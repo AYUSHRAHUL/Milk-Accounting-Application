@@ -1,98 +1,134 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { Button } from '@/components/ui/Button';
+import { Colors } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { router } from 'expo-router';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
-export default function HomeScreen() {
+export default function DashboardScreen() {
+  const { user, logout } = useAuth();
+  const colorScheme = useColorScheme() ?? 'light';
+  const theme = Colors[colorScheme];
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.topDecoration, { backgroundColor: theme.primary }]} />
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
+      <ThemedView style={styles.header}>
+        <View>
+          <ThemedText type="title" style={{ color: colorScheme === 'light' ? '#fff' : theme.text }}>
+            Admin Dashboard
+          </ThemedText>
+          <ThemedText style={[styles.welcomeText, { color: colorScheme === 'light' ? 'rgba(255,255,255,0.8)' : theme.textSecondary }]}>
+            Welcome back, {user?.name}!
+          </ThemedText>
+        </View>
+        <Button
+          title="Log Out"
+          onPress={logout}
+          style={[styles.logoutButton, { backgroundColor: colorScheme === 'light' ? 'rgba(255,255,255,0.2)' : theme.card }]}
+          textStyle={{ color: colorScheme === 'light' ? '#fff' : theme.error }}
+        />
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+
+      <View style={styles.grid}>
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
+          activeOpacity={0.7}
+          onPress={() => router.push('/milk-collection')}
+        >
+          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Milk Collection</ThemedText>
+          <ThemedText type="title" style={[styles.cardValue, { color: theme.primary }]}>🥛</ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]} activeOpacity={0.7}>
+          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Customers</ThemedText>
+          <ThemedText type="title" style={[styles.cardValue, { color: theme.secondary }]}>👥</ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
+          activeOpacity={0.7}
+          onPress={() => router.push('/products')}
+        >
+          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Products</ThemedText>
+          <ThemedText type="title" style={[styles.cardValue, { color: theme.warning }]}>📦</ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]} activeOpacity={0.7}>
+          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Reports</ThemedText>
+          <ThemedText type="title" style={[styles.cardValue, { color: theme.success }]}>📊</ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]} activeOpacity={0.7}>
+          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Expenses</ThemedText>
+          <ThemedText type="title" style={[styles.cardValue, { color: theme.error }]}>📉</ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]} activeOpacity={0.7}>
+          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Sales</ThemedText>
+          <ThemedText type="title" style={[styles.cardValue, { color: theme.primary }]}>💰</ThemedText>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flexGrow: 1,
+    padding: 24,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
+  topDecoration: {
     position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 220,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginTop: 40, // Safe area
+    marginBottom: 40,
+    backgroundColor: 'transparent',
+  },
+  welcomeText: {
+    marginTop: 4,
+    fontSize: 15,
+  },
+  logoutButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    width: 'auto',
+    marginVertical: 0,
+    height: 40,
+    borderRadius: 20,
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    marginTop: 10,
+  },
+  card: {
+    width: '47%',
+    padding: 20,
+    borderRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  cardValue: {
+    marginTop: 12,
+    fontSize: 28,
   },
 });
