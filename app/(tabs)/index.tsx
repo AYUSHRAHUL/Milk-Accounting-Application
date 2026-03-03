@@ -43,8 +43,12 @@ export default function DashboardScreen() {
           <ThemedText type="title" style={[styles.cardValue, { color: theme.primary }]}>🥛</ThemedText>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]} activeOpacity={0.7}>
-          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Customers</ThemedText>
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
+          activeOpacity={0.7}
+          onPress={() => router.push('/suppliers')}
+        >
+          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Suppliers</ThemedText>
           <ThemedText type="title" style={[styles.cardValue, { color: theme.secondary }]}>👥</ThemedText>
         </TouchableOpacity>
 
@@ -67,9 +71,13 @@ export default function DashboardScreen() {
           <ThemedText type="title" style={[styles.cardValue, { color: theme.error }]}>📉</ThemedText>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
+          activeOpacity={0.7}
+          onPress={() => router.push('/sales')}
+        >
           <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Sales</ThemedText>
-          <ThemedText type="title" style={[styles.cardValue, { color: theme.primary }]}>💰</ThemedText>
+          <ThemedText type="title" style={[styles.cardValue, { color: theme.warning }]}>💰</ThemedText>
         </TouchableOpacity>
       </View>
     </ScrollView>
