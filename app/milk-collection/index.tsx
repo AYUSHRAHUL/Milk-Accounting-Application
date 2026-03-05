@@ -107,9 +107,14 @@ export default function MilkCollectionScreen() {
                 <View style={[styles.topDecoration, { backgroundColor: theme.primary }]} />
 
                 <View style={styles.header}>
-                    <ThemedText type="title" style={{ color: colorScheme === 'light' ? '#fff' : theme.text }}>
-                        Milk Entry
-                    </ThemedText>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <ThemedText type="title" style={{ color: colorScheme === 'light' ? '#fff' : theme.text }}>
+                            Milk Entry
+                        </ThemedText>
+                        <TouchableOpacity onPress={() => router.push('/milk-collection/history')} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 }}>
+                            <ThemedText style={{ color: '#fff', fontSize: 13, fontWeight: '600', paddingHorizontal: 6 }}>View Ledger</ThemedText>
+                        </TouchableOpacity>
+                    </View>
                     <ThemedText style={{ color: colorScheme === 'light' ? 'rgba(255,255,255,0.8)' : theme.textSecondary, marginTop: 4 }}>
                         Record today's collection
                     </ThemedText>

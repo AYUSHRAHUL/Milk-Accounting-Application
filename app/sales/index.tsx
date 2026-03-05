@@ -141,9 +141,14 @@ export default function SalesScreen() {
                 <View style={[styles.topDecoration, { backgroundColor: theme.success }]} />
 
                 <View style={styles.header}>
-                    <ThemedText type="title" style={{ color: '#fff' }}>
-                        Record Sale
-                    </ThemedText>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <ThemedText type="title" style={{ color: '#fff' }}>
+                            Record Sale
+                        </ThemedText>
+                        <TouchableOpacity onPress={() => router.push('/sales/history')} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 }}>
+                            <ThemedText style={{ color: '#fff', fontSize: 13, fontWeight: '600', paddingHorizontal: 6 }}>View Ledger</ThemedText>
+                        </TouchableOpacity>
+                    </View>
                     <ThemedText style={{ color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>
                         Checkout and manage inventory
                     </ThemedText>

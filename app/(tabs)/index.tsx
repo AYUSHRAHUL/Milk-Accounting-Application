@@ -1,11 +1,14 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { AnimatedCard } from '@/components/ui/AnimatedCard';
 import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 export default function DashboardScreen() {
   const { user, logout } = useAuth();
@@ -14,7 +17,12 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.topDecoration, { backgroundColor: theme.primary }]} />
+      <LinearGradient
+        colors={[theme.primary, '#6366F1']} // Rich indigo gradient
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.topDecoration}
+      />
 
       <ThemedView style={styles.header}>
         <View>
@@ -34,51 +42,65 @@ export default function DashboardScreen() {
       </ThemedView>
 
       <View style={styles.grid}>
-        <TouchableOpacity
+        <AnimatedCard
           style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
-          activeOpacity={0.7}
           onPress={() => router.push('/milk-collection')}
         >
           <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Milk Collection</ThemedText>
-          <ThemedText type="title" style={[styles.cardValue, { color: theme.primary }]}>🥛</ThemedText>
-        </TouchableOpacity>
+          <View style={styles.iconContainer}>
+            <Ionicons name="pint" size={32} color={theme.primary} />
+          </View>
+        </AnimatedCard>
 
-        <TouchableOpacity
+        <AnimatedCard
           style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
-          activeOpacity={0.7}
           onPress={() => router.push('/suppliers')}
         >
           <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Suppliers</ThemedText>
-          <ThemedText type="title" style={[styles.cardValue, { color: theme.secondary }]}>👥</ThemedText>
-        </TouchableOpacity>
+          <View style={styles.iconContainer}>
+            <Ionicons name="people" size={32} color={theme.secondary} />
+          </View>
+        </AnimatedCard>
 
-        <TouchableOpacity
+        <AnimatedCard
           style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
-          activeOpacity={0.7}
           onPress={() => router.push('/products')}
         >
           <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Products</ThemedText>
-          <ThemedText type="title" style={[styles.cardValue, { color: theme.warning }]}>📦</ThemedText>
-        </TouchableOpacity>
+          <View style={styles.iconContainer}>
+            <Ionicons name="cube" size={32} color={theme.warning} />
+          </View>
+        </AnimatedCard>
 
-        <TouchableOpacity style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]} activeOpacity={0.7}>
-          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Reports</ThemedText>
-          <ThemedText type="title" style={[styles.cardValue, { color: theme.success }]}>📊</ThemedText>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]} activeOpacity={0.7}>
-          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Expenses</ThemedText>
-          <ThemedText type="title" style={[styles.cardValue, { color: theme.error }]}>📉</ThemedText>
-        </TouchableOpacity>
-
-        <TouchableOpacity
+        <AnimatedCard
           style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
-          activeOpacity={0.7}
+          onPress={() => router.push('/reports')}
+        >
+          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Reports</ThemedText>
+          <View style={styles.iconContainer}>
+            <Ionicons name="bar-chart" size={32} color={theme.success} />
+          </View>
+        </AnimatedCard>
+
+        <AnimatedCard
+          style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
+          onPress={() => router.push('/expenses')}
+        >
+          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Expenses</ThemedText>
+          <View style={styles.iconContainer}>
+            <Ionicons name="wallet" size={32} color={theme.error} />
+          </View>
+        </AnimatedCard>
+
+        <AnimatedCard
+          style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
           onPress={() => router.push('/sales')}
         >
           <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Sales</ThemedText>
-          <ThemedText type="title" style={[styles.cardValue, { color: theme.warning }]}>💰</ThemedText>
-        </TouchableOpacity>
+          <View style={styles.iconContainer}>
+            <Ionicons name="cash" size={32} color={theme.warning} />
+          </View>
+        </AnimatedCard>
       </View>
     </ScrollView>
   );
@@ -138,5 +160,9 @@ const styles = StyleSheet.create({
   cardValue: {
     marginTop: 12,
     fontSize: 28,
+  },
+  iconContainer: {
+    marginTop: 12,
+    alignItems: 'flex-start',
   },
 });

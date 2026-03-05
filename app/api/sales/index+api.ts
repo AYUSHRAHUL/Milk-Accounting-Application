@@ -6,38 +6,47 @@ export async function GET(request: Request) {
     try {
         await connectToDatabase();
         const url = new URL(request.url);
+
+        // If they ask for productType, they want the stock check. Else they want all history.
         const productType = url.searchParams.get('productType');
 
-        if (!productType) {
-            return new Response(JSON.stringify({ message: 'Product type is required to check stock' }), { status: 400 });
+        if (productType) {
+            // Calculate total produced
+            const productionResult = await ProductionEntry.aggregate([
+                { $match: { productType } },
+                { $group: { _id: null, totalProduced: { $sum: '$quantityProduced' } } }
+            ]);
+
+            // Calculate total sold
+            const salesResult = await SaleEntry.aggregate([
+                { $match: { productType } },
+                { $group: { _id: null, totalSold: { $sum: '$quantity' } } }
+            ]);
+
+            const totalProduced = productionResult[0]?.totalProduced || 0;
+            const totalSold = salesResult[0]?.totalSold || 0;
+            const availableStock = totalProduced - totalSold;
+
+            return new Response(JSON.stringify({ availableStock }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+            });
         }
 
-        // Calculate total produced
-        const productionResult = await ProductionEntry.aggregate([
-            { $match: { productType } },
-            { $group: { _id: null, totalProduced: { $sum: '$quantityProduced' } } }
-        ]);
+        // Fetch all sales, sorted newest first
+        const sales = await SaleEntry.find({}).sort({ date: -1, createdAt: -1 });
 
-        // Calculate total sold
-        const salesResult = await SaleEntry.aggregate([
-            { $match: { productType } },
-            { $group: { _id: null, totalSold: { $sum: '$quantity' } } }
-        ]);
-
-        const totalProduced = productionResult[0]?.totalProduced || 0;
-        const totalSold = salesResult[0]?.totalSold || 0;
-        const availableStock = totalProduced - totalSold;
-
-        return new Response(JSON.stringify({ availableStock }), {
+        return new Response(JSON.stringify(sales), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
         });
 
     } catch (error: any) {
-        console.error('Stock Check Error:', error);
+        console.error('Sales GET Error:', error);
         return new Response(JSON.stringify({ message: error.message || 'Internal Server Error' }), { status: 500 });
     }
 }
+
 
 export async function POST(request: Request) {
     try {

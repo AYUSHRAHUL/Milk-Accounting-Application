@@ -102,7 +102,7 @@ export default function SupplierDetailsScreen() {
                 <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
                 <ThemedText style={[styles.sectionTitle, { color: theme.primary }]}>Livestock</ThemedText>
-                <View style={[styles.badgeContainer, { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 10 }]}>
+                <View style={styles.badgeContainer}>
                     {supplier.animalType?.map(type => (
                         <View key={type} style={[styles.badge, { backgroundColor: theme.background }]}>
                             <ThemedText style={{ fontSize: 14, color: theme.primary, fontWeight: 'bold' }}>{type}</ThemedText>
@@ -183,6 +183,12 @@ const styles = StyleSheet.create({
         width: '100%',
         marginVertical: 20,
         opacity: 0.3,
+    },
+    badgeContainer: {
+        flexDirection: 'row',
+        gap: 8,
+        flexWrap: 'wrap',
+        marginTop: 10,
     },
     badge: {
         paddingHorizontal: 16,
