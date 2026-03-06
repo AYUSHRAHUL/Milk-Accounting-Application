@@ -45,18 +45,19 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_600SemiBold',
   },
   title: {
-    fontSize: 32,
-    lineHeight: 36,
+    fontSize: 28,
+    lineHeight: 34,
     fontFamily: 'Outfit_700Bold',
   },
   subtitle: {
-    fontSize: 20,
-    fontFamily: 'Outfit_700Bold',
+    fontSize: 18,
+    lineHeight: 24,
+    fontFamily: 'Outfit_600SemiBold',
   },
   link: {
-    lineHeight: 30,
+    lineHeight: 24,
     fontSize: 16,
-    color: '#0a7ea4',
     fontFamily: 'Outfit_400Regular',
+    textDecorationLine: 'underline',
   },
 });

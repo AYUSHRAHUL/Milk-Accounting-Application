@@ -135,7 +135,7 @@ export default function ProductionScreen() {
                         Products Entry
                     </ThemedText>
                     <ThemedText style={{ color: colorScheme === 'light' ? 'rgba(255,255,255,0.8)' : theme.textSecondary, marginTop: 4 }}>
-                        Record today's converted milk
+                        Record today&apos;s converted milk
                     </ThemedText>
                 </View>
 

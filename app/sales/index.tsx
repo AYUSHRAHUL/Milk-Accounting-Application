@@ -1,6 +1,8 @@
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -116,8 +118,8 @@ export default function SalesScreen() {
                         style={[
                             styles.selectorPill,
                             {
-                                backgroundColor: isSelected ? theme.success : theme.card, // Green theme for Sales
-                                borderColor: isSelected ? theme.success : theme.border
+                                backgroundColor: isSelected ? theme.primary : theme.surface,
+                                borderColor: isSelected ? theme.primary : theme.border
                             }
                         ]}
                         onPress={() => onSelect(option)}
@@ -138,23 +140,23 @@ export default function SalesScreen() {
     return (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
-                <View style={[styles.topDecoration, { backgroundColor: theme.success }]} />
+                <ScreenHeader
+                    title="Record Sale"
+                    subtitle="Checkout and manage inventory"
+                    onBack={() => router.back()}
+                    right={
+                        <View style={{ width: 120 }}>
+                            <Button
+                                title="Ledger"
+                                variant="outline"
+                                style={{ height: 40 }}
+                                onPress={() => router.push('/sales/history')}
+                            />
+                        </View>
+                    }
+                />
 
-                <View style={styles.header}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <ThemedText type="title" style={{ color: '#fff' }}>
-                            Record Sale
-                        </ThemedText>
-                        <TouchableOpacity onPress={() => router.push('/sales/history')} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 }}>
-                            <ThemedText style={{ color: '#fff', fontSize: 13, fontWeight: '600', paddingHorizontal: 6 }}>View Ledger</ThemedText>
-                        </TouchableOpacity>
-                    </View>
-                    <ThemedText style={{ color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>
-                        Checkout and manage inventory
-                    </ThemedText>
-                </View>
-
-                <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}>
+                <Card variant="elevated" style={[styles.card, { backgroundColor: theme.surface, shadowColor: theme.shadow }]}>
                     <Input
                         label="Date (YYYY-MM-DD)"
                         value={date}
@@ -180,7 +182,7 @@ export default function SalesScreen() {
                         </ThemedText>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             {isCheckingStock ? (
-                                <ActivityIndicator size="small" color={theme.success} />
+                                <ActivityIndicator size="small" color={theme.primary} />
                             ) : (
                                 <ThemedText style={{
                                     fontSize: 18,
@@ -214,9 +216,9 @@ export default function SalesScreen() {
                         </View>
                     </View>
 
-                    <View style={styles.totalBox}>
+                    <View style={[styles.totalBox, { backgroundColor: theme.surfaceMuted }]}>
                         <ThemedText style={styles.totalLabel}>Total Amount:</ThemedText>
-                        <ThemedText style={[styles.totalValue, { color: theme.success }]}>
+                        <ThemedText style={[styles.totalValue, { color: theme.primary }]}>
                             ₹ {totalAmount}
                         </ThemedText>
                     </View>
@@ -230,16 +232,16 @@ export default function SalesScreen() {
                         title="Complete Sale"
                         onPress={handleSave}
                         loading={isLoading}
-                        style={{ marginTop: 24, backgroundColor: theme.success }}
+                        style={{ marginTop: 24 }}
                     />
                     <Button
                         title="Cancel"
                         onPress={() => router.back()}
-                        style={[styles.cancelButton, { backgroundColor: 'transparent', borderColor: theme.border, shadowOpacity: 0, elevation: 0 }]}
-                        textStyle={{ color: theme.textSecondary }}
+                        variant="outline"
+                        style={styles.cancelButton}
                         disabled={isLoading}
                     />
-                </View>
+                </Card>
             </ScrollView>
         </KeyboardAvoidingView>
     );
@@ -250,25 +252,9 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         padding: 24,
     },
-    topDecoration: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 180,
-    },
-    header: {
-        marginTop: 40,
-        marginBottom: 32,
-    },
     card: {
         width: '100%',
         padding: 24,
-        borderRadius: 20,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.08,
-        shadowRadius: 24,
-        elevation: 8,
         marginBottom: 30,
     },
     sectionTitle: {
@@ -308,7 +294,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.03)',
         padding: 16,
         borderRadius: 12,
         marginTop: 10,

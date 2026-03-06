@@ -1,4 +1,4 @@
-import { Colors } from '@/constants/theme';
+import { Colors, Radii } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import React from 'react';
 import {
@@ -6,61 +6,88 @@ import {
     StyleSheet,
     Text,
     TextStyle,
-    TouchableOpacity,
-    TouchableOpacityProps,
+    ViewStyle,
+    Pressable,
+    PressableProps,
 } from 'react-native';
 
-interface ButtonProps extends TouchableOpacityProps {
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+
+interface ButtonProps extends PressableProps {
     title: string;
     loading?: boolean;
     textStyle?: TextStyle | TextStyle[];
+    variant?: ButtonVariant;
 }
 
-export const Button = ({ title, loading, style, textStyle, ...props }: ButtonProps) => {
+export const Button = ({ title, loading, style, textStyle, variant = 'primary', ...props }: ButtonProps) => {
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
 
+    const containerBase: ViewStyle = {
+        borderRadius: Radii.md,
+        height: 52,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 16,
+        width: '100%',
+    };
+
+    const variantStyle: ViewStyle =
+        variant === 'primary'
+            ? { backgroundColor: theme.primary, shadowColor: theme.shadow, borderWidth: 1, borderColor: 'transparent' }
+            : variant === 'secondary'
+                ? { backgroundColor: theme.secondary, shadowColor: theme.shadow, borderWidth: 1, borderColor: 'transparent' }
+                : variant === 'danger'
+                    ? { backgroundColor: theme.error, shadowColor: theme.shadow, borderWidth: 1, borderColor: 'transparent' }
+                    : variant === 'outline'
+                        ? { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.border }
+                        : { backgroundColor: 'transparent', borderWidth: 1, borderColor: 'transparent' };
+
+    const titleColor =
+        variant === 'outline' || variant === 'ghost'
+            ? theme.text
+            : '#FFFFFF';
+
     return (
-        <TouchableOpacity
-            style={[
-                styles.button,
-                { backgroundColor: theme.primary, shadowColor: theme.primary },
-                props.disabled && styles.disabled,
+        <Pressable
+            accessibilityRole="button"
+            disabled={props.disabled || loading}
+            style={({ pressed }) => [
+                containerBase,
+                variantStyle,
+                styles.shadow,
+                pressed && styles.pressed,
+                (props.disabled || loading) && styles.disabled,
                 style,
             ]}
-            activeOpacity={0.7}
             {...props}
         >
             {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={titleColor} />
             ) : (
-                <Text style={[styles.text, { color: '#FFFFFF' }, textStyle]}>{title}</Text>
+                <Text style={[styles.text, { color: titleColor }, textStyle]}>{title}</Text>
             )}
-        </TouchableOpacity>
+        </Pressable>
     );
 };
 
 const styles = StyleSheet.create({
-    button: {
-        height: 54,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginVertical: 12,
-        width: '100%',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 5, // For Android
-    },
     text: {
         fontSize: 16,
         fontWeight: '700',
-        letterSpacing: 0.5,
+    },
+    shadow: {
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.08,
+        shadowRadius: 20,
+        elevation: 3,
+    },
+    pressed: {
+        transform: [{ scale: 0.99 }],
+        opacity: 0.92,
     },
     disabled: {
-        opacity: 0.5,
-        shadowOpacity: 0,
-        elevation: 0,
+        opacity: 0.55,
     },
 });

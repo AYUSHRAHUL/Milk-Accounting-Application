@@ -1,9 +1,13 @@
 import { ThemedText } from '@/components/themed-text';
-import { Colors } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
 interface SaleEntryData {
     _id: string;
@@ -57,7 +61,7 @@ export default function SalesHistoryScreen() {
     };
 
     const renderEntry = ({ item }: { item: SaleEntryData }) => (
-        <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}>
+        <Card variant="elevated" style={[styles.card, { backgroundColor: theme.surface, shadowColor: theme.shadow }]}>
             <View style={styles.cardHeader}>
                 <View>
                     <ThemedText style={{ fontSize: 16, fontWeight: 'bold' }}>{item.customerName || 'Walk-in Customer'}</ThemedText>
@@ -76,40 +80,26 @@ export default function SalesHistoryScreen() {
             <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
             <View style={styles.cardFooter}>
-                <View style={[styles.badge, { backgroundColor: 'rgba(52, 152, 219, 0.1)' }]}>
+                <View style={[styles.badge, { backgroundColor: theme.primaryMuted }]}>
                     <ThemedText style={{ fontSize: 12, color: theme.primary, fontWeight: '600' }}>{item.productType}</ThemedText>
                 </View>
-                <View style={[styles.badge, { backgroundColor: item.paymentMode === 'Credit' ? 'rgba(231, 76, 60, 0.1)' : 'rgba(46, 204, 113, 0.1)' }]}>
+                <View style={[styles.badge, { backgroundColor: item.paymentMode === 'Credit' ? theme.errorMuted : theme.successMuted }]}>
                     <ThemedText style={{ fontSize: 12, color: item.paymentMode === 'Credit' ? theme.error : theme.success, fontWeight: '600' }}>
                         {item.paymentMode}
                     </ThemedText>
                 </View>
             </View>
-        </View>
+        </Card>
     );
 
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>
-            <View style={[styles.topDecoration, { backgroundColor: theme.warning }]} />
-
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ThemedText style={{ fontSize: 24, color: '#FFFFFF' }}>←</ThemedText>
-                </TouchableOpacity>
-                <View>
-                    <ThemedText type="title" style={{ color: '#FFFFFF' }}>
-                        Sales Ledger
-                    </ThemedText>
-                    <ThemedText style={{ color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>
-                        History of all product sales
-                    </ThemedText>
-                </View>
+            <View style={{ paddingHorizontal: Spacing.xl, paddingTop: Spacing.md }}>
+                <ScreenHeader title="Sales Ledger" subtitle="History of all product sales" onBack={() => router.back()} />
             </View>
 
             {isLoading ? (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="large" color={theme.warning} />
-                </View>
+                <LoadingIndicator />
             ) : (
                 <FlatList
                     data={entries}
@@ -118,9 +108,7 @@ export default function SalesHistoryScreen() {
                     contentContainerStyle={styles.listContainer}
                     refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
                     ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                            <ThemedText style={{ color: theme.textSecondary, fontSize: 16 }}>No sales recorded yet.</ThemedText>
-                        </View>
+                        <EmptyState title="No sales recorded" description="Once you record sales, they will appear here." />
                     }
                 />
             )}
@@ -132,36 +120,14 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    topDecoration: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 180,
-    },
-    header: {
-        paddingTop: 60,
-        paddingHorizontal: 24,
-        paddingBottom: 20,
-    },
-    backButton: {
-        marginBottom: 16,
-        padding: 4,
-        alignSelf: 'flex-start',
-    },
     listContainer: {
-        padding: 24,
+        padding: Spacing.xl,
         paddingTop: 10,
         paddingBottom: 40,
     },
     card: {
-        padding: 16,
-        borderRadius: 16,
-        marginBottom: 16,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 3,
+        padding: Spacing.lg,
+        marginBottom: Spacing.lg,
     },
     cardHeader: {
         flexDirection: 'row',
@@ -176,15 +142,11 @@ const styles = StyleSheet.create({
     },
     cardFooter: {
         flexDirection: 'row',
-        gap: 8,
+        gap: Spacing.sm,
     },
     badge: {
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 12,
-    },
-    emptyContainer: {
-        alignItems: 'center',
-        paddingTop: 40,
     },
 });
