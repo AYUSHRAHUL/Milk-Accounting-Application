@@ -11,8 +11,8 @@ export default function SupportScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 
-  const SUPPORT_PHONE = '+919876543210';
-  const SUPPORT_EMAIL = 'support@yourapp.com';
+  const SUPPORT_PHONE = '9279866178';
+  const SUPPORT_EMAIL = 'support@kaamwalah.com';
 
   const openDialer = async () => {
     const url = `tel:${SUPPORT_PHONE}`;
@@ -51,20 +51,20 @@ export default function SupportScreen() {
         <SupportCard
           icon="chatbubbles-outline"
           title="Chat Us"
-          description="Talk to our support team instantly"
+          description="Talk with our support team instantly."
           onPress={() => router.push('/(tabs)/support-chat')}
         />
         <SupportCard
           icon="call-outline"
           title="Call Us"
-          description={`Speak directly with support (${SUPPORT_PHONE})`}
+          description="Speak directly with our support team."
           onPress={openDialer}
           tone="success"
         />
         <SupportCard
           icon="mail-outline"
           title="Mail Us"
-          description={`Send us your queries at ${SUPPORT_EMAIL}`}
+          description="Send us your query by email."
           onPress={openMail}
           tone="warning"
         />

@@ -35,7 +35,7 @@ export default function ChatSupportScreen() {
     {
       id: nowId(),
       from: 'support',
-      text: 'Hello! Welcome to Support Center. How can we help you today?',
+      text: 'Hello! Thank you for contacting Kaamwalah Support. Our team will get back to you shortly.',
       createdAt: Date.now(),
     },
   ]);
@@ -55,7 +55,7 @@ export default function ChatSupportScreen() {
       const reply: ChatMessage = {
         id: nowId(),
         from: 'support',
-        text: 'Hello! Our support team will respond shortly.',
+        text: 'Hello! Thank you for contacting Kaamwalah Support. Our team will get back to you shortly.',
         createdAt: Date.now(),
       };
       setMessages((prev) => [...prev, reply]);
@@ -73,7 +73,7 @@ export default function ChatSupportScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScreenHeader title="Support Team" subtitle="Chat Support" onBack={() => router.back()} />
+      <ScreenHeader title="Support Chat" subtitle="Kaamwalah Support" onBack={() => router.back()} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}

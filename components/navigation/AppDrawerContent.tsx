@@ -69,9 +69,12 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
           {
             text: 'Log Out',
             style: 'destructive',
-            onPress: async () => {
+            onPress: () => {
+              // Close drawer for immediate visual feedback
               props.navigation.closeDrawer();
-              await logout();
+              // Clear auth state synchronously (instant)
+              logout();
+              // Navigate immediately (do not wait on storage cleanup)
               router.replace('/(auth)/register');
             },
           },

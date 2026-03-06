@@ -52,6 +52,14 @@ function RootLayoutNav() {
       <Stack>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="milk-collection/index"
+          options={{
+            title: 'Milk Collection',
+            headerTitleAlign: 'center',
+            headerTitleStyle: { fontWeight: '700' },
+          }}
+        />
         <Stack.Screen name="settlement" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>

@@ -1,26 +1,20 @@
-import React, { useState, useMemo } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import React, { useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
+  ActivityIndicator,
+  Animated,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
-  ActivityIndicator,
-  Animated,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
-import { Colors } from '@/constants/theme';
-import { useAuth } from '@/context/AuthContext';
-import { router } from 'expo-router';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -136,15 +130,6 @@ export default function LoginScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-                <Card variant="elevated" style={styles.card}>
-                    <Input
-                        label="Email Address"
-                        placeholder="Enter your email"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                    />
 
               {/* Login Button */}
               <Animated.View style={{ transform: [{ scale: buttonScale }], marginTop: 8 }}>
@@ -166,7 +151,7 @@ export default function LoginScreen() {
 
               {/* Bottom Text */}
               <View style={styles.bottomTextContainer}>
-                <Text style={styles.bottomText}>Don't have an account? </Text>
+                <Text style={styles.bottomText}>Don&apos;t have an account? </Text>
                 <TouchableOpacity onPress={() => router.replace('/(auth)/register')}>
                   <Text style={styles.registerText}>Register</Text>
                 </TouchableOpacity>
@@ -174,14 +159,6 @@ export default function LoginScreen() {
 
             </View>
           </ScrollView>
-                    <View style={styles.footerContainer}>
-                        <ThemedText style={{ color: theme.textSecondary }}>Don&apos;t have an account? </ThemedText>
-                        <Link href="/(auth)/register" asChild>
-                            <ThemedText type="link" style={{ color: theme.primary, fontWeight: '700' }}>Register Here</ThemedText>
-                        </Link>
-                    </View>
-                </Card>
-            </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
@@ -335,63 +312,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-    container: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        padding: 24,
-    },
-    topDecoration: {
-        position: 'absolute',
-        top: -200,
-        left: -100,
-        width: 400,
-        height: 400,
-        borderRadius: 200,
-        opacity: 0.08,
-    },
-    headerContainer: {
-        alignItems: 'center',
-        marginBottom: 32,
-        backgroundColor: 'transparent',
-    },
-    logoContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: '#FFFFFF',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 24,
-        borderWidth: 1,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    logo: {
-        width: 45,
-        height: 45,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: '800',
-        marginBottom: 8,
-        letterSpacing: -0.5,
-    },
-    subtitle: {
-        fontSize: 15,
-    },
-    card: {
-        width: '100%',
-    },
-    loginButton: {
-        marginTop: 24,
-        marginBottom: 20,
-    },
-    footerContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 10,
-    },
 });

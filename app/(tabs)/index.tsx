@@ -1,117 +1,207 @@
-import { ThemedText } from '@/components/themed-text';
-import { AnimatedCard } from '@/components/ui/AnimatedCard';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { Colors, Spacing } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import React, { useEffect } from 'react';
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { default as MilkCollectionImage, default as ProductsImage } from '@/assets/milkcollection.png';
+import ReportsImage from '@/assets/reports.png';
+import SalesImage from '@/assets/sales.png';
+import SuppliersImage from '@/assets/supplier.png';
+import ViewCollectionsImage from '@/assets/view collection.png';
+
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+
+interface FeatureCard {
+  title: string;
+  route: string;
+  image: any;
+}
+
+const FEATURES: FeatureCard[] = [
+  { title: 'Milk Collection', route: '/milk-collection', image: MilkCollectionImage },
+  { title: 'View Collections', route: '/milk-collection/history', image: ViewCollectionsImage },
+  { title: 'Suppliers', route: '/suppliers', image: SuppliersImage },
+  { title: 'Products', route: '/products', image: ProductsImage },
+  { title: 'Sales', route: '/sales', image: SalesImage },
+  { title: 'Reports', route: '/(tabs)/reports', image: ReportsImage },
+];
+
+// Dashboard Card
+function DashboardCard({ item, index }: { item: FeatureCard; index: number }) {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(20);
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    const delay = index * 80;
+    opacity.value = withDelay(delay, withTiming(1, { duration: 400, easing: Easing.out(Easing.ease) }));
+    translateY.value = withDelay(delay, withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) }));
+  }, []);
+
+  const cardAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withTiming(0.96, { duration: 120 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 200 });
+  };
+
+  return (
+    <AnimatedTouchable
+      style={[styles.card, cardAnimatedStyle]}
+      onPress={() => router.push(item.route as any)}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      activeOpacity={1}
+    >
+      <Image source={item.image} style={styles.cardImage} />
+
+      <Text style={styles.cardTitle}>{item.title}</Text>
+    </AnimatedTouchable>
+  );
+}
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
-  const colorScheme = useColorScheme() ?? 'light';
-  const theme = Colors[colorScheme];
 
   return (
-    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
-      <ScreenHeader
-        title="Dashboard"
-        subtitle="Milk accounting overview"
-        onMenu={() => navigation.dispatch(DrawerActions.openDrawer())}
-      />
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>
+            <Ionicons name="menu-outline" size={28} color="#22C55E" />
+          </TouchableOpacity>
 
-      <View style={styles.grid}>
-        <AnimatedCard
-          style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
-          onPress={() => router.push('/milk-collection')}
-        >
-          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Milk Collection</ThemedText>
-          <View style={styles.iconContainer}>
-            <Ionicons name="pint" size={32} color={theme.primary} />
-          </View>
-        </AnimatedCard>
+          <Text style={styles.headerTitle}>Dashboard</Text>
 
-        <AnimatedCard
-          style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
-          onPress={() => router.push('/milk-collection/history')}
-        >
-          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>View Collections</ThemedText>
-          <View style={styles.iconContainer}>
-            <Ionicons name="list" size={32} color={theme.primary} />
-          </View>
-        </AnimatedCard>
+          <TouchableOpacity>
+            <Ionicons name="notifications-outline" size={26} color="#22C55E" />
+          </TouchableOpacity>
+        </View>
 
-        <AnimatedCard
-          style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
-          onPress={() => router.push('/suppliers')}
-        >
-          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Suppliers</ThemedText>
-          <View style={styles.iconContainer}>
-            <Ionicons name="people" size={32} color={theme.secondary} />
-          </View>
-        </AnimatedCard>
+        {/* Welcome */}
+        <View style={styles.welcomeSection}>
+          <Text style={styles.welcomeTitle}>Welcome back!</Text>
+          <Text style={styles.welcomeSubtitle}>
+            Manage your dairy operations efficiently
+          </Text>
+        </View>
 
-        <AnimatedCard
-          style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
-          onPress={() => router.push('/products')}
-        >
-          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Products</ThemedText>
-          <View style={styles.iconContainer}>
-            <Ionicons name="cube" size={32} color={theme.warning} />
-          </View>
-        </AnimatedCard>
-
-        <AnimatedCard
-          style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
-          onPress={() => router.push('/sales')}
-        >
-          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Sales</ThemedText>
-          <View style={styles.iconContainer}>
-            <Ionicons name="cash" size={32} color={theme.warning} />
-          </View>
-        </AnimatedCard>
-
-        <AnimatedCard
-          style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
-          onPress={() => router.push('/(tabs)/reports')}
-        >
-          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Reports</ThemedText>
-          <View style={styles.iconContainer}>
-            <Ionicons name="stats-chart" size={32} color={theme.success} />
-          </View>
-        </AnimatedCard>
-      </View>
-    </ScrollView>
+        {/* Feature Grid */}
+        <View style={styles.grid}>
+          {FEATURES.map((item, index) => (
+            <DashboardCard key={item.title} item={item} index={index} />
+          ))}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: Spacing.xl,
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
+
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 40,
+  },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    marginBottom: 10,
+  },
+
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#111827',
+  },
+
+  welcomeSection: {
+    marginBottom: 20,
+  },
+
+  welcomeTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#111827',
+  },
+
+  welcomeSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.lg,
-    marginTop: Spacing.xs,
+    justifyContent: 'space-between',
+    gap: 16,
   },
+
   card: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 18,
+    padding: 15,
+    height: 130,
     width: '47%',
-    padding: Spacing.xl,
-    borderRadius: 16,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  cardValue: {
-    marginTop: Spacing.md,
-    fontSize: 28,
+
+  cardImage: {
+    height: 45,
+    width: 45,
+    marginBottom: 10,
+    resizeMode: 'contain',
+    tintColor: '#22C55E',
   },
-  iconContainer: {
-    marginTop: Spacing.md,
-    alignItems: 'flex-start',
+
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    textAlign: 'center',
   },
 });

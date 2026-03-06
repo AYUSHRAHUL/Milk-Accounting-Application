@@ -12,7 +12,11 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password?: string) => Promise<void>;
   register: (name: string, email: string, password?: string) => Promise<void>;
-  logout: () => Promise<void>;
+  /**
+   * Clear in-memory auth state immediately and trigger
+   * background cleanup of persisted data.
+   */
+  logout: () => void;
   updateUser: (updates: Partial<Exclude<User, null>>) => Promise<void>;
 }
 
@@ -98,17 +102,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = async () => {
+  const logout = () => {
     const prevEmail = user?.email?.toLowerCase() ?? null;
+    // Make UI respond instantly
     setUser(null);
-    try {
-      await AsyncStorage.removeItem(USER_STORAGE_KEY);
-      if (prevEmail) {
-        await AsyncStorage.removeItem(`milkAccounting:profile:v1:${prevEmail}`);
+    // Background cleanup – do not block UI
+    void (async () => {
+      try {
+        const tasks: Promise<void>[] = [AsyncStorage.removeItem(USER_STORAGE_KEY)];
+        if (prevEmail) {
+          tasks.push(AsyncStorage.removeItem(`milkAccounting:profile:v1:${prevEmail}`));
+        }
+        await Promise.all(tasks);
+      } catch {
+        // ignore persistence errors
       }
-    } catch {
-      // ignore
-    }
+    })();
   };
 
   const updateUser = async (updates: Partial<Exclude<User, null>>) => {
