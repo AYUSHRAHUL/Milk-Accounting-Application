@@ -1,6 +1,8 @@
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -111,23 +113,23 @@ export default function MilkCollectionScreen() {
     return (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
-                <View style={[styles.topDecoration, { backgroundColor: theme.primary }]} />
+                <ScreenHeader
+                    title="Milk Entry"
+                    subtitle={`Recording for: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`}
+                    onBack={() => router.back()}
+                    right={
+                        <View style={{ width: 120 }}>
+                            <Button
+                                title="Ledger"
+                                variant="outline"
+                                style={{ height: 40 }}
+                                onPress={() => router.push('/milk-collection/history')}
+                            />
+                        </View>
+                    }
+                />
 
-                <View style={styles.header}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <ThemedText type="title" style={{ color: colorScheme === 'light' ? '#fff' : theme.text }}>
-                            Milk Entry
-                        </ThemedText>
-                        <TouchableOpacity onPress={() => router.push('/milk-collection/history')} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 }}>
-                            <ThemedText style={{ color: '#fff', fontSize: 13, fontWeight: '600', paddingHorizontal: 6 }}>View Ledger</ThemedText>
-                        </TouchableOpacity>
-                    </View>
-                    <ThemedText style={{ color: colorScheme === 'light' ? 'rgba(255,255,255,0.8)' : theme.textSecondary, marginTop: 4 }}>
-                        Recording for: {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                    </ThemedText>
-                </View>
-
-                <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}>
+                <Card variant="elevated" style={[styles.card, { backgroundColor: theme.surface, shadowColor: theme.shadow }]}>
                     <Input
                         label="Supplier Name / ID *"
                         value={supplier}
@@ -231,11 +233,11 @@ export default function MilkCollectionScreen() {
                     <Button
                         title="Cancel"
                         onPress={() => router.back()}
-                        style={[styles.cancelButton, { backgroundColor: 'transparent', borderColor: theme.border, shadowOpacity: 0, elevation: 0 }]}
-                        textStyle={{ color: theme.textSecondary }}
+                        variant="outline"
+                        style={styles.cancelButton}
                         disabled={isLoading}
                     />
-                </View>
+                </Card>
             </ScrollView>
         </KeyboardAvoidingView>
     );
@@ -246,25 +248,9 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         padding: 24,
     },
-    topDecoration: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 180,
-    },
-    header: {
-        marginTop: 40,
-        marginBottom: 32,
-    },
     card: {
         width: '100%',
         padding: 24,
-        borderRadius: 20,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.08,
-        shadowRadius: 24,
-        elevation: 8,
         marginBottom: 30,
     },
     sectionTitle: {

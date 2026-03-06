@@ -1,9 +1,14 @@
 import { ThemedText } from '@/components/themed-text';
-import { Colors } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface SupplierData {
     _id: string;
@@ -62,7 +67,7 @@ export default function SuppliersListScreen() {
                             } else {
                                 Alert.alert('Error', 'Failed to delete supplier');
                             }
-                        } catch (error) {
+                        } catch {
                             Alert.alert('Error', 'Network error while deleting');
                         }
                     }
@@ -84,15 +89,16 @@ export default function SuppliersListScreen() {
 
     const renderSupplier = ({ item }: { item: SupplierData }) => (
         <TouchableOpacity
-            style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
+            style={styles.cardPressable}
             onPress={() => handleViewDetails(item._id)}
             activeOpacity={0.7}
         >
+            <Card variant="elevated" style={[styles.card, { backgroundColor: theme.surface, shadowColor: theme.shadow }]}>
             <View style={styles.cardInfo}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <ThemedText style={{ fontSize: 18, fontWeight: 'bold' }}>{item.name}</ThemedText>
                     {item.supplierId && (
-                        <View style={{ backgroundColor: theme.primary + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                        <View style={{ backgroundColor: theme.primaryMuted, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
                             <ThemedText style={{ fontSize: 12, color: theme.primary, fontWeight: 'bold' }}>{item.supplierId}</ThemedText>
                         </View>
                     )}
@@ -115,37 +121,29 @@ export default function SuppliersListScreen() {
                     <ThemedText style={{ fontSize: 20 }}>🗑️</ThemedText>
                 </TouchableOpacity>
             </View>
+            </Card>
         </TouchableOpacity>
     );
 
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>
-            <View style={[styles.topDecoration, { backgroundColor: theme.secondary }]} />
-
-            <View style={styles.header}>
-                <View>
-                    <ThemedText type="title" style={{ color: colorScheme === 'light' ? '#fff' : theme.text }}>
-                        Suppliers
-                    </ThemedText>
-                    <ThemedText style={{ color: colorScheme === 'light' ? 'rgba(255,255,255,0.8)' : theme.textSecondary, marginTop: 4 }}>
-                        Manage your milk providers
-                    </ThemedText>
-                </View>
-                <TouchableOpacity
-                    style={[styles.addButton, { backgroundColor: theme.card }]}
-                    onPress={() => router.push('/suppliers/manage')}
-                >
-                    <ThemedText style={{ color: theme.secondary, fontWeight: 'bold' }}>+ Add New</ThemedText>
-                </TouchableOpacity>
+            <View style={{ paddingTop: 12 }}>
+                <ScreenHeader
+                    title="Suppliers"
+                    subtitle="Manage your milk providers"
+                    onBack={() => router.back()}
+                    right={
+                        <View style={{ width: 120 }}>
+                            <Button title="Add New" onPress={() => router.push('/suppliers/manage')} style={{ height: 40 }} />
+                        </View>
+                    }
+                />
             </View>
 
             {isLoading ? (
-                <ActivityIndicator size="large" color={theme.secondary} style={{ marginTop: 50 }} />
+                <LoadingIndicator />
             ) : suppliers.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                    <ThemedText style={{ fontSize: 40, marginBottom: 10 }}>🧑‍🌾</ThemedText>
-                    <ThemedText style={{ color: theme.textSecondary }}>No suppliers added yet.</ThemedText>
-                </View>
+                <EmptyState title="No suppliers yet" description="Add your first supplier to get started." />
             ) : (
                 <FlatList
                     data={suppliers}
@@ -162,46 +160,13 @@ export default function SuppliersListScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 24,
+        padding: Spacing.xl,
     },
-    topDecoration: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 160,
-    },
-    header: {
-        marginTop: 40,
-        marginBottom: 32,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    addButton: {
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 20,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 4,
-    },
-    emptyContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 100,
-    },
+    cardPressable: { marginBottom: Spacing.lg },
     card: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        padding: 20,
-        borderRadius: 16,
-        marginBottom: 16,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 3,
+        padding: Spacing.xl,
     },
     cardInfo: {
         flex: 1,
@@ -216,7 +181,7 @@ const styles = StyleSheet.create({
     actions: {
         flexDirection: 'column',
         justifyContent: 'space-between',
-        marginLeft: 16,
+        marginLeft: Spacing.lg,
     },
     actionBtn: {
         padding: 8,

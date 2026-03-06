@@ -1,35 +1,44 @@
-import { Tabs } from 'expo-router';
 import React from 'react';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AppDrawerContent } from '@/components/navigation/AppDrawerContent';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Drawer } from 'expo-router/drawer';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
 
   return (
-    <Tabs
+    <Drawer
+      drawerContent={(props) => <AppDrawerContent {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
+        drawerType: 'front',
+        drawerStyle: {
+          backgroundColor: theme.surface,
+          width: 320,
+        },
+        sceneContainerStyle: {
+          backgroundColor: theme.background,
+        },
       }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-    </Tabs>
+      <Drawer.Screen name="index" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="explore" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="reports" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="report-milk" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="report-sales" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="report-products" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="report-suppliers" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="report-milk-visuals" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="report-sales-visuals" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="report-products-visuals" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="report-suppliers-visuals" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="profile" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="help" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="support" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="support-chat" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="about" options={{ drawerItemStyle: { display: 'none' } }} />
+    </Drawer>
   );
 }

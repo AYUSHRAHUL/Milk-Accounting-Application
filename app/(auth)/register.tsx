@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
@@ -48,7 +49,7 @@ export default function RegisterScreen() {
                     <ThemedText type="subtitle" style={[styles.subtitle, { color: theme.textSecondary }]}>Join Milk Accounting</ThemedText>
                 </ThemedView>
 
-                <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}>
+                <Card variant="elevated" style={styles.card}>
                     <Input
                         label="Full Name"
                         placeholder="Enter your full name"
@@ -88,7 +89,7 @@ export default function RegisterScreen() {
                             <ThemedText type="link" style={{ color: theme.primary, fontWeight: '700' }}>Log In</ThemedText>
                         </Link>
                     </View>
-                </View>
+                </Card>
             </ScrollView>
         </KeyboardAvoidingView>
     );
@@ -143,12 +144,6 @@ const styles = StyleSheet.create({
     },
     card: {
         width: '100%',
-        padding: 24,
-        borderRadius: 20,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.08,
-        shadowRadius: 24,
-        elevation: 8,
     },
     registerButton: {
         marginTop: 24,

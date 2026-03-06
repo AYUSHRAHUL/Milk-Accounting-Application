@@ -2,7 +2,7 @@ import connectToDatabase from '@/lib/mongodb';
 import { MilkEntry } from '@/models/MilkEntry';
 import { ProductionEntry } from '@/models/ProductionEntry';
 import { SaleEntry } from '@/models/SaleEntry';
-import Supplier from '@/models/Supplier';
+import { Supplier } from '@/models/Supplier';
 
 export async function GET(request: Request) {
     try {

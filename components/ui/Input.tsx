@@ -1,4 +1,4 @@
-import { Colors } from '@/constants/theme';
+import { Colors, Radii } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import React, { useState } from 'react';
 import {
@@ -29,9 +29,9 @@ export const Input = ({ label, error, style, ...props }: InputProps) => {
                     styles.input,
                     {
                         color: theme.text,
-                        backgroundColor: theme.card,
+                        backgroundColor: theme.surface,
                         borderColor: error ? theme.error : isFocused ? theme.primary : theme.border,
-                        shadowColor: isFocused ? theme.primary : 'transparent',
+                        shadowColor: isFocused ? theme.shadow : 'transparent',
                     },
                     isFocused && styles.inputFocused,
                     style,
@@ -64,18 +64,18 @@ const styles = StyleSheet.create({
         marginLeft: 4,
     },
     input: {
-        height: 54,
-        borderWidth: 1.5,
-        borderRadius: 12,
+        height: 52,
+        borderWidth: 1,
+        borderRadius: Radii.md,
         paddingHorizontal: 16,
         fontSize: 16,
         elevation: 0,
     },
     inputFocused: {
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.08,
+        shadowRadius: 20,
+        elevation: 2,
     },
     error: {
         fontSize: 12,

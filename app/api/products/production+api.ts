@@ -9,27 +9,33 @@ export async function GET(request: Request) {
         const source = url.searchParams.get('source');
         const fatType = url.searchParams.get('fatType');
 
-        if (!source || !fatType) {
-            return new Response(JSON.stringify({ message: 'Source and Fat Type are required' }), { status: 400 });
+        // If source & fatType diye gaye hain, stock check mode
+        if (source && fatType) {
+            const collectedMilk = await MilkEntry.aggregate([
+                { $match: { source, fatType } },
+                { $group: { _id: null, total: { $sum: '$quantity' } } }
+            ]);
+            const totalCollected = collectedMilk.length > 0 ? collectedMilk[0].total : 0;
+
+            const usedMilk = await ProductionEntry.aggregate([
+                { $match: { source, fatType } },
+                { $group: { _id: null, total: { $sum: '$milkUsedLiters' } } }
+            ]);
+            const totalUsed = usedMilk.length > 0 ? usedMilk[0].total : 0;
+
+            return new Response(JSON.stringify({ availableStock: totalCollected - totalUsed }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+            });
         }
 
-        const collectedMilk = await MilkEntry.aggregate([
-            { $match: { source, fatType } },
-            { $group: { _id: null, total: { $sum: '$quantity' } } }
-        ]);
-        const totalCollected = collectedMilk.length > 0 ? collectedMilk[0].total : 0;
-
-        const usedMilk = await ProductionEntry.aggregate([
-            { $match: { source, fatType } },
-            { $group: { _id: null, total: { $sum: '$milkUsedLiters' } } }
-        ]);
-        const totalUsed = usedMilk.length > 0 ? usedMilk[0].total : 0;
-
-        return new Response(JSON.stringify({ availableStock: totalCollected - totalUsed }), {
+        // Agar query params nahi diye gaye, to saare production history entries bhej do
+        const entries = await ProductionEntry.find({}).sort({ date: -1, createdAt: -1 });
+        return new Response(JSON.stringify(entries), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
         });
-    } catch (error: any) {
+    } catch {
         return new Response(JSON.stringify({ message: 'Error checking stock' }), { status: 500 });
     }
 }

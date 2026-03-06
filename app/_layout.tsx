@@ -1,10 +1,13 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, router, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold, useFonts } from '@expo-google-fonts/outfit';
+import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { PreferencesProvider } from '@/context/PreferencesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { LogBox } from 'react-native';
 
@@ -36,8 +39,8 @@ function RootLayoutNav() {
     const isLandingPage = (segments as string[]).length === 0;
 
     if (!user && !inAuthGroup && !isLandingPage) {
-      // Redirect to the landing page if not authenticated and trying to access protected routes
-      router.replace('/');
+      // Redirect to register if not authenticated and trying to access protected routes
+      router.replace('/(auth)/register');
     } else if (user && (inAuthGroup || isLandingPage)) {
       // Redirect to the dashboard if authenticated and on login or landing pages
       router.replace('/(tabs)');
@@ -56,9 +59,6 @@ function RootLayoutNav() {
     </ThemeProvider>
   );
 }
-
-import { Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold, useFonts } from '@expo-google-fonts/outfit';
-import * as SplashScreen from 'expo-splash-screen';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -82,8 +82,10 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <RootLayoutNav />
-    </AuthProvider>
+    <PreferencesProvider>
+      <AuthProvider>
+        <RootLayoutNav />
+      </AuthProvider>
+    </PreferencesProvider>
   );
 }
