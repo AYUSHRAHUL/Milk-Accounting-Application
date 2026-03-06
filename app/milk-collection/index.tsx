@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 const MILK_SOURCES = ['Cow', 'Buffalo', 'Goat', 'Other'];
-const FAT_TYPES = ['Whole', 'Reduced', 'Low-fat', 'Skim'];
+const SHIFTS = ['Morning', 'Evening'];
 
 export default function MilkCollectionScreen() {
     const { user } = useAuth();
@@ -17,10 +17,14 @@ export default function MilkCollectionScreen() {
     const theme = Colors[colorScheme];
 
     const [supplier, setSupplier] = useState('');
-    const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]); // YYYY-MM-DD
+    const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [time, setTime] = useState(() => new Date().toTimeString().split(' ')[0].substring(0, 5));
+    const [shift, setShift] = useState('Morning');
     const [source, setSource] = useState('Cow');
     const [customSource, setCustomSource] = useState('');
-    const [fatType, setFatType] = useState('Whole');
+    const [fatType, setFatType] = useState(''); // Empty default for text input
+    const [snf, setSnf] = useState('');
+    const [clr, setClr] = useState('');
     const [quantity, setQuantity] = useState('');
     const [costPerLiter, setCostPerLiter] = useState('');
     const [totalCost, setTotalCost] = useState('0.00');
@@ -33,7 +37,7 @@ export default function MilkCollectionScreen() {
     }, [quantity, costPerLiter]);
 
     const handleSave = async () => {
-        if (!supplier || !quantity || !costPerLiter || !date || (source === 'Other' && !customSource)) {
+        if (!supplier || !quantity || !costPerLiter || (source === 'Other' && !customSource) || !fatType || !date || !time) {
             Alert.alert('Missing Fields', 'Please fill in all mandatory fields.');
             return;
         }
@@ -46,10 +50,13 @@ export default function MilkCollectionScreen() {
                 body: JSON.stringify({
                     userId: user?.id || 'static-user-id', // Ideally from session
                     supplier,
-                    date,
+                    date: new Date(`${date}T${time}:00`).toISOString(),
+                    shift,
                     source,
                     customSource: source === 'Other' ? customSource : undefined,
                     fatType,
+                    snf: snf ? parseFloat(snf) : undefined,
+                    clr: clr ? parseFloat(clr) : undefined,
                     quantity: parseFloat(quantity),
                     costPerLiter: parseFloat(costPerLiter),
                     totalCost: parseFloat(totalCost),
@@ -116,26 +123,39 @@ export default function MilkCollectionScreen() {
                         </TouchableOpacity>
                     </View>
                     <ThemedText style={{ color: colorScheme === 'light' ? 'rgba(255,255,255,0.8)' : theme.textSecondary, marginTop: 4 }}>
-                        Record today's collection
+                        Recording for: {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </ThemedText>
                 </View>
 
                 <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}>
                     <Input
-                        label="Supplier Name / ID"
+                        label="Supplier Name / ID *"
                         value={supplier}
                         onChangeText={setSupplier}
                         placeholder="Enter farmer name or ID"
                     />
 
-                    <Input
-                        label="Date (YYYY-MM-DD)"
-                        value={date}
-                        onChangeText={setDate}
-                        placeholder="2024-10-15"
-                    />
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 8 }}>
+                            <Input
+                                label="Date (YYYY-MM-DD)"
+                                value={date}
+                                onChangeText={setDate}
+                            />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 8 }}>
+                            <Input
+                                label="Time (HH:MM)"
+                                value={time}
+                                onChangeText={setTime}
+                            />
+                        </View>
+                    </View>
 
-                    <ThemedText style={[styles.sectionTitle, { color: theme.textSecondary }]}>Milk Source</ThemedText>
+                    <ThemedText style={[styles.sectionTitle, { color: theme.textSecondary }]}>Shift</ThemedText>
+                    {renderSelector(SHIFTS, shift, setShift)}
+
+                    <ThemedText style={[styles.sectionTitle, { color: theme.textSecondary, marginTop: 15 }]}>Milk Source</ThemedText>
                     {renderSelector(MILK_SOURCES, source, setSource)}
 
                     {source === 'Other' && (
@@ -147,8 +167,34 @@ export default function MilkCollectionScreen() {
                         />
                     )}
 
-                    <ThemedText style={[styles.sectionTitle, { color: theme.textSecondary, marginTop: 15 }]}>Fat Type</ThemedText>
-                    {renderSelector(FAT_TYPES, fatType, setFatType)}
+                    <Input
+                        label="Fat Percentage (%) *"
+                        value={fatType}
+                        onChangeText={setFatType}
+                        keyboardType="numeric"
+                        placeholder="e.g. 4.5"
+                    />
+
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 8 }}>
+                            <Input
+                                label="SNF (%)"
+                                value={snf}
+                                onChangeText={setSnf}
+                                keyboardType="numeric"
+                                placeholder="e.g. 8.5"
+                            />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 8 }}>
+                            <Input
+                                label="CLR"
+                                value={clr}
+                                onChangeText={setClr}
+                                keyboardType="numeric"
+                                placeholder="e.g. 28"
+                            />
+                        </View>
+                    </View>
 
                     <View style={styles.row}>
                         <View style={{ flex: 1, marginRight: 8 }}>

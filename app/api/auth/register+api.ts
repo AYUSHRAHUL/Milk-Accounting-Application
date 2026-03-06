@@ -1,5 +1,6 @@
 import connectToDatabase from '@/lib/mongodb';
 import User from '@/models/User';
+import bcrypt from 'bcryptjs';
 
 export async function POST(req: Request) {
     try {
@@ -18,12 +19,15 @@ export async function POST(req: Request) {
             return Response.json({ error: 'User already exists' }, { status: 409 });
         }
 
+        // Hash the password securely
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+
         // Create a new user 
-        // SECURITY NOTE: In production, always hash the password using bcrypt.
         const newUser = await User.create({
             name,
             email: email.toLowerCase(),
-            password, // Store as plain text only for learning/demo purposes
+            passwordHash,
         });
 
         return Response.json({

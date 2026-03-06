@@ -23,9 +23,9 @@ export async function POST(request: Request) {
         await connectToDatabase();
         const body = await request.json();
 
-        const { userId, supplier, date, source, customSource, fatType, quantity, costPerLiter, totalCost } = body;
+        const { userId, supplier, date, shift, source, customSource, fatType, snf, clr, quantity, costPerLiter, totalCost } = body;
 
-        if (!userId || !supplier || !date || !source || !fatType || !quantity || !costPerLiter || !totalCost) {
+        if (!userId || !supplier || !date || !shift || !source || !fatType || !quantity || !costPerLiter || !totalCost) {
             return new Response(JSON.stringify({ message: 'Missing required fields' }), {
                 status: 400,
                 headers: { 'Content-Type': 'application/json' },
@@ -36,9 +36,12 @@ export async function POST(request: Request) {
             userId,
             supplier,
             date,
+            shift,
             source,
             customSource,
             fatType,
+            snf,
+            clr,
             quantity,
             costPerLiter,
             totalCost,

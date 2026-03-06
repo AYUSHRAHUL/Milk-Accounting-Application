@@ -20,6 +20,7 @@ export default function ManageSupplierScreen() {
     const isEditing = !!params.id;
 
     const [name, setName] = useState('');
+    const [supplierId, setSupplierId] = useState('');
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
     const [animalType, setAnimalType] = useState<string[]>(['Cow']);
@@ -31,6 +32,7 @@ export default function ManageSupplierScreen() {
     useEffect(() => {
         if (isEditing) {
             setName(params.name as string || '');
+            setSupplierId(params.supplierId as string || '');
             setPhone(params.phone as string || '');
             setAddress(params.address as string || '');
             setAnimalType(params.animalType ? (params.animalType as string).split(',') : ['Cow']);
@@ -40,8 +42,8 @@ export default function ManageSupplierScreen() {
     }, [isEditing, params]);
 
     const handleSave = async () => {
-        if (!name || !phone || !address || animalType.length === 0) {
-            Alert.alert('Missing Fields', 'Please fill in Name, Phone, Address, and at least one Animal Type.');
+        if (!name || !supplierId || !phone || !address || animalType.length === 0) {
+            Alert.alert('Missing Fields', 'Please fill in Name, Supplier ID, Phone, Address, and at least one Animal Type.');
             return;
         }
 
@@ -58,6 +60,7 @@ export default function ManageSupplierScreen() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userId: user?.id || 'static-user-id',
+                    supplierId,
                     name,
                     phone,
                     address,
@@ -146,6 +149,14 @@ export default function ManageSupplierScreen() {
                         value={name}
                         onChangeText={setName}
                         placeholder="John Doe"
+                    />
+
+                    <Input
+                        label="Supplier ID *"
+                        value={supplierId}
+                        onChangeText={setSupplierId}
+                        placeholder="e.g. F-101"
+                        autoCapitalize="characters"
                     />
 
                     <Input

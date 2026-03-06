@@ -1,11 +1,11 @@
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Dimensions, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { PieChart } from 'react-native-chart-kit';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 const TimeFilters = [
     { label: 'All Time', value: 'all' },
@@ -16,18 +16,17 @@ const TimeFilters = [
 export default function ReportsScreen() {
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
-    const screenWidth = Dimensions.get('window').width;
 
     const [activeFilter, setActiveFilter] = useState('month');
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    // Financial Data
+    // Module Data
     const [metrics, setMetrics] = useState({
-        totalRevenue: 0,
-        totalMilkCost: 0,
-        totalExpenses: 0,
-        netProfit: 0
+        sales: { revenue: 0, transactions: 0 },
+        milkCollection: { cost: 0, liters: 0 },
+        products: { produced: 0, batches: 0 },
+        suppliers: { active: 0, total: 0 }
     });
 
     const fetchReports = useCallback(async () => {
@@ -61,37 +60,13 @@ export default function ReportsScreen() {
         return '₹ ' + amount.toLocaleString('en-IN', { maximumFractionDigits: 2 });
     };
 
-    const chartData = [
-        {
-            name: "Profit",
-            amount: Math.max(0, metrics.netProfit),
-            color: theme.primary,
-            legendFontColor: theme.textSecondary,
-            legendFontSize: 12
-        },
-        {
-            name: "Milk Cost",
-            amount: metrics.totalMilkCost,
-            color: theme.warning,
-            legendFontColor: theme.textSecondary,
-            legendFontSize: 12
-        },
-        {
-            name: "Expenses",
-            amount: metrics.totalExpenses,
-            color: theme.error,
-            legendFontColor: theme.textSecondary,
-            legendFontSize: 12
-        }
-    ];
-
     return (
         <ScrollView
             contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
         >
             <LinearGradient
-                colors={[theme.success, theme.secondary]}
+                colors={[theme.primary, '#6366F1']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.topDecoration}
@@ -103,10 +78,10 @@ export default function ReportsScreen() {
                 </TouchableOpacity>
                 <View>
                     <ThemedText type="title" style={{ color: '#FFFFFF' }}>
-                        Financial Reports
+                        Module Reports
                     </ThemedText>
                     <ThemedText style={{ color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>
-                        Track your business health
+                        System Activity Overview
                     </ThemedText>
                 </View>
             </View>
@@ -121,8 +96,8 @@ export default function ReportsScreen() {
                             style={[
                                 styles.filterPill,
                                 {
-                                    backgroundColor: isActive ? theme.success : theme.card,
-                                    borderColor: isActive ? theme.success : theme.border,
+                                    backgroundColor: isActive ? theme.primary : theme.card,
+                                    borderColor: isActive ? theme.primary : theme.border,
                                 }
                             ]}
                             onPress={() => setActiveFilter(filter.value)}
@@ -141,74 +116,105 @@ export default function ReportsScreen() {
 
             {isLoading ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 }}>
-                    <ActivityIndicator size="large" color={theme.success} />
+                    <ActivityIndicator size="large" color={theme.primary} />
                 </View>
             ) : (
-                <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}>
-
-                    {/* Top Row: Revenue & Profit */}
-                    <View style={styles.metricsRow}>
-                        <View style={[styles.metricBox, { backgroundColor: 'rgba(46, 204, 113, 0.08)' }]}>
-                            <ThemedText style={styles.metricLabel}>Total Revenue</ThemedText>
-                            <ThemedText style={[styles.metricValue, { color: theme.success }]}>
-                                {formatCurrency(metrics.totalRevenue)}
-                            </ThemedText>
-                        </View>
-
-                        <View style={[styles.metricBox, {
-                            backgroundColor: metrics.netProfit >= 0 ? 'rgba(52, 152, 219, 0.08)' : 'rgba(231, 76, 60, 0.08)'
-                        }]}>
-                            <ThemedText style={styles.metricLabel}>Net Profit</ThemedText>
-                            <ThemedText style={[styles.metricValue, {
-                                color: metrics.netProfit >= 0 ? theme.primary : theme.error
-                            }]}>
-                                {formatCurrency(metrics.netProfit)}
-                            </ThemedText>
-                        </View>
-                    </View>
-
-                    <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-                    <ThemedText style={[styles.sectionTitle, { color: theme.textSecondary }]}>Cost Breakdown</ThemedText>
-
-                    {/* Bottom Row: Milk Costs & Expenses */}
-                    <View style={styles.metricsRow}>
-                        <View style={[styles.metricBox, { backgroundColor: 'rgba(230, 126, 34, 0.08)' }]}>
-                            <ThemedText style={styles.metricLabel}>Raw Milk</ThemedText>
-                            <ThemedText style={[styles.metricValue, { color: theme.warning }]}>
-                                {formatCurrency(metrics.totalMilkCost)}
-                            </ThemedText>
-                        </View>
-
-                        <View style={[styles.metricBox, { backgroundColor: 'rgba(231, 76, 60, 0.08)' }]}>
-                            <ThemedText style={styles.metricLabel}>Op. Expenses</ThemedText>
-                            <ThemedText style={[styles.metricValue, { color: theme.error }]}>
-                                {formatCurrency(metrics.totalExpenses)}
-                            </ThemedText>
-                        </View>
-                    </View>
-
-                    {(metrics.totalRevenue > 0 || metrics.totalExpenses > 0 || metrics.totalMilkCost > 0) && (
-                        <>
-                            <View style={[styles.divider, { backgroundColor: theme.border, marginTop: 16 }]} />
-                            <ThemedText style={[styles.sectionTitle, { color: theme.textSecondary, marginTop: 12 }]}>Revenue Distribution</ThemedText>
-                            <View style={{ alignItems: 'center' }}>
-                                <PieChart
-                                    data={chartData}
-                                    width={screenWidth - 80}
-                                    height={200}
-                                    chartConfig={{
-                                        color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                                    }}
-                                    accessor={"amount"}
-                                    backgroundColor={"transparent"}
-                                    paddingLeft={"15"}
-                                    center={[10, 0]}
-                                    absolute
-                                />
+                <View style={styles.gridContainer}>
+                    {/* Milk Collection Module */}
+                    <TouchableOpacity
+                        style={[styles.moduleCard, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
+                        onPress={() => router.push('/milk-collection/history')}
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.cardHeader}>
+                            <View style={[styles.iconBox, { backgroundColor: 'rgba(52, 152, 219, 0.1)' }]}>
+                                <Ionicons name="water" size={24} color={theme.primary} />
                             </View>
-                        </>
-                    )}
+                            <ThemedText style={styles.cardTitle}>Milk Collection</ThemedText>
+                        </View>
+                        <View style={styles.cardBody}>
+                            <View style={styles.statRow}>
+                                <ThemedText style={styles.statLabel}>Total Volume:</ThemedText>
+                                <ThemedText style={styles.statValue}>{metrics.milkCollection.liters.toFixed(1)} L</ThemedText>
+                            </View>
+                            <View style={[styles.statRow, { marginTop: 8 }]}>
+                                <ThemedText style={styles.statLabel}>Total Cost:</ThemedText>
+                                <ThemedText style={[styles.statValue, { color: theme.error }]}>{formatCurrency(metrics.milkCollection.cost)}</ThemedText>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Sales Module */}
+                    <TouchableOpacity
+                        style={[styles.moduleCard, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
+                        onPress={() => router.push('/sales/history')}
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.cardHeader}>
+                            <View style={[styles.iconBox, { backgroundColor: 'rgba(46, 204, 113, 0.1)' }]}>
+                                <Ionicons name="cash" size={24} color={theme.success} />
+                            </View>
+                            <ThemedText style={styles.cardTitle}>Sales & Revenue</ThemedText>
+                        </View>
+                        <View style={styles.cardBody}>
+                            <View style={styles.statRow}>
+                                <ThemedText style={styles.statLabel}>Transactions:</ThemedText>
+                                <ThemedText style={styles.statValue}>{metrics.sales.transactions}</ThemedText>
+                            </View>
+                            <View style={[styles.statRow, { marginTop: 8 }]}>
+                                <ThemedText style={styles.statLabel}>Revenue:</ThemedText>
+                                <ThemedText style={[styles.statValue, { color: theme.success }]}>{formatCurrency(metrics.sales.revenue)}</ThemedText>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Products Module */}
+                    <TouchableOpacity
+                        style={[styles.moduleCard, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
+                        onPress={() => router.push('/products')}
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.cardHeader}>
+                            <View style={[styles.iconBox, { backgroundColor: 'rgba(230, 126, 34, 0.1)' }]}>
+                                <Ionicons name="cube" size={24} color={theme.warning} />
+                            </View>
+                            <ThemedText style={styles.cardTitle}>Production</ThemedText>
+                        </View>
+                        <View style={styles.cardBody}>
+                            <View style={styles.statRow}>
+                                <ThemedText style={styles.statLabel}>Batches Made:</ThemedText>
+                                <ThemedText style={styles.statValue}>{metrics.products.batches}</ThemedText>
+                            </View>
+                            <View style={[styles.statRow, { marginTop: 8 }]}>
+                                <ThemedText style={styles.statLabel}>Total Yield:</ThemedText>
+                                <ThemedText style={[styles.statValue, { color: theme.warning }]}>{metrics.products.produced.toFixed(1)} Units</ThemedText>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Suppliers Module */}
+                    <TouchableOpacity
+                        style={[styles.moduleCard, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
+                        onPress={() => router.push('/suppliers')}
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.cardHeader}>
+                            <View style={[styles.iconBox, { backgroundColor: 'rgba(155, 89, 182, 0.1)' }]}>
+                                <Ionicons name="people" size={24} color={theme.secondary} />
+                            </View>
+                            <ThemedText style={styles.cardTitle}>Suppliers</ThemedText>
+                        </View>
+                        <View style={styles.cardBody}>
+                            <View style={styles.statRow}>
+                                <ThemedText style={styles.statLabel}>New Profiles:</ThemedText>
+                                <ThemedText style={styles.statValue}>{metrics.suppliers.active}</ThemedText>
+                            </View>
+                            <View style={[styles.statRow, { marginTop: 8 }]}>
+                                <ThemedText style={styles.statLabel}>Total Registered:</ThemedText>
+                                <ThemedText style={[styles.statValue, { color: theme.secondary }]}>{metrics.suppliers.total}</ThemedText>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
 
                 </View>
             )}
@@ -257,49 +263,55 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: 'bold',
     },
-    card: {
-        width: '100%',
-        padding: 24,
-        borderRadius: 20,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.08,
-        shadowRadius: 24,
-        elevation: 8,
-        marginBottom: 30,
-    },
-    metricsRow: {
+    gridContainer: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         justifyContent: 'space-between',
-        gap: 16,
+        paddingBottom: 40,
+    },
+    moduleCard: {
+        width: '47%',
+        borderRadius: 20,
+        padding: 16,
+        marginBottom: 16,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 4,
+    },
+    cardHeader: {
+        alignItems: 'center',
         marginBottom: 16,
     },
-    metricBox: {
-        flex: 1,
-        padding: 16,
-        borderRadius: 16,
+    iconBox: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
         justifyContent: 'center',
         alignItems: 'center',
+        marginBottom: 12,
     },
-    metricLabel: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#666',
-        marginBottom: 8,
-    },
-    metricValue: {
-        fontSize: 18,
-        fontWeight: '900',
-    },
-    sectionTitle: {
-        fontSize: 14,
+    cardTitle: {
+        fontSize: 15,
         fontWeight: 'bold',
-        marginBottom: 16,
         textAlign: 'center',
+        lineHeight: 20,
     },
-    divider: {
-        height: 1,
-        width: '100%',
-        marginVertical: 10,
-        opacity: 0.3,
+    cardBody: {
+        borderTopWidth: 1,
+        borderTopColor: '#f0f0f0',
+        paddingTop: 12,
+    },
+    statRow: {
+        flexDirection: 'column',
+    },
+    statLabel: {
+        fontSize: 12,
+        color: '#666',
+        marginBottom: 2,
+    },
+    statValue: {
+        fontSize: 14,
+        fontWeight: '900',
     },
 });

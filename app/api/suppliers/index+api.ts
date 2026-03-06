@@ -29,9 +29,9 @@ export async function POST(request: Request) {
         await connectToDatabase();
         const body = await request.json();
 
-        const { userId, name, phone, address, animalType, bankDetails } = body;
+        const { userId, supplierId, name, phone, address, animalType, bankDetails } = body;
 
-        if (!userId || !name || !phone || !address || !animalType) {
+        if (!userId || !supplierId || !name || !phone || !address || !animalType) {
             return new Response(JSON.stringify({ message: 'Missing required fields' }), {
                 status: 400,
                 headers: { 'Content-Type': 'application/json' },
@@ -40,6 +40,7 @@ export async function POST(request: Request) {
 
         const newSupplier = new Supplier({
             userId,
+            supplierId,
             name,
             phone,
             address,

@@ -54,6 +54,16 @@ export default function DashboardScreen() {
 
         <AnimatedCard
           style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
+          onPress={() => router.push('/milk-collection/history')}
+        >
+          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>View Collections</ThemedText>
+          <View style={styles.iconContainer}>
+            <Ionicons name="list" size={32} color={theme.primary} />
+          </View>
+        </AnimatedCard>
+
+        <AnimatedCard
+          style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
           onPress={() => router.push('/suppliers')}
         >
           <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Suppliers</ThemedText>
@@ -79,16 +89,6 @@ export default function DashboardScreen() {
           <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Reports</ThemedText>
           <View style={styles.iconContainer}>
             <Ionicons name="bar-chart" size={32} color={theme.success} />
-          </View>
-        </AnimatedCard>
-
-        <AnimatedCard
-          style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}
-          onPress={() => router.push('/expenses')}
-        >
-          <ThemedText style={{ color: theme.textSecondary, fontWeight: '600' }}>Expenses</ThemedText>
-          <View style={styles.iconContainer}>
-            <Ionicons name="wallet" size={32} color={theme.error} />
           </View>
         </AnimatedCard>
 

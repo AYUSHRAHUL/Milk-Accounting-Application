@@ -3,9 +3,12 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 export interface IMilkEntry extends Document {
     userId: string;
     date: Date;
+    shift: string;
     source: string;
     customSource?: string;
     fatType: string;
+    snf?: number;
+    clr?: number;
     quantity: number;
     costPerLiter: number;
     totalCost: number;
@@ -17,9 +20,12 @@ const MilkEntrySchema: Schema = new Schema(
     {
         userId: { type: String, required: true }, // We assume a user is making the entry
         date: { type: Date, required: true },
+        shift: { type: String, required: true, enum: ['Morning', 'Evening'] },
         source: { type: String, required: true, enum: ['Cow', 'Buffalo', 'Goat', 'Other'] },
         customSource: { type: String },
-        fatType: { type: String, required: true, enum: ['Whole', 'Reduced', 'Low-fat', 'Skim'] },
+        fatType: { type: String, required: true },
+        snf: { type: Number },
+        clr: { type: Number },
         quantity: { type: Number, required: true },
         costPerLiter: { type: Number, required: true },
         totalCost: { type: Number, required: true },

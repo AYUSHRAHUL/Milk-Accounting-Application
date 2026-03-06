@@ -1,7 +1,8 @@
 import connectToDatabase from '@/lib/mongodb';
-import { Expense } from '@/models/Expense';
 import { MilkEntry } from '@/models/MilkEntry';
+import { ProductionEntry } from '@/models/ProductionEntry';
 import { SaleEntry } from '@/models/SaleEntry';
+import Supplier from '@/models/Supplier';
 
 export async function GET(request: Request) {
     try {
@@ -21,36 +22,51 @@ export async function GET(request: Request) {
         }
 
         const dateQuery = filter === 'all' ? {} : { createdAt: { $gte: startDate } };
+        // Milk collections use 'date' field in the schema instead of implicit createdAt
+        const milkDateQuery = filter === 'all' ? {} : { date: { $gte: startDate } };
 
-        // 1. Calculate Total Revenue (Sales)
+        // 1. Sales Metrics
         const salesResult = await SaleEntry.aggregate([
             { $match: dateQuery },
-            { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' } } }
+            { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' }, totalTransactions: { $sum: 1 } } }
         ]);
-        const totalRevenue = salesResult[0]?.totalRevenue || 0;
+        const sales = {
+            revenue: salesResult[0]?.totalRevenue || 0,
+            transactions: salesResult[0]?.totalTransactions || 0
+        };
 
-        // 2. Calculate Milk Cost (Raw materials)
+        // 2. Milk Collection Metrics
         const milkResult = await MilkEntry.aggregate([
-            { $match: dateQuery },
-            { $group: { _id: null, totalCost: { $sum: '$totalCost' } } }
+            { $match: milkDateQuery },
+            { $group: { _id: null, totalCost: { $sum: '$totalCost' }, totalLiters: { $sum: '$quantity' } } }
         ]);
-        const totalMilkCost = milkResult[0]?.totalCost || 0;
+        const milkCollection = {
+            cost: milkResult[0]?.totalCost || 0,
+            liters: milkResult[0]?.totalLiters || 0
+        };
 
-        // 3. Calculate Expenses (Overhead)
-        const expensesResult = await Expense.aggregate([
+        // 3. Products Metrics
+        const productsResult = await ProductionEntry.aggregate([
             { $match: dateQuery },
-            { $group: { _id: null, totalExpenses: { $sum: '$amount' } } }
+            { $group: { _id: null, totalProduced: { $sum: '$quantityProduced' }, totalBatches: { $sum: 1 } } }
         ]);
-        const totalExpenses = expensesResult[0]?.totalExpenses || 0;
+        const products = {
+            produced: productsResult[0]?.totalProduced || 0,
+            batches: productsResult[0]?.totalBatches || 0
+        };
 
-        // 4. Calculate Net Profit
-        const netProfit = totalRevenue - (totalMilkCost + totalExpenses);
+        // 4. Suppliers Metrics (Date query applied to creation date if tracking join date)
+        const activeSuppliers = await Supplier.countDocuments(dateQuery);
+        const totalSuppliers = await Supplier.countDocuments(); // Fallback for overall context
 
         return new Response(JSON.stringify({
-            totalRevenue,
-            totalMilkCost,
-            totalExpenses,
-            netProfit,
+            sales,
+            milkCollection,
+            products,
+            suppliers: {
+                active: activeSuppliers,
+                total: totalSuppliers
+            }
         }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },

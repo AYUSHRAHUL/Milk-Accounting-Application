@@ -3,7 +3,8 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 export interface IUser extends Document {
     name: string;
     email: string;
-    password?: string; // In production this should be hashed
+    passwordHash?: string; // Storing hashed password securely
+    password?: string; // Legacy plaintext password
     createdAt: Date;
 }
 
@@ -21,9 +22,13 @@ const UserSchema: Schema<IUser> = new Schema(
             trim: true,
             lowercase: true,
         },
+        passwordHash: {
+            type: String,
+            required: false,
+        },
         password: {
             type: String,
-            required: true,
+            required: false,
         },
     },
     { timestamps: true }

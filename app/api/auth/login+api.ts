@@ -1,5 +1,6 @@
 import connectToDatabase from '@/lib/mongodb';
 import User from '@/models/User';
+import bcrypt from 'bcryptjs';
 
 export async function POST(req: Request) {
     try {
@@ -20,8 +21,17 @@ export async function POST(req: Request) {
         }
 
         // Check password
-        // SECURITY NOTE: In production, verify against a bcrypt hashed password
-        if (user.password !== password) {
+        let isMatch = false;
+
+        if (user.passwordHash) {
+            // Check password against the stored bcrypt hash
+            isMatch = await bcrypt.compare(password, user.passwordHash);
+        } else if (user.password) {
+            // Fallback for legacy plain text passwords
+            isMatch = user.password === password;
+        }
+
+        if (!isMatch) {
             return Response.json({ error: 'Invalid credentials' }, { status: 401 });
         }
 

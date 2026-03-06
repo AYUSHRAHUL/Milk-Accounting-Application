@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, FlatList, StyleSheet, TouchableOpacity, View 
 
 interface SupplierData {
     _id: string;
+    supplierId?: string;
     name: string;
     phone: string;
     address: string;
@@ -88,7 +89,14 @@ export default function SuppliersListScreen() {
             activeOpacity={0.7}
         >
             <View style={styles.cardInfo}>
-                <ThemedText style={{ fontSize: 18, fontWeight: 'bold' }}>{item.name}</ThemedText>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <ThemedText style={{ fontSize: 18, fontWeight: 'bold' }}>{item.name}</ThemedText>
+                    {item.supplierId && (
+                        <View style={{ backgroundColor: theme.primary + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                            <ThemedText style={{ fontSize: 12, color: theme.primary, fontWeight: 'bold' }}>{item.supplierId}</ThemedText>
+                        </View>
+                    )}
+                </View>
                 <ThemedText style={{ color: theme.textSecondary, marginTop: 4 }}>📞 {item.phone}</ThemedText>
                 <ThemedText style={{ color: theme.textSecondary, marginTop: 2 }}>📍 {item.address}</ThemedText>
                 <View style={{ flexDirection: 'row', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
