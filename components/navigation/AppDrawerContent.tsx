@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { DrawerContentScrollView, type DrawerContentComponentProps } from '@react-navigation/drawer';
 import { router } from 'expo-router';
 import React, { useContext, useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 type DrawerItem = {
   key: string;
@@ -64,21 +64,23 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
       icon: 'log-out-outline',
       variant: 'danger',
       onPress: () => {
-        Alert.alert('Log out', 'Are you sure you want to log out?', [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Log Out',
-            style: 'destructive',
-            onPress: () => {
-              // Close drawer for immediate visual feedback
-              props.navigation.closeDrawer();
-              // Clear auth state synchronously (instant)
-              logout();
-              // Navigate immediately (do not wait on storage cleanup)
-              router.replace('/(auth)/register');
-            },
-          },
-        ]);
+        const doLogout = () => {
+          props.navigation.closeDrawer();
+          logout();
+          router.replace('/(auth)/register');
+        };
+
+        if (Platform.OS === 'web') {
+          // Alert.alert is a no-op on web, use window.confirm instead
+          if (window.confirm('Are you sure you want to log out?')) {
+            doLogout();
+          }
+        } else {
+          Alert.alert('Log out', 'Are you sure you want to log out?', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Log Out', style: 'destructive', onPress: doLogout },
+          ]);
+        }
       },
     },
   ];
