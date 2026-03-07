@@ -1,10 +1,11 @@
+import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -72,15 +73,24 @@ export default function ManageSupplierScreen() {
             const data = await response.json();
 
             if (response.ok) {
-                Alert.alert('Success', `Supplier ${isEditing ? 'updated' : 'added'} successfully!`, [
-                    { text: 'OK', onPress: () => router.back() }
-                ]);
+                if (Platform.OS === 'web') {
+                    alert('Success: Your data has been saved!');
+                    router.back();
+                } else {
+                    Alert.alert('Success', 'Your data has been saved!', [
+                        { text: 'OK', onPress: () => router.back() }
+                    ]);
+                }
             } else {
-                Alert.alert('Failed', data.message || 'Failed to save supplier.');
+                const errorMsg = data.message || 'Failed to save supplier.';
+                if (Platform.OS === 'web') alert('Error: ' + errorMsg);
+                else Alert.alert('Failed', errorMsg);
             }
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'An unexpected network error occurred.');
+            const errorMsg = 'An unexpected network error occurred.';
+            if (Platform.OS === 'web') alert('Error: ' + errorMsg);
+            else Alert.alert('Error', errorMsg);
         } finally {
             setIsLoading(false);
         }
@@ -131,16 +141,26 @@ export default function ManageSupplierScreen() {
 
     return (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <Stack.Screen options={{ headerShown: false }} />
             <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
                 <View style={[styles.topDecoration, { backgroundColor: theme.primary }]} />
 
                 <View style={styles.header}>
-                    <ThemedText type="title" style={{ color: colorScheme === 'light' ? '#fff' : theme.text }}>
-                        {isEditing ? 'Edit Supplier' : 'Add New Supplier'}
-                    </ThemedText>
-                    <ThemedText style={{ color: colorScheme === 'light' ? 'rgba(255,255,255,0.8)' : theme.textSecondary, marginTop: 4 }}>
-                        {isEditing ? 'Update farmer details' : 'Register a new farmer for milk collection'}
-                    </ThemedText>
+                    <TouchableOpacity 
+                        onPress={() => router.back()} 
+                        style={styles.backButton}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                        <Ionicons name="arrow-back" size={24} color={colorScheme === 'light' ? '#fff' : theme.primary} />
+                    </TouchableOpacity>
+                    <View>
+                        <ThemedText type="title" style={{ color: colorScheme === 'light' ? '#fff' : theme.text }}>
+                            {isEditing ? 'Edit Supplier' : 'Add New Supplier'}
+                        </ThemedText>
+                        <ThemedText style={{ color: colorScheme === 'light' ? 'rgba(255,255,255,0.8)' : theme.textSecondary, marginTop: 4 }}>
+                            {isEditing ? 'Update farmer details' : 'Register a new farmer for milk collection'}
+                        </ThemedText>
+                    </View>
                 </View>
 
                 <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}>
@@ -162,9 +182,15 @@ export default function ManageSupplierScreen() {
                     <Input
                         label="Phone Number *"
                         value={phone}
-                        onChangeText={setPhone}
+                        onChangeText={(text) => {
+                            const numericValue = text.replace(/[^0-9]/g, '');
+                            if (numericValue.length <= 10) {
+                                setPhone(numericValue);
+                            }
+                        }}
                         keyboardType="phone-pad"
-                        placeholder="+91 9876543210"
+                        placeholder="1234567890"
+                        maxLength={10}
                     />
 
                     <Input
@@ -216,7 +242,8 @@ export default function ManageSupplierScreen() {
 const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
-        padding: 24,
+        paddingHorizontal: 24,
+        paddingBottom: 24,
     },
     topDecoration: {
         position: 'absolute',
@@ -226,8 +253,13 @@ const styles = StyleSheet.create({
         height: 180,
     },
     header: {
-        marginTop: 40,
-        marginBottom: 32,
+        marginTop: 20,
+        marginBottom: 24,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    backButton: {
+        marginRight: 16,
     },
     card: {
         width: '100%',

@@ -54,51 +54,27 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="milk-collection/index"
-          options={{
-            title: 'Milk Collection',
-            headerTitleAlign: 'center',
-            headerTitleStyle: { fontWeight: '700' },
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="milk-collection/history"
-          options={{
-            title: 'Milk Collection',
-            headerTitleAlign: 'center',
-            headerTitleStyle: { fontWeight: '700' },
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="suppliers/index"
-          options={{
-            title: 'Suppliers',
-            headerTitleAlign: 'center',
-            headerTitleStyle: { fontWeight: '700' },
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="products/index"
-          options={{
-            title: 'Products',
-            headerTitleAlign: 'center',
-            headerTitleStyle: { fontWeight: '700' },
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="sales/index"
-          options={{
-            title: 'Sales',
-            headerTitleAlign: 'center',
-            headerTitleStyle: { fontWeight: '700' },
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="reports/index"
-          options={{
-            title: 'Reports',
-            headerTitleAlign: 'center',
-            headerTitleStyle: { fontWeight: '700' },
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen name="settlement" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />

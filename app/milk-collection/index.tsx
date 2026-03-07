@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
@@ -129,15 +130,24 @@ export default function MilkCollectionScreen() {
 
       const data = await response.json();
       if (response.ok) {
-        Alert.alert('Success', 'Milk entry saved successfully!', [
-          { text: 'OK', onPress: () => router.back() },
-        ]);
+        if (Platform.OS === 'web') {
+          alert('Success: Your data has been saved!');
+          router.back();
+        } else {
+          Alert.alert('Success', 'Your data has been saved!', [
+            { text: 'OK', onPress: () => router.back() },
+          ]);
+        }
       } else {
-        Alert.alert('Error', data.message || 'Failed to save entry.');
+        const errorMsg = data.message || 'Failed to save entry.';
+        if (Platform.OS === 'web') alert('Error: ' + errorMsg);
+        else Alert.alert('Error', errorMsg);
       }
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'An unexpected error occurred.');
+      const errorMsg = 'An unexpected error occurred.';
+      if (Platform.OS === 'web') alert('Error: ' + errorMsg);
+      else Alert.alert('Error', errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -158,6 +168,19 @@ export default function MilkCollectionScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <Stack.Screen options={{ headerShown: false }} />
+      
+      {/* ────────── Header ────────── */}
+      <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.headerIcon}>
+              <Ionicons name="arrow-back" size={24} color="#22C55E" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Milk Entry</Text>
+          <TouchableOpacity style={styles.ledgerButton} onPress={() => router.push('/milk-collection/history')}>
+              <Text style={styles.ledgerText}>Ledger</Text>
+          </TouchableOpacity>
+      </View>
+      
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -166,16 +189,6 @@ export default function MilkCollectionScreen() {
           bounces={true}
           overScrollMode="always"
         >
-          {/* ────────── Header ────────── */}
-          {/* <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.headerIcon}>
-              <Ionicons name="arrow-back" size={24} color="#111827" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Milk Entry</Text>
-            <TouchableOpacity style={styles.ledgerButton} onPress={() => router.push('/milk-collection/history')}>
-              <Text style={styles.ledgerText}>Ledger</Text>
-            </TouchableOpacity>
-          </View> */}
           <Text style={styles.headerSubtitle}>Recording for: {todayFormatted}</Text>
 
           {/* ────────── Animated Form ────────── */}

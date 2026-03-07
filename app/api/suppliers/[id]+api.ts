@@ -5,17 +5,31 @@ import { Supplier } from '@/models/Supplier';
 export async function GET(request: Request, context: { params: { id: string } }) {
     try {
         await connectToDatabase();
-        const { id } = context.params;
+        // Fallback for context.params being undefined in some environments
+        const id = context?.params?.id || request.url.split('/').pop()?.split('?')[0];
+        console.log('[API] Fetching supplier for ID:', id);
 
-        if (!id) {
-            return new Response(JSON.stringify({ message: 'Supplier ID is required' }), { status: 400 });
+        if (!id || id === 'suppliers') {
+            return new Response(JSON.stringify({ message: 'Supplier ID is required or invalid' }), { status: 400 });
         }
 
-        const supplier = await Supplier.findById(id);
+        let supplier = await Supplier.findById(id).catch((err) => {
+            console.log('[API] findById failed, likely invalid format:', err.message);
+            return null;
+        });
+
+        // Fallback: try to find by the user-facing supplierId if _id lookup fails
+        if (!supplier) {
+            console.log('[API] Trying fallback findOne for supplierId:', id);
+            supplier = await Supplier.findOne({ supplierId: id, isActive: true });
+        }
 
         if (!supplier) {
-            return new Response(JSON.stringify({ message: 'Supplier not found' }), { status: 404 });
+            console.log('[API] Supplier NOT found in DB for ID:', id);
+            return new Response(JSON.stringify({ message: `Supplier not found for ID: ${id}` }), { status: 404 });
         }
+
+        console.log('[API] Supplier found:', supplier.name);
 
         return new Response(JSON.stringify(supplier), {
             status: 200,
@@ -31,11 +45,26 @@ export async function GET(request: Request, context: { params: { id: string } })
 export async function PUT(request: Request, context: { params: { id: string } }) {
     try {
         await connectToDatabase();
-        const { id } = context.params;
+        const id = context?.params?.id || request.url.split('/').pop()?.split('?')[0];
         const body = await request.json();
 
-        if (!id) {
-            return new Response(JSON.stringify({ message: 'Supplier ID is required' }), { status: 400 });
+        if (!id || id === 'suppliers') {
+            return new Response(JSON.stringify({ message: 'Supplier ID is required or invalid' }), { status: 400 });
+        }
+
+        // Check for duplicate supplierId if it's being updated
+        if (body.supplierId) {
+            const existingWithSameId = await Supplier.findOne({ 
+                supplierId: body.supplierId, 
+                _id: { $ne: id },
+                isActive: true
+            });
+            if (existingWithSameId) {
+                return new Response(JSON.stringify({ message: 'already Exist' }), {
+                    status: 409,
+                    headers: { 'Content-Type': 'application/json' },
+                });
+            }
         }
 
         const updatedSupplier = await Supplier.findByIdAndUpdate(
@@ -62,10 +91,10 @@ export async function PUT(request: Request, context: { params: { id: string } })
 export async function DELETE(request: Request, context: { params: { id: string } }) {
     try {
         await connectToDatabase();
-        const { id } = context.params;
+        const id = context?.params?.id || request.url.split('/').pop()?.split('?')[0];
 
-        if (!id) {
-            return new Response(JSON.stringify({ message: 'Supplier ID is required' }), { status: 400 });
+        if (!id || id === 'suppliers') {
+            return new Response(JSON.stringify({ message: 'Supplier ID is required or invalid' }), { status: 400 });
         }
 
         // We use soft delete to maintain referential integrity with past MilkEntries

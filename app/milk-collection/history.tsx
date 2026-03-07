@@ -1,12 +1,14 @@
+import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useFocusEffect } from 'expo-router';
+import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, RefreshControl, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface MilkEntryData {
     _id: string;
@@ -192,7 +194,18 @@ export default function MilkCollectionHistoryScreen() {
     const filterChips = ['Today', 'This Month', 'Morning', 'Evening'];
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+            <Stack.Screen options={{ headerShown: false }} />
+            
+            {/* Header Section */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Ionicons name="arrow-back" size={24} color={theme.primary} />
+                </TouchableOpacity>
+                <ThemedText style={styles.headerTitle}>History</ThemedText>
+                <View style={{ width: 24 }} />
+            </View>
+
             <View style={styles.content}>
 
                 {/* Search Bar Row */}
@@ -283,13 +296,24 @@ export default function MilkCollectionHistoryScreen() {
                     />
                 )}
             </View>
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        justifyContent: 'space-between',
+    },
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
     },
     content: {
         flex: 1,

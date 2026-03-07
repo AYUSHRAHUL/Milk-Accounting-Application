@@ -38,6 +38,14 @@ export async function POST(request: Request) {
             });
         }
 
+        const existingSupplier = await Supplier.findOne({ supplierId, isActive: true });
+        if (existingSupplier) {
+            return new Response(JSON.stringify({ message: 'already Exist' }), {
+                status: 409,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
         const newSupplier = new Supplier({
             userId,
             supplierId,

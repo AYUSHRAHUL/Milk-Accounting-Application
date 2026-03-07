@@ -1,9 +1,11 @@
+import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface SupplierData {
     _id: string;
@@ -22,45 +24,36 @@ export default function SupplierDetailsScreen() {
 
     const [supplier, setSupplier] = useState<SupplierData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [apiError, setApiError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchDetails = async () => {
+            if (!id || id === '[id]' || id === 'undefined') {
+                setIsLoading(false);
+                return;
+            }
+
             try {
+                console.log('[Frontend] Fetching supplier details for:', id);
                 const response = await fetch(`/api/suppliers/${id}`);
+                const data = await response.json();
+                
                 if (response.ok) {
-                    const data = await response.json();
                     setSupplier(data);
+                } else {
+                    console.warn('[Frontend] API Error:', data.message);
+                    setApiError(data.message || 'Supplier not found');
                 }
             } catch (error) {
-                console.error(error);
+                console.error('Fetch Details Error:', error);
+                setApiError('Network error occurred');
             } finally {
                 setIsLoading(false);
             }
         };
 
-        if (id) {
-            fetchDetails();
-        }
+        fetchDetails();
     }, [id]);
-
-    if (isLoading) {
-        return (
-            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }]}>
-                <ActivityIndicator size="large" color={theme.primary} />
-            </View>
-        );
-    }
-
-    if (!supplier) {
-        return (
-            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }]}>
-                <ThemedText style={{ fontSize: 20 }}>Supplier not found 😕</ThemedText>
-                <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
-                    <ThemedText style={{ color: theme.primary }}>Go Back</ThemedText>
-                </TouchableOpacity>
-            </View>
-        );
-    }
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -69,68 +62,87 @@ export default function SupplierDetailsScreen() {
     };
 
     return (
-        <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
-            <View style={[styles.topDecoration, { backgroundColor: theme.primary }]} />
-
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ThemedText style={{ fontSize: 24, color: '#FFFFFF' }}>←</ThemedText>
-                </TouchableOpacity>
-                <View>
-                    <ThemedText type="title" style={{ color: '#FFFFFF', fontSize: 28 }}>
-                        {supplier.name}
-                    </ThemedText>
-                    <ThemedText style={{ color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>
-                        Joined {formatDate(supplier.createdAt)}
-                    </ThemedText>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+            <Stack.Screen options={{ headerShown: false }} />
+            
+            {isLoading ? (
+                <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }]}>
+                    <ActivityIndicator size="large" color={theme.primary} />
                 </View>
-            </View>
-
-            <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}>
-                <ThemedText style={[styles.sectionTitle, { color: theme.primary }]}>Contact Information</ThemedText>
-
-                <View style={styles.detailRow}>
-                    <ThemedText style={styles.detailLabel}>Phone:</ThemedText>
-                    <ThemedText style={styles.detailValue}>{supplier.phone}</ThemedText>
+            ) : apiError || !supplier ? (
+                <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }]}>
+                    <ThemedText style={{ fontSize: 20 }}>{apiError || 'Supplier not found'} 😕</ThemedText>
+                    <ThemedText style={{ color: theme.textSecondary, marginTop: 8 }}>ID: {id as string}</ThemedText>
+                    <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
+                        <ThemedText style={{ color: theme.primary }}>Go Back</ThemedText>
+                    </TouchableOpacity>
                 </View>
-
-                <View style={styles.detailRow}>
-                    <ThemedText style={styles.detailLabel}>Address:</ThemedText>
-                    <ThemedText style={styles.detailValue}>{supplier.address}</ThemedText>
-                </View>
-
-                <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-                <ThemedText style={[styles.sectionTitle, { color: theme.primary }]}>Livestock</ThemedText>
-                <View style={styles.badgeContainer}>
-                    {supplier.animalType?.map(type => (
-                        <View key={type} style={[styles.badge, { backgroundColor: theme.background }]}>
-                            <ThemedText style={{ fontSize: 14, color: theme.primary, fontWeight: 'bold' }}>{type}</ThemedText>
+            ) : (
+                <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
+                    <View style={[styles.topDecoration, { backgroundColor: theme.primary }]} />
+                    
+                    <View style={[styles.header, { flexDirection: 'row', alignItems: 'center' }]}>
+                        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                        </TouchableOpacity>
+                        <View style={{ marginLeft: 8 }}>
+                            <ThemedText type="title" style={{ color: '#FFFFFF', fontSize: 28 }}>
+                                {supplier.name}
+                            </ThemedText>
+                            <ThemedText style={{ color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>
+                                Joined {formatDate(supplier.createdAt)}
+                            </ThemedText>
                         </View>
-                    ))}
-                </View>
+                    </View>
 
-                <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                    <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}>
+                        <ThemedText style={[styles.sectionTitle, { color: theme.primary }]}>Contact Information</ThemedText>
 
-                {supplier.bankDetails ? (
-                    <>
-                        <ThemedText style={[styles.sectionTitle, { color: theme.primary }]}>Bank Details</ThemedText>
-                        <ThemedText style={{ fontSize: 16, marginTop: 8, lineHeight: 24, color: theme.text }}>
-                            {supplier.bankDetails}
-                        </ThemedText>
-                    </>
-                ) : (
-                    <ThemedText style={{ fontStyle: 'italic', color: theme.textSecondary }}>No bank details provided.</ThemedText>
-                )}
-            </View>
-        </ScrollView>
+                        <View style={styles.detailRow}>
+                            <ThemedText style={styles.detailLabel}>Phone:</ThemedText>
+                            <ThemedText style={styles.detailValue}>{supplier.phone}</ThemedText>
+                        </View>
+
+                        <View style={styles.detailRow}>
+                            <ThemedText style={styles.detailLabel}>Address:</ThemedText>
+                            <ThemedText style={styles.detailValue}>{supplier.address}</ThemedText>
+                        </View>
+
+                        <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+                        <ThemedText style={[styles.sectionTitle, { color: theme.primary }]}>Livestock</ThemedText>
+                        <View style={styles.badgeContainer}>
+                            {supplier.animalType?.map(type => (
+                                <View key={type} style={[styles.badge, { backgroundColor: theme.background }]}>
+                                    <ThemedText style={{ fontSize: 14, color: theme.primary, fontWeight: 'bold' }}>{type}</ThemedText>
+                                </View>
+                            ))}
+                        </View>
+
+                        <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+                        {supplier.bankDetails ? (
+                            <>
+                                <ThemedText style={[styles.sectionTitle, { color: theme.primary }]}>Bank Details</ThemedText>
+                                <ThemedText style={{ fontSize: 16, marginTop: 8, lineHeight: 24, color: theme.text }}>
+                                    {supplier.bankDetails}
+                                </ThemedText>
+                            </>
+                        ) : (
+                            <ThemedText style={{ fontStyle: 'italic', color: theme.textSecondary }}>No bank details provided.</ThemedText>
+                        )}
+                    </View>
+                </ScrollView>
+            )}
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
-        padding: 24,
+        paddingHorizontal: 24,
+        paddingBottom: 24,
     },
     topDecoration: {
         position: 'absolute',
@@ -142,8 +154,8 @@ const styles = StyleSheet.create({
         borderBottomRightRadius: 30,
     },
     header: {
-        marginTop: 40,
-        marginBottom: 32,
+        marginTop: 20,
+        marginBottom: 24,
     },
     backButton: {
         marginBottom: 16,

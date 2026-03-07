@@ -1,11 +1,11 @@
-import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { router, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Alert, FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -89,8 +89,8 @@ export default function SuppliersListScreen() {
 
     const renderSupplier = ({ item }: { item: SupplierData }) => (
         <Card variant="elevated" style={styles.card}>
-            <TouchableOpacity 
-                activeOpacity={0.7} 
+            <TouchableOpacity
+                activeOpacity={0.7}
                 onPress={() => handleViewDetails(item._id)}
                 style={styles.cardMain}
             >
@@ -118,8 +118,8 @@ export default function SuppliersListScreen() {
                             </View>
                         </View>
                     </View>
-                    <TouchableOpacity 
-                        onPress={() => handleDelete(item._id, item.name)} 
+                    <TouchableOpacity
+                        onPress={() => handleDelete(item._id, item.name)}
                         style={[styles.deleteBtn, { backgroundColor: theme.error + '15' }]}
                     >
                         <Ionicons name="trash" size={16} color={theme.error} />
@@ -143,14 +143,15 @@ export default function SuppliersListScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+            <Stack.Screen options={{ headerShown: false }} />
             {/* Header Section */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Ionicons name="arrow-back" size={24} color={theme.primary} />
                 </TouchableOpacity>
                 <ThemedText style={styles.headerTitle}>Suppliers</ThemedText>
-                <TouchableOpacity 
-                    style={[styles.addNewBtn, { backgroundColor: theme.primary }]} 
+                <TouchableOpacity
+                    style={[styles.addNewBtn, { backgroundColor: theme.primary }]}
                     onPress={() => router.push('/suppliers/manage')}
                 >
                     <Ionicons name="add" size={20} color="#FFFFFF" />
@@ -168,16 +169,16 @@ export default function SuppliersListScreen() {
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl 
-                            refreshing={isLoading && suppliers.length > 0} 
+                        <RefreshControl
+                            refreshing={isLoading && suppliers.length > 0}
                             onRefresh={fetchSuppliers}
                             colors={[theme.primary]}
                         />
                     }
                     ListEmptyComponent={
-                        <EmptyState 
-                            title="No suppliers yet" 
-                            description="Add your first supplier to begin managing collections." 
+                        <EmptyState
+                            title="No suppliers yet"
+                            description="Add your first supplier to begin managing collections."
                         />
                     }
                 />

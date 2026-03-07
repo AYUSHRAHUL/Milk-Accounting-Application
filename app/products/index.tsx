@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -82,16 +82,24 @@ export default function ProductionScreen() {
             const data = await response.json();
 
             if (response.ok) {
-                Alert.alert('Success', `Production saved! Remaining Milk: ${data.remainingStock}L`, [
-                    { text: 'OK', onPress: () => router.back() }
-                ]);
+                if (Platform.OS === 'web') {
+                    alert('Success: Your data has been saved!');
+                    router.back();
+                } else {
+                    Alert.alert('Success', 'Your data has been saved!', [
+                        { text: 'OK', onPress: () => router.back() }
+                    ]);
+                }
             } else {
-                // This captures our backend "Insufficient stock" error message perfectly
-                Alert.alert('Production Failed', data.message || 'Failed to save entry.');
+                const errorMsg = data.message || 'Failed to save production data.';
+                if (Platform.OS === 'web') alert('Error: ' + errorMsg);
+                else Alert.alert('Error', errorMsg);
             }
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'An unexpected network error occurred.');
+            const errorMsg = 'An unexpected network error occurred.';
+            if (Platform.OS === 'web') alert('Error: ' + errorMsg);
+            else Alert.alert('Error', errorMsg);
         } finally {
             setIsLoading(false);
         }
@@ -129,6 +137,7 @@ export default function ProductionScreen() {
 
     return (
         <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+            <Stack.Screen options={{ headerShown: false }} />
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Ionicons name="arrow-back" size={24} color={theme.primary} />

@@ -120,10 +120,16 @@ export default function ProfileScreen() {
             <Input label="Email" value={profile.email} editable={false} />
             <Input
               label="Phone Number"
-              placeholder="Add phone number"
+              placeholder="1234567890"
               value={profile.phone}
-              onChangeText={(v) => setProfile((p) => ({ ...p, phone: v }))}
+              onChangeText={(v) => {
+                const numericValue = v.replace(/[^0-9]/g, '');
+                if (numericValue.length <= 10) {
+                  setProfile((p) => ({ ...p, phone: numericValue }));
+                }
+              }}
               keyboardType="phone-pad"
+              maxLength={10}
             />
             <Input
               label="Address"
