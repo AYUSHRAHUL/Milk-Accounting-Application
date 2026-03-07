@@ -1,23 +1,22 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import Animated, {
+  type SharedValue,
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withSpring,
   withDelay,
   Easing,
-  useAnimatedReaction,
 } from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
@@ -60,6 +59,8 @@ export default function LandingScreen() {
       600,
       withTiming(0, { duration: 600, easing: Easing.out(Easing.ease) })
     );
+    // Intentionally run once on mount for entrance animation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Animated Styles
@@ -86,11 +87,11 @@ export default function LandingScreen() {
   }));
 
   // Press Handlers
-  const handlePressIn = (scale: Animated.SharedValue<number>) => {
+  const handlePressIn = (scale: SharedValue<number>) => {
     scale.value = withSpring(0.95, { damping: 15, stiffness: 200 });
   };
 
-  const handlePressOut = (scale: Animated.SharedValue<number>) => {
+  const handlePressOut = (scale: SharedValue<number>) => {
     scale.value = withSpring(1, { damping: 15, stiffness: 200 });
   };
 

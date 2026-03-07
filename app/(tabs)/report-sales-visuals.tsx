@@ -107,6 +107,7 @@ export default function ReportSalesVisualsScreen() {
               }}
               width={screenWidth}
               height={220}
+              yAxisLabel=""
               yAxisSuffix=""
               chartConfig={{
                 backgroundColor: theme.card,

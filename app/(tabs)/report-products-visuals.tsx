@@ -109,6 +109,8 @@ export default function ReportProductsVisualsScreen() {
               }}
               width={screenWidth}
               height={220}
+              yAxisLabel=""
+              yAxisSuffix=""
               chartConfig={{
                 backgroundColor: theme.card,
                 backgroundGradientFrom: theme.card,

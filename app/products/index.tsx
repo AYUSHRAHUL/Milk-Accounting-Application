@@ -128,16 +128,7 @@ export default function ProductionScreen() {
     return (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
-                <View style={[styles.topDecoration, { backgroundColor: theme.warning }]} />
-
-                <View style={styles.header}>
-                    <ThemedText type="title" style={{ color: colorScheme === 'light' ? '#fff' : theme.text }}>
-                        Products Entry
-                    </ThemedText>
-                    <ThemedText style={{ color: colorScheme === 'light' ? 'rgba(255,255,255,0.8)' : theme.textSecondary, marginTop: 4 }}>
-                        Record today&apos;s converted milk
-                    </ThemedText>
-                </View>
+              
 
                 <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}>
                     <Input
@@ -224,16 +215,10 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         padding: 24,
     },
-    topDecoration: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 180,
-    },
-    header: {
-        marginTop: 40,
-        marginBottom: 32,
+    backBtn: {
+        paddingVertical: 8,
+        paddingRight: 12,
+        marginBottom: 24,
     },
     card: {
         width: '100%',

@@ -1,11 +1,10 @@
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { Colors, Spacing } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Alert, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -127,17 +126,9 @@ export default function SuppliersListScreen() {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>
-            <View style={{ paddingTop: 12 }}>
-                <ScreenHeader
-                    title="Suppliers"
-                    subtitle="Manage your milk providers"
-                    onBack={() => router.back()}
-                    right={
-                        <View style={{ width: 120 }}>
-                            <Button title="Add New" onPress={() => router.push('/suppliers/manage')} style={{ height: 40 }} />
-                        </View>
-                    }
-                />
+            <View style={styles.topRow}>
+                 
+                <Button title="Add New" onPress={() => router.push('/suppliers/manage')} style={styles.addBtn} />
             </View>
 
             {isLoading ? (
@@ -161,6 +152,20 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: Spacing.xl,
+    },
+    topRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: Spacing.lg,
+    },
+    backBtn: {
+        paddingVertical: 8,
+        paddingRight: 12,
+    },
+    addBtn: {
+        height: 40,
+        minWidth: 120,
     },
     cardPressable: { marginBottom: Spacing.lg },
     card: {

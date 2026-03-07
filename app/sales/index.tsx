@@ -2,7 +2,6 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -140,21 +139,15 @@ export default function SalesScreen() {
     return (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
-                <ScreenHeader
-                    title="Record Sale"
-                    subtitle="Checkout and manage inventory"
-                    onBack={() => router.back()}
-                    right={
-                        <View style={{ width: 120 }}>
-                            <Button
-                                title="Ledger"
-                                variant="outline"
-                                style={{ height: 40 }}
-                                onPress={() => router.push('/sales/history')}
-                            />
-                        </View>
-                    }
-                />
+                <View style={styles.topRow}>
+                    
+                    <Button
+                        title="Ledger"
+                        variant="outline"
+                        style={styles.ledgerBtn}
+                        onPress={() => router.push('/sales/history')}
+                    />
+                </View>
 
                 <Card variant="elevated" style={[styles.card, { backgroundColor: theme.surface, shadowColor: theme.shadow }]}>
                     <Input
@@ -251,6 +244,20 @@ const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
         padding: 24,
+    },
+    topRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 24,
+    },
+    backBtn: {
+        paddingVertical: 8,
+        paddingRight: 12,
+    },
+    ledgerBtn: {
+        height: 40,
+        minWidth: 100,
     },
     card: {
         width: '100%',

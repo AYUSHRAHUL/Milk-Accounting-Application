@@ -80,6 +80,8 @@ export default function MilkCollectionScreen() {
   useEffect(() => {
     formOpacity.value = withTiming(1, { duration: 500, easing: Easing.out(Easing.ease) });
     formTranslateY.value = withTiming(0, { duration: 500, easing: Easing.out(Easing.ease) });
+    // Intentionally run once on mount for entrance animation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const formAnimStyle = useAnimatedStyle(() => ({

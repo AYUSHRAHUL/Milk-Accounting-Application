@@ -20,7 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { default as MilkCollectionImage, default as ProductsImage } from '@/assets/milkcollection.png';
+import MilkCollectionImage from '@/assets/milkcollection.png';
 import ReportsImage from '@/assets/reports.png';
 import SalesImage from '@/assets/sales.png';
 import SuppliersImage from '@/assets/supplier.png';
@@ -31,16 +31,20 @@ const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 interface FeatureCard {
   title: string;
   route: string;
-  image: any;
+  image?: number;
+  icon: string;
 }
 
+// Products: use require() so the image always resolves (avoids "product image is not defined" when import is undefined)
+const ProductsImage = require('@/assets/milkcollection.png');
+
 const FEATURES: FeatureCard[] = [
-  { title: 'Milk Collection', route: '/milk-collection', image: MilkCollectionImage },
-  { title: 'View Collections', route: '/milk-collection/history', image: ViewCollectionsImage },
-  { title: 'Suppliers', route: '/suppliers', image: SuppliersImage },
-  { title: 'Products', route: '/products', image: ProductsImage },
-  { title: 'Sales', route: '/sales', image: SalesImage },
-  { title: 'Reports', route: '/(tabs)/reports', image: ReportsImage },
+  { title: 'Milk Collection', route: '/milk-collection', image: MilkCollectionImage, icon: 'water' },
+  { title: 'View Collections', route: '/milk-collection/history', image: ViewCollectionsImage, icon: 'list' },
+  { title: 'Suppliers', route: '/suppliers', image: SuppliersImage, icon: 'people' },
+  { title: 'Products', route: '/products', image: ProductsImage, icon: 'cube' },
+  { title: 'Sales', route: '/sales', image: SalesImage, icon: 'cash' },
+  { title: 'Reports', route: '/(tabs)/reports', image: ReportsImage, icon: 'bar-chart' },
 ];
 
 // Dashboard Card
@@ -53,7 +57,7 @@ function DashboardCard({ item, index }: { item: FeatureCard; index: number }) {
     const delay = index * 80;
     opacity.value = withDelay(delay, withTiming(1, { duration: 400, easing: Easing.out(Easing.ease) }));
     translateY.value = withDelay(delay, withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) }));
-  }, []);
+  }, [index, opacity, translateY]);
 
   const cardAnimatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -68,6 +72,9 @@ function DashboardCard({ item, index }: { item: FeatureCard; index: number }) {
     scale.value = withSpring(1, { damping: 15, stiffness: 200 });
   };
 
+  const imageSource = item.image;
+  const hasValidImage = imageSource != null;
+
   return (
     <AnimatedTouchable
       style={[styles.card, cardAnimatedStyle]}
@@ -76,8 +83,13 @@ function DashboardCard({ item, index }: { item: FeatureCard; index: number }) {
       onPressOut={handlePressOut}
       activeOpacity={1}
     >
-      <Image source={item.image} style={styles.cardImage} />
-
+      {hasValidImage ? (
+        <Image source={imageSource} style={styles.cardImage} />
+      ) : (
+        <View style={styles.cardImagePlaceholder}>
+          <Ionicons name={item.icon as any} size={40} color="#22C55E" />
+        </View>
+      )}
       <Text style={styles.cardTitle}>{item.title}</Text>
     </AnimatedTouchable>
   );
@@ -196,6 +208,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     resizeMode: 'contain',
     tintColor: '#22C55E',
+  },
+
+  cardImagePlaceholder: {
+    height: 45,
+    width: 45,
+    marginBottom: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   cardTitle: {

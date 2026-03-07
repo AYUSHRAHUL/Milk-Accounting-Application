@@ -19,13 +19,19 @@ export default function TabLayout() {
           backgroundColor: theme.surface,
           width: 320,
         },
-        sceneContainerStyle: {
-          backgroundColor: theme.background,
-        },
       }}>
       <Drawer.Screen name="index" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="explore" options={{ drawerItemStyle: { display: 'none' } }} />
-      <Drawer.Screen name="reports" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen
+        name="reports"
+        options={{
+          drawerItemStyle: { display: 'none' },
+          headerShown: true,
+          title: 'Reports',
+          headerTitleAlign: 'center',
+          headerTitleStyle: { fontWeight: '700' },
+        }}
+      />
       <Drawer.Screen name="report-milk" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="report-sales" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="report-products" options={{ drawerItemStyle: { display: 'none' } }} />

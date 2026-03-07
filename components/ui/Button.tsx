@@ -53,14 +53,17 @@ export const Button = ({ title, loading, style, textStyle, variant = 'primary', 
         <Pressable
             accessibilityRole="button"
             disabled={props.disabled || loading}
-            style={({ pressed }) => [
-                containerBase,
-                variantStyle,
-                styles.shadow,
-                pressed && styles.pressed,
-                (props.disabled || loading) && styles.disabled,
-                style,
-            ]}
+            style={(state) => {
+                const resolvedStyle = typeof style === 'function' ? style(state) : style;
+                return [
+                    containerBase,
+                    variantStyle,
+                    styles.shadow,
+                    state.pressed && styles.pressed,
+                    (props.disabled || loading) && styles.disabled,
+                    resolvedStyle,
+                ];
+            }}
             {...props}
         >
             {loading ? (

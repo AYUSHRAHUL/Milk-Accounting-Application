@@ -1,11 +1,10 @@
 import { ThemedText } from '@/components/themed-text';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { router, useFocusEffect } from 'expo-router';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, RefreshControl, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -195,7 +194,7 @@ export default function MilkCollectionHistoryScreen() {
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>
             <View style={styles.content}>
-                <ScreenHeader title="View Collections" subtitle="Milk collection history & summary" onBack={() => router.back()} />
+                
                 {/* Search Bar Row */}
                 <View style={styles.searchRow}>
                     <TouchableOpacity style={[styles.allFarmersBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -295,6 +294,9 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         padding: 16,
+    },
+    backRow: {
+        marginBottom: 12,
     },
     searchRow: {
         flexDirection: 'row',
