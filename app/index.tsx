@@ -5,9 +5,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import Animated, {
   type SharedValue,
@@ -18,6 +18,8 @@ import Animated, {
   withDelay,
   Easing,
 } from 'react-native-reanimated';
+
+import Logo from '@/assets/images/logo.jpeg';
 
 const { width, height } = Dimensions.get('window');
 
@@ -119,7 +121,7 @@ export default function LandingScreen() {
           {/* Top Section - Logo & Text */}
           <View style={styles.topSection}>
             <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
-              <Ionicons name="water" size={56} color="#22C55E" />
+              <Image source={Logo} style={styles.logoImage} />
             </Animated.View>
 
             <Animated.View style={[styles.textContainer, textAnimatedStyle]}>
@@ -202,18 +204,24 @@ const styles = StyleSheet.create({
     marginTop: height * 0.05,
   },
   logoContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     backgroundColor: '#DCFCE7',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 40,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.15,
     shadowRadius: 15,
     elevation: 10,
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   textContainer: {
     alignItems: 'center',

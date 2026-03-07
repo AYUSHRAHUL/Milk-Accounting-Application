@@ -1,13 +1,30 @@
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { PreferencesContext, type AppLanguage, type ThemeMode } from '@/context/PreferencesContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
-import { DrawerContentScrollView, type DrawerContentComponentProps } from '@react-navigation/drawer';
+import { type DrawerContentComponentProps } from '@react-navigation/drawer';
 import { router } from 'expo-router';
-import React, { useContext, useMemo, useState } from 'react';
-import { Alert, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 type DrawerItem = {
   key: string;
@@ -15,6 +32,22 @@ type DrawerItem = {
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
   variant?: 'danger';
+};
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const COLORS = {
+  primaryGreen: '#22C55E',
+  lightGreen: '#DCFCE7',
+  white: '#FFFFFF',
+  darkText: '#111827',
+  secondaryText: '#6B7280',
+  divider: '#E5E7EB',
+  iconBg: '#F3F4F6',
+  arrowColor: '#9CA3AF',
+  dangerBg: '#FEE2E2',
+  dangerText: '#EF4444',
+  overlay: 'rgba(0,0,0,0.35)',
 };
 
 const languageOptions: { id: AppLanguage; label: string }[] = [
@@ -29,22 +62,97 @@ const themeOptions: { id: ThemeMode; label: string; icon: keyof typeof Ionicons.
   { id: 'dark', label: 'Dark Mode', icon: 'moon-outline' },
 ];
 
+// ─── Animated Menu Item ──────────────────────────────────────────────────────
+
+function DrawerMenuItem({ item, index }: { item: DrawerItem; index: number }) {
+  const opacity = useSharedValue(0);
+  const translateX = useSharedValue(-10);
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    const delay = index * 60;
+    opacity.value = withDelay(delay, withTiming(1, { duration: 350, easing: Easing.out(Easing.ease) }));
+    translateX.value = withDelay(delay, withTiming(0, { duration: 350, easing: Easing.out(Easing.ease) }));
+  }, [index, opacity, translateX]);
+
+  const enterAnimStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const scaleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withTiming(0.97, { duration: 120 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 200 });
+  };
+
+  const isDanger = item.variant === 'danger';
+
+  return (
+    <Animated.View style={enterAnimStyle}>
+      <Animated.View style={scaleStyle}>
+        <Pressable
+          onPress={item.onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={({ pressed }) => [
+            styles.menuItem,
+            pressed && { backgroundColor: isDanger ? COLORS.dangerBg : COLORS.lightGreen },
+          ]}
+        >
+          {/* Left: Icon + Title */}
+          <View style={styles.menuItemLeft}>
+            <View style={[styles.menuIconContainer, isDanger && { backgroundColor: COLORS.dangerBg }]}>
+              <Ionicons
+                name={item.icon}
+                size={18}
+                color={isDanger ? COLORS.dangerText : COLORS.primaryGreen}
+              />
+            </View>
+            <Text style={[styles.menuTitle, isDanger && { color: COLORS.dangerText }]}>
+              {item.label}
+            </Text>
+          </View>
+
+          {/* Right: Arrow */}
+          <Ionicons name="chevron-forward" size={16} color={COLORS.arrowColor} />
+        </Pressable>
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+// ─── Main Drawer Component ───────────────────────────────────────────────────
+
 export function AppDrawerContent(props: DrawerContentComponentProps) {
-  const colorScheme = useColorScheme() ?? 'light';
-  const theme = Colors[colorScheme];
   const prefs = useContext(PreferencesContext);
   const { user, logout } = useAuth();
 
   const [languageOpen, setLanguageOpen] = useState(false);
   const [modeOpen, setModeOpen] = useState(false);
 
+  // Profile header animation
+  const headerOpacity = useSharedValue(0);
+  const headerTranslateX = useSharedValue(-10);
+
+  useEffect(() => {
+    headerOpacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.ease) });
+    headerTranslateX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) });
+  }, [headerOpacity, headerTranslateX]);
+
+  const headerAnimStyle = useAnimatedStyle(() => ({
+    opacity: headerOpacity.value,
+    transform: [{ translateX: headerTranslateX.value }],
+  }));
+
   const displayName = user?.name?.trim() || 'User';
-  const initials = useMemo(() => {
-    const parts = displayName.split(' ').filter(Boolean);
-    const first = parts[0]?.[0] ?? 'U';
-    const second = parts.length > 1 ? parts[parts.length - 1]?.[0] : '';
-    return (first + (second ?? '')).toUpperCase();
-  }, [displayName]);
+  const firstLetter = useMemo(() => (displayName[0] ?? 'U').toUpperCase(), [displayName]);
 
   const navigateTo = (path: string) => {
     props.navigation.closeDrawer();
@@ -71,7 +179,6 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
         };
 
         if (Platform.OS === 'web') {
-          // Alert.alert is a no-op on web, use window.confirm instead
           if (window.confirm('Are you sure you want to log out?')) {
             doLogout();
           }
@@ -86,66 +193,50 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
   ];
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.surface }]}>
-      <DrawerContentScrollView {...props} contentContainerStyle={styles.scroll}>
-        <View style={[styles.header, { borderBottomColor: theme.border }]}>
-          <View style={[styles.avatar, { backgroundColor: theme.primaryMuted, borderColor: theme.border }]}>
-            <ThemedText style={[styles.avatarText, { color: theme.primary }]}>{initials}</ThemedText>
+    <SafeAreaView style={styles.root}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Section 1: Profile Header ── */}
+        <Animated.View style={[styles.profileHeader, headerAnimStyle]}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarLetter}>{firstLetter}</Text>
           </View>
-
-          <View style={styles.headerText}>
-            <ThemedText style={[styles.name, { color: theme.text }]}>{displayName}</ThemedText>
-            <ThemedText style={[styles.sub, { color: theme.textSecondary }]}>{user?.email ?? ''}</ThemedText>
+          <View style={styles.userInfo}>
+            <Text style={styles.userName} numberOfLines={1}>{displayName}</Text>
+            <Text style={styles.userEmail} numberOfLines={1}>{user?.email ?? ''}</Text>
           </View>
-        </View>
+        </Animated.View>
 
-        <View style={styles.section}>
-          {items.map((item) => (
-            <Pressable
-              key={item.key}
-              onPress={item.onPress}
-              style={({ pressed }) => [
-                styles.item,
-                pressed && { backgroundColor: theme.surfaceMuted },
-              ]}
-              android_ripple={{ color: theme.surfaceMuted }}
-            >
-              <View
-                style={[
-                  styles.itemIcon,
-                  { backgroundColor: item.variant === 'danger' ? theme.errorMuted : theme.surfaceMuted },
-                ]}
-              >
-                <Ionicons
-                  name={item.icon}
-                  size={18}
-                  color={item.variant === 'danger' ? theme.error : theme.primary}
-                />
-              </View>
-              <ThemedText style={[styles.itemLabel, { color: item.variant === 'danger' ? theme.error : theme.text }]}>
-                {item.label}
-              </ThemedText>
-              <Ionicons name="chevron-forward" size={16} color={theme.icon} />
-            </Pressable>
+        {/* ── Divider ── */}
+        <View style={styles.divider} />
+
+        {/* ── Section 2: Menu Items ── */}
+        <View style={styles.menuSection}>
+          {items.map((item, index) => (
+            <DrawerMenuItem key={item.key} item={item} index={index} />
           ))}
         </View>
+      </ScrollView>
 
-        <View style={{ height: 12 }} />
-        <ThemedText style={[styles.footer, { color: theme.textSecondary }]}>Milk Accounting</ThemedText>
-      </DrawerContentScrollView>
+      {/* ── Section 3: Footer ── */}
+      <View style={styles.footer}>
+        <View style={styles.footerDivider} />
+        <Text style={styles.footerText}>Milk Accounting</Text>
+      </View>
 
+      {/* ── Language Modal ── */}
       <Modal visible={languageOpen} transparent animationType="fade" onRequestClose={() => setLanguageOpen(false)}>
-        <Pressable style={[styles.backdrop, { backgroundColor: theme.overlay }]} onPress={() => setLanguageOpen(false)}>
-          <Pressable style={[styles.modal, { backgroundColor: theme.surface }]} onPress={() => undefined}>
+        <Pressable style={styles.backdrop} onPress={() => setLanguageOpen(false)}>
+          <Pressable style={styles.modal} onPress={() => undefined}>
             <View style={styles.modalHeader}>
-              <ThemedText type="title" style={{ color: theme.text }}>
-                Language
-              </ThemedText>
+              <Text style={styles.modalTitle}>Language</Text>
               <Pressable onPress={() => setLanguageOpen(false)} hitSlop={10}>
-                <Ionicons name="close" size={20} color={theme.icon} />
+                <Ionicons name="close" size={20} color={COLORS.secondaryText} />
               </Pressable>
             </View>
-
             {languageOptions.map((opt) => {
               const selected = !!prefs && prefs.language === opt.id;
               return (
@@ -157,11 +248,14 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
                   }}
                   style={[
                     styles.choice,
-                    { borderColor: selected ? theme.primary : theme.border, backgroundColor: selected ? theme.primaryMuted : 'transparent' },
+                    {
+                      borderColor: selected ? COLORS.primaryGreen : COLORS.divider,
+                      backgroundColor: selected ? COLORS.lightGreen : 'transparent',
+                    },
                   ]}
                 >
-                  <ThemedText style={{ color: theme.text, fontWeight: selected ? '800' : '600' }}>{opt.label}</ThemedText>
-                  {selected ? <Ionicons name="checkmark-circle" size={18} color={theme.primary} /> : null}
+                  <Text style={[styles.choiceText, selected && { fontWeight: '700' }]}>{opt.label}</Text>
+                  {selected ? <Ionicons name="checkmark-circle" size={18} color={COLORS.primaryGreen} /> : null}
                 </Pressable>
               );
             })}
@@ -169,18 +263,16 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
         </Pressable>
       </Modal>
 
+      {/* ── Mode Modal ── */}
       <Modal visible={modeOpen} transparent animationType="fade" onRequestClose={() => setModeOpen(false)}>
-        <Pressable style={[styles.backdrop, { backgroundColor: theme.overlay }]} onPress={() => setModeOpen(false)}>
-          <Pressable style={[styles.modal, { backgroundColor: theme.surface }]} onPress={() => undefined}>
+        <Pressable style={styles.backdrop} onPress={() => setModeOpen(false)}>
+          <Pressable style={styles.modal} onPress={() => undefined}>
             <View style={styles.modalHeader}>
-              <ThemedText type="title" style={{ color: theme.text }}>
-                Mode
-              </ThemedText>
+              <Text style={styles.modalTitle}>Mode</Text>
               <Pressable onPress={() => setModeOpen(false)} hitSlop={10}>
-                <Ionicons name="close" size={20} color={theme.icon} />
+                <Ionicons name="close" size={20} color={COLORS.secondaryText} />
               </Pressable>
             </View>
-
             {themeOptions.map((opt) => {
               const selected = !!prefs && prefs.themeMode === opt.id;
               return (
@@ -192,119 +284,179 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
                   }}
                   style={[
                     styles.choice,
-                    { borderColor: selected ? theme.primary : theme.border, backgroundColor: selected ? theme.primaryMuted : 'transparent' },
+                    {
+                      borderColor: selected ? COLORS.primaryGreen : COLORS.divider,
+                      backgroundColor: selected ? COLORS.lightGreen : 'transparent',
+                    },
                   ]}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Ionicons name={opt.icon} size={18} color={theme.icon} />
-                    <ThemedText style={{ color: theme.text, fontWeight: selected ? '800' : '600' }}>{opt.label}</ThemedText>
+                  <View style={styles.choiceLeft}>
+                    <Ionicons name={opt.icon} size={18} color={COLORS.secondaryText} />
+                    <Text style={[styles.choiceText, selected && { fontWeight: '700' }]}>{opt.label}</Text>
                   </View>
-                  {selected ? <Ionicons name="checkmark-circle" size={18} color={theme.primary} /> : null}
+                  {selected ? <Ionicons name="checkmark-circle" size={18} color={COLORS.primaryGreen} /> : null}
                 </Pressable>
               );
             })}
           </Pressable>
         </Pressable>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    backgroundColor: COLORS.white,
   },
-  scroll: {
-    paddingBottom: Spacing.xl,
+  scrollView: {
+    flex: 1,
   },
-  header: {
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.lg,
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+
+  // ── Profile Header ──
+  profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginBottom: 24,
   },
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 1,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.lightGreen,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: {
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+  avatarLetter: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: COLORS.primaryGreen,
   },
-  headerText: {
+  userInfo: {
+    marginLeft: 12,
     flex: 1,
   },
-  name: {
-    fontSize: 16,
-    fontWeight: '900',
-    letterSpacing: -0.2,
+  userName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.darkText,
   },
-  sub: {
+  userEmail: {
+    fontSize: 13,
+    color: COLORS.secondaryText,
     marginTop: 2,
-    fontSize: 12,
   },
-  section: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+
+  // ── Divider ──
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.divider,
+    marginBottom: 12,
   },
-  item: {
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: Radii.lg,
+
+  // ── Menu Items ──
+  menuSection: {
+    // no extra styles needed
+  },
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 6,
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    marginBottom: 8,
   },
-  itemIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    flex: 1,
+  },
+  menuIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.iconBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  itemLabel: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '800',
+  menuTitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: COLORS.darkText,
   },
+
+  // ── Footer ──
   footer: {
-    paddingHorizontal: Spacing.xl,
-    fontSize: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
+  footerDivider: {
+    height: 1,
+    backgroundColor: COLORS.divider,
+    marginBottom: 12,
+  },
+  footerText: {
+    fontSize: 13,
+    color: COLORS.secondaryText,
+    marginTop: 8,
+  },
+
+  // ── Modals ──
   backdrop: {
     flex: 1,
-    padding: Spacing.xl,
+    padding: 24,
     justifyContent: 'center',
+    backgroundColor: COLORS.overlay,
   },
   modal: {
-    borderRadius: Radii.xl,
-    padding: Spacing.xl,
-    borderWidth: 1,
+    borderRadius: 20,
+    padding: 24,
+    backgroundColor: COLORS.white,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.lg,
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.darkText,
   },
   choice: {
     paddingVertical: 12,
     paddingHorizontal: 14,
-    borderRadius: Radii.lg,
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 10,
   },
+  choiceLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  choiceText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: COLORS.darkText,
+  },
 });
-

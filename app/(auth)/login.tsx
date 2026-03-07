@@ -5,6 +5,7 @@ import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,6 +16,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import Logo from '@/assets/images/logo.jpeg';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -76,7 +79,7 @@ export default function LoginScreen() {
             {/* Header Area (in Green section) */}
             <View style={styles.headerArea}>
               <View style={styles.logoContainer}>
-                <Ionicons name="water" size={36} color="#22C55E" />
+                <Image source={Logo} style={styles.logoImage} />
               </View>
               <Text style={styles.title}>Welcome Back</Text>
               <Text style={styles.subtitle}>Log in to continue</Text>
@@ -205,18 +208,24 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: '#DCFCE7',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 4,
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   title: {
     fontSize: 28,
