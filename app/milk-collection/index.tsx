@@ -60,6 +60,7 @@ export default function MilkCollectionScreen() {
   const { user } = useAuth();
 
   const [supplier, setSupplier] = useState('');
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState(() => new Date().toTimeString().split(' ')[0].substring(0, 5));
   const [shift, setShift] = useState('Morning');
@@ -73,6 +74,56 @@ export default function MilkCollectionScreen() {
   const [totalCost, setTotalCost] = useState('0.00');
   const [isLoading, setIsLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+
+  // Supplier Search State
+  const [allSuppliers, setAllSuppliers] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [filteredSuppliers, setFilteredSuppliers] = useState<any[]>([]);
+
+  // Fetch Suppliers on Mount
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const res = await fetch('/api/suppliers');
+        if (res.ok) {
+          const data = await res.json();
+          setAllSuppliers(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch suppliers", err);
+      }
+    };
+    fetchSuppliers();
+  }, []);
+
+  // Filter logic
+  useEffect(() => {
+    if (searchQuery.trim().length > 0) {
+      const query = searchQuery.toLowerCase();
+      const filtered = allSuppliers.filter(s => {
+        const nameMatch = s.name?.toLowerCase().includes(query) || false;
+        const idMatch = s.supplierId?.toLowerCase().includes(query) || false;
+        return nameMatch || idMatch;
+      });
+      setFilteredSuppliers(filtered);
+      setShowDropdown(filtered.length > 0);
+    } else {
+      setFilteredSuppliers([]);
+      setShowDropdown(false);
+    }
+  }, [searchQuery, allSuppliers]);
+
+  const selectSupplier = (s: any) => {
+    if (!s) return;
+    const displayName = s.name || 'Unknown';
+    const displayId = s.supplierId || 'No ID';
+    setSupplier(displayName);
+    setSelectedSupplierId(displayId);
+    setSearchQuery(`${displayName} (${displayId})`);
+    setShowDropdown(false);
+    setFocusedField(null);
+  };
 
   // Entrance animation
   const formOpacity = useSharedValue(0);
@@ -194,20 +245,91 @@ export default function MilkCollectionScreen() {
           {/* ────────── Animated Form ────────── */}
           <Animated.View style={formAnimStyle}>
 
-            {/* ═══ Section 1: Supplier Info ═══ */}
-            <View style={styles.sectionCard}>
-              <SectionTitle title="Supplier Information" />
+            {/* ═══ Section 1: Supplier & Search ═══ */}
+            <View style={styles.searchSectionCard}>
+              <View style={styles.searchRow}>
+                <TouchableOpacity 
+                  style={styles.selectFarmerContainer}
+                  onPress={() => {
+                    if (allSuppliers.length > 0) {
+                      setFilteredSuppliers(allSuppliers);
+                      setShowDropdown(!showDropdown);
+                    }
+                  }}
+                  activeOpacity={0.6}
+                >
+                  <Text style={styles.selectFarmerText}>Select Suppliers</Text>
+                  <Ionicons name={showDropdown ? "chevron-up" : "chevron-down"} size={18} color="#4B5563" />
+                </TouchableOpacity>
 
-              <Text style={styles.label}>Supplier Name / ID *</Text>
-              <TextInput
-                style={inputStyle('supplier')}
-                placeholder="Enter farmer name or ID"
-                placeholderTextColor="#9CA3AF"
-                value={supplier}
-                onChangeText={setSupplier}
-                onFocus={() => setFocusedField('supplier')}
-                onBlur={() => setFocusedField(null)}
-              />
+                <View style={styles.searchInputContainer}>
+                  <View style={[
+                    styles.searchInputWrapper,
+                    focusedField === 'supplier' && styles.textInputFocused
+                  ]}>
+                    <Ionicons name="search" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+                    <TextInput
+                      style={[styles.textInputMain, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
+                      placeholder="Search..."
+                      placeholderTextColor="#9CA3AF"
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
+                      onFocus={() => {
+                        setFocusedField('supplier');
+                        if (filteredSuppliers.length > 0) setShowDropdown(true);
+                      }}
+                      onBlur={() => {
+                        setTimeout(() => {
+                          setShowDropdown(false);
+                          setFocusedField(null);
+                        }, 200);
+                      }}
+                    />
+                    {searchQuery.length > 0 && (
+                      <TouchableOpacity onPress={() => {
+                        setSearchQuery('');
+                        setSupplier('');
+                        setSelectedSupplierId(null);
+                      }}>
+                        <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              </View>
+
+              {showDropdown && (
+                <View style={styles.dropdown}>
+                  <ScrollView style={{ maxHeight: 200 }} keyboardShouldPersistTaps="handled">
+                    {filteredSuppliers.map((s) => (
+                      <TouchableOpacity
+                        key={s._id}
+                        style={styles.dropdownItem}
+                        onPress={() => selectSupplier(s)}
+                      >
+                        <View style={styles.dropdownItemLeft}>
+                          <View style={styles.avatarMini}>
+                            <Text style={styles.avatarText}>{s.name?.charAt(0).toUpperCase() || '?'}</Text>
+                          </View>
+                          <View style={styles.dropdownInfoRow}>
+                            <Text style={styles.dropdownItemName}>{s.name}</Text>
+                            <Text style={styles.dropdownItemSeparator}>•</Text>
+                            <Text style={styles.dropdownItemId}>ID: {s.supplierId}</Text>
+                          </View>
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color="#E5E7EB" />
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+              
+              {selectedSupplierId && (
+                <View style={styles.selectedBadge}>
+                  <Ionicons name="checkmark-circle" size={14} color="#22C55E" style={{ marginRight: 6 }} />
+                  <Text style={styles.selectedBadgeText}>Selected: {supplier} ({selectedSupplierId})</Text>
+                </View>
+              )}
             </View>
 
             {/* ═══ Section 2: Date, Time & Shift ═══ */}
@@ -587,5 +709,134 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 16,
     fontWeight: '500',
+  },
+  // New Structured Search Styles
+  searchSectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+    zIndex: 100,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  selectFarmerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingLeft: 4,
+  },
+  selectFarmerText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#4338CA', // Purple color as in the image
+  },
+  searchInputContainer: {
+    flex: 1,
+    maxWidth: '65%',
+  },
+  searchContainer: {
+    zIndex: 100,
+    width: '100%',
+  },
+  searchInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    paddingHorizontal: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  textInputMain: {
+    flex: 1,
+    fontSize: 14,
+    color: '#374151',
+    height: '100%',
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 65,
+    left: 16,
+    right: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  dropdownItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dropdownInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dropdownItemSeparator: {
+    fontSize: 14,
+    color: '#D1D5DB',
+  },
+  avatarMini: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  avatarText: {
+    color: '#22C55E',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  dropdownItemName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  dropdownItemId: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  selectedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginTop: 12,
+    alignSelf: 'flex-start',
+  },
+  selectedBadgeText: {
+    fontSize: 12,
+    color: '#166534',
+    fontWeight: '600',
   },
 });

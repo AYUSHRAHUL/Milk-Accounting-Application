@@ -2,6 +2,7 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 
 export interface IMilkEntry extends Document {
     userId: string;
+    supplier: string;
     date: Date;
     shift: string;
     source: string;
@@ -18,7 +19,8 @@ export interface IMilkEntry extends Document {
 
 const MilkEntrySchema: Schema = new Schema(
     {
-        userId: { type: String, required: true }, // We assume a user is making the entry
+        userId: { type: String, required: true },
+        supplier: { type: String, required: true },
         date: { type: Date, required: true },
         shift: { type: String, required: true, enum: ['Morning', 'Evening'] },
         source: { type: String, required: true, enum: ['Cow', 'Buffalo', 'Goat', 'Other'] },

@@ -7,7 +7,17 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, FlatList, RefreshControl, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { 
+    Alert, 
+    FlatList, 
+    Platform,
+    RefreshControl, 
+    ScrollView, 
+    StyleSheet, 
+    TextInput, 
+    TouchableOpacity, 
+    View 
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface MilkEntryData {
@@ -102,7 +112,10 @@ export default function MilkCollectionHistoryScreen() {
     const filteredEntries = useMemo(() => {
         let filtered = entries;
         if (searchQuery) {
-            filtered = filtered.filter(e => e.supplier.toLowerCase().includes(searchQuery.toLowerCase()));
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(e => 
+                (e.supplier?.toLowerCase() || '').includes(query)
+            );
         }
         if (activeChip === 'Morning') {
             filtered = filtered.filter(e => e.shift === 'Morning');
@@ -140,51 +153,58 @@ export default function MilkCollectionHistoryScreen() {
 
     const renderEntry = ({ item }: { item: MilkEntryData }) => (
         <Card variant="elevated" style={styles.card}>
-            <View style={[styles.cardHeader, { borderBottomColor: theme.borderMuted }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <ThemedText style={{ fontSize: 16 }}>👤</ThemedText>
-                    <ThemedText style={{ fontSize: 16, fontWeight: 'bold', marginLeft: 8, color: theme.text }}>{item.supplier}</ThemedText>
+            <View style={styles.cardHeader}>
+                <View style={styles.supplierBrand}>
+                    <View style={styles.supplierIconBg}>
+                        <Ionicons name="person" size={16} color="#4338CA" />
+                    </View>
+                    <ThemedText style={styles.supplierName}>{item.supplier || 'Unknown Supplier'}</ThemedText>
                 </View>
-                <ThemedText style={{ fontSize: 13, color: theme.textSecondary, fontWeight: '500' }}>
-                    {formatDate(item.date)} | {item.shift}
-                </ThemedText>
-            </View>
-
-            <View style={[styles.gridContainer, { borderBottomColor: theme.borderMuted }]}>
-                <View style={styles.gridItem}>
-                    <ThemedText style={[styles.gridLabel, { color: theme.textSecondary }]}>QTY</ThemedText>
-                    <ThemedText style={[styles.gridValue, { color: theme.primary }]}>{item.quantity.toFixed(2)} Ltr</ThemedText>
-                </View>
-                <View style={styles.gridItem}>
-                    <ThemedText style={[styles.gridLabel, { color: theme.textSecondary }]}>FAT</ThemedText>
-                    <ThemedText style={[styles.gridValue, { color: theme.primary }]}>{!isNaN(parseFloat(item.fatType)) ? parseFloat(item.fatType).toFixed(1) : (item.fatType || '0.0')}</ThemedText>
-                </View>
-                <View style={styles.gridItem}>
-                    <ThemedText style={[styles.gridLabel, { color: theme.textSecondary }]}>SNF/CLR</ThemedText>
-                    <ThemedText style={[styles.gridValue, { color: theme.primary }]}>{item.snf || 0} / {item.clr || 0}</ThemedText>
-                </View>
-                <View style={styles.gridItem}>
-                    <ThemedText style={[styles.gridLabel, { color: theme.textSecondary }]}>RATE (₹)</ThemedText>
-                    <ThemedText style={[styles.gridValue, { color: theme.primary }]}>₹{item.costPerLiter.toFixed(2)}</ThemedText>
-                </View>
-            </View>
-
-            <View style={[styles.cardFooter, { backgroundColor: theme.surfaceMuted }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <ThemedText style={{ fontSize: 16 }}>💳</ThemedText>
-                    <ThemedText style={{ fontSize: 14, fontWeight: 'bold', marginLeft: 6, color: theme.text }}>
-                        Total: ₹ {item.totalCost.toFixed(2)}
+                <View style={styles.dateTimeBadge}>
+                    <Ionicons name="calendar-outline" size={12} color="#6B7280" style={{ marginRight: 4 }} />
+                    <ThemedText style={styles.dateTimeText}>
+                        {formatDate(item.date)} • {item.shift}
                     </ThemedText>
                 </View>
-                <View style={{ flexDirection: 'row', gap: 16 }}>
-                    <TouchableOpacity onPress={() => handlePrint(item)}>
-                        <ThemedText style={{ fontSize: 20 }}>�️</ThemedText>
+            </View>
+
+            <View style={styles.gridContainer}>
+                <View style={styles.gridItem}>
+                    <ThemedText style={styles.gridLabel}>QTY</ThemedText>
+                    <ThemedText style={styles.gridValue}>{item.quantity?.toFixed(2) || '0.00'} L</ThemedText>
+                </View>
+                <View style={[styles.gridItem, styles.gridBorder]}>
+                    <ThemedText style={styles.gridLabel}>FAT</ThemedText>
+                    <ThemedText style={styles.gridValue}>
+                        {!isNaN(parseFloat(item.fatType)) ? parseFloat(item.fatType).toFixed(1) : (item.fatType || '0.0')}
+                    </ThemedText>
+                </View>
+                <View style={[styles.gridItem, styles.gridBorder]}>
+                    <ThemedText style={styles.gridLabel}>SNF/CLR</ThemedText>
+                    <ThemedText style={styles.gridValue}>{item.snf || 0} / {item.clr || 0}</ThemedText>
+                </View>
+                <View style={styles.gridItem}>
+                    <ThemedText style={styles.gridLabel}>RATE</ThemedText>
+                    <ThemedText style={styles.gridValue}>₹{item.costPerLiter?.toFixed(2) || '0.00'}</ThemedText>
+                </View>
+            </View>
+
+            <View style={styles.cardFooter}>
+                <View style={styles.totalBadge}>
+                    <Ionicons name="wallet-outline" size={16} color="#166534" style={{ marginRight: 6 }} />
+                    <ThemedText style={styles.totalText}>
+                        Total: ₹ {item.totalCost?.toFixed(2) || '0.00'}
+                    </ThemedText>
+                </View>
+                <View style={styles.actionButtons}>
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => handlePrint(item)}>
+                        <Ionicons name="print-outline" size={18} color="#4B5563" />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => Alert.alert("Edit", "Edit feature coming soon!")}>
-                        <ThemedText style={{ fontSize: 20 }}>✏️</ThemedText>
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => Alert.alert("Edit", "Edit feature coming soon!")}>
+                        <Ionicons name="pencil-outline" size={18} color="#4B5563" />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDelete(item._id)}>
-                        <ThemedText style={{ fontSize: 20 }}>🗑️</ThemedText>
+                    <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDelete(item._id)}>
+                        <Ionicons name="trash-outline" size={18} color="#EF4444" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -207,55 +227,60 @@ export default function MilkCollectionHistoryScreen() {
             </View>
 
             <View style={styles.content}>
-
                 {/* Search Bar Row */}
-                <View style={styles.searchRow}>
-                    <TouchableOpacity style={[styles.allFarmersBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                        <ThemedText style={{ color: theme.text, fontWeight: '700', fontSize: 14 }}>All Suppliers</ThemedText>
-                    </TouchableOpacity>
-                    <View style={[styles.searchInputContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                        <ThemedText style={{ marginLeft: 8, fontSize: 16 }}>🔍</ThemedText>
-                        <TextInput
-                            style={[styles.searchInput, { color: theme.text }]}
-                            placeholder="Enter Supplier"
-                            value={searchQuery}
-                            onChangeText={setSearchQuery}
-                            placeholderTextColor={theme.icon}
-                        />
+                <View style={styles.filterSection}>
+                    <View style={styles.searchRow}>
+                        <TouchableOpacity style={styles.allSuppliersChip}>
+                            <ThemedText style={styles.allSuppliersText}>All Suppliers</ThemedText>
+                        </TouchableOpacity>
+                        <View style={styles.searchInputContainer}>
+                            <Ionicons name="search" size={20} color="#9CA3AF" />
+                            <TextInput
+                                style={[styles.searchInput, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
+                                placeholder="Search supplier..."
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                placeholderTextColor="#9CA3AF"
+                            />
+                        </View>
                     </View>
-                </View>
 
-                {/* Date Filters Row */}
-                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
-                    <View style={[styles.dateBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                        <ThemedText style={[styles.dateLabel, { backgroundColor: theme.background, color: theme.textSecondary }]}>From Date</ThemedText>
-                        <ThemedText style={[styles.dateValue, { color: theme.text }]}>01-11-2025</ThemedText>
-                    </View>
-                    <View style={[styles.dateBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                        <ThemedText style={[styles.dateLabel, { backgroundColor: theme.background, color: theme.textSecondary }]}>To Date</ThemedText>
-                        <ThemedText style={[styles.dateValue, { color: theme.text }]}>30-11-2025</ThemedText>
+                    {/* Date Filters Row */}
+                    <View style={styles.dateRow}>
+                        <View style={styles.dateInputWrapper}>
+                            <ThemedText style={styles.dateLabel}>From Date</ThemedText>
+                            <View style={styles.dateInput}>
+                                <Ionicons name="calendar-outline" size={16} color="#4B5563" />
+                                <ThemedText style={styles.dateValue}>01-11-2025</ThemedText>
+                            </View>
+                        </View>
+                        <View style={styles.dateInputWrapper}>
+                            <ThemedText style={styles.dateLabel}>To Date</ThemedText>
+                            <View style={styles.dateInput}>
+                                <Ionicons name="calendar-outline" size={16} color="#4B5563" />
+                                <ThemedText style={styles.dateValue}>30-11-2025</ThemedText>
+                            </View>
+                        </View>
                     </View>
                 </View>
 
                 {/* Chips */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16, flexGrow: 0 }}>
-                    <View style={{ flexDirection: 'row', gap: 8, paddingBottom: 4 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+                    <View style={styles.chipsContainer}>
                         {filterChips.map(chip => (
                             <TouchableOpacity
                                 key={chip}
                                 onPress={() => setActiveChip(chip)}
                                 style={[
                                     styles.chip,
-                                    { backgroundColor: theme.surface, borderColor: theme.border },
-                                    activeChip === chip && { backgroundColor: theme.primaryMuted, borderColor: theme.primary + '59' }
+                                    activeChip === chip && styles.chipActive
                                 ]}
                             >
                                 <ThemedText style={[
                                     styles.chipText,
-                                    { color: theme.textSecondary },
-                                    activeChip === chip && { color: theme.primary, fontWeight: '700' }
+                                    activeChip === chip && styles.chipTextActive
                                 ]}>
-                                    {activeChip === chip ? '✓ ' : ''}{chip}
+                                    {chip}
                                 </ThemedText>
                             </TouchableOpacity>
                         ))}
@@ -263,22 +288,22 @@ export default function MilkCollectionHistoryScreen() {
                 </ScrollView>
 
                 {/* Summary Card */}
-                <Card variant="elevated" style={styles.summaryCard}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-                        <View style={{ alignItems: 'center', flex: 1 }}>
-                            <ThemedText style={[styles.summaryLabel, { color: theme.textSecondary }]}>Total Milk Qty</ThemedText>
-                            <ThemedText style={[styles.summaryValueQty, { color: theme.primary }]}>{summary.totalQty.toFixed(2)} Ltr</ThemedText>
+                <View style={styles.summaryCard}>
+                    <View style={styles.summaryGrid}>
+                        <View style={styles.summaryBox}>
+                            <ThemedText style={styles.summaryLabel}>Total Milk Qty</ThemedText>
+                            <ThemedText style={styles.summaryValue}>{summary.totalQty.toFixed(2)} Ltr</ThemedText>
                         </View>
-                        <View style={{ alignItems: 'center', flex: 1 }}>
-                            <ThemedText style={[styles.summaryLabel, { color: theme.textSecondary }]}>Avg FAT/SNF-CLR</ThemedText>
-                            <ThemedText style={[styles.summaryValueQty, { color: theme.primary }]}>{summary.avgFat} / {summary.avgSnf}</ThemedText>
+                        <View style={[styles.summaryBox, styles.summaryBorder]}>
+                            <ThemedText style={styles.summaryLabel}>Avg FAT / SNF</ThemedText>
+                            <ThemedText style={styles.summaryValue}>{summary.avgFat} / {summary.avgSnf}</ThemedText>
                         </View>
                     </View>
-                    <View style={{ alignItems: 'center' }}>
-                        <ThemedText style={[styles.summaryLabel, { color: theme.textSecondary }]}>Total Milk Amount</ThemedText>
-                        <ThemedText style={[styles.summaryValueAmount, { color: theme.primary }]}>₹ {summary.totalAmount.toFixed(2)}</ThemedText>
+                    <View style={styles.summaryTotalBox}>
+                        <ThemedText style={styles.totalLabel}>Total Milk Amount</ThemedText>
+                        <ThemedText style={styles.totalAmount}>₹ {summary.totalAmount.toFixed(2)}</ThemedText>
                     </View>
-                </Card>
+                </View>
 
                 {/* Ledger List */}
                 {isLoading ? (
@@ -303,136 +328,303 @@ export default function MilkCollectionHistoryScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#F9FAFB',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 20,
-        paddingVertical: 12,
+        paddingVertical: 16,
         justifyContent: 'space-between',
+        backgroundColor: '#FFFFFF',
     },
     headerTitle: {
         fontSize: 20,
-        fontWeight: 'bold',
+        fontWeight: '700',
+        color: '#111827',
     },
     content: {
         flex: 1,
         padding: 16,
     },
-    backRow: {
-        marginBottom: 12,
+    filterSection: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        padding: 16,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 3,
     },
     searchRow: {
         flexDirection: 'row',
-        gap: 10,
+        gap: 12,
         marginBottom: 16,
     },
-    allFarmersBtn: {
-        borderWidth: 1,
-        borderRadius: 8,
-        paddingHorizontal: 16,
+    allSuppliersChip: {
+        backgroundColor: '#F3F4F6',
+        borderRadius: 12,
+        paddingHorizontal: 12,
         justifyContent: 'center',
-        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    allSuppliersText: {
+        color: '#374151',
+        fontWeight: '600',
+        fontSize: 12,
     },
     searchInputContainer: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: '#F9FAFB',
+        borderRadius: 12,
         borderWidth: 1,
-        borderRadius: 8,
-        paddingVertical: 8,
+        borderColor: '#E5E7EB',
         paddingHorizontal: 12,
+        height: 44,
     },
     searchInput: {
         flex: 1,
         marginLeft: 8,
-        fontSize: 16,
+        fontSize: 14,
+        color: '#111827',
     },
-    dateBox: {
+    dateRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    dateInputWrapper: {
         flex: 1,
-        borderWidth: 1,
-        borderRadius: 8,
-        padding: 8,
-        position: 'relative',
     },
     dateLabel: {
-        position: 'absolute',
-        top: -10,
-        left: 10,
-        paddingHorizontal: 4,
-        fontSize: 12,
-        fontWeight: 'bold',
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#6B7280',
+        marginBottom: 4,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    dateInput: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F9FAFB',
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        paddingHorizontal: 10,
+        height: 40,
+        gap: 8,
     },
     dateValue: {
-        fontSize: 16,
+        fontSize: 13,
+        color: '#374151',
         fontWeight: '500',
-        marginTop: 4,
-        marginLeft: 4,
+    },
+    chipsScroll: {
+        marginBottom: 16,
+        flexGrow: 0,
+    },
+    chipsContainer: {
+        flexDirection: 'row',
+        gap: 8,
+        paddingBottom: 4,
     },
     chip: {
+        backgroundColor: '#FFFFFF',
         borderWidth: 1,
+        borderColor: '#E5E7EB',
         borderRadius: 20,
         paddingVertical: 6,
         paddingHorizontal: 16,
     },
+    chipActive: {
+        backgroundColor: '#E0E7FF',
+        borderColor: '#4338CA',
+    },
     chipText: {
+        fontSize: 13,
+        color: '#6B7280',
         fontWeight: '500',
     },
+    chipTextActive: {
+        color: '#4338CA',
+        fontWeight: '700',
+    },
     summaryCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        padding: 20,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#F3F4F6',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 15,
+        elevation: 4,
+    },
+    summaryGrid: {
+        flexDirection: 'row',
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
+        paddingBottom: 16,
         marginBottom: 16,
     },
+    summaryBox: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    summaryBorder: {
+        borderLeftWidth: 1,
+        borderLeftColor: '#F3F4F6',
+    },
     summaryLabel: {
-        fontSize: 13,
-        fontWeight: 'bold',
+        fontSize: 12,
+        color: '#6B7280',
+        fontWeight: '600',
         marginBottom: 4,
     },
-    summaryValueQty: {
-        fontSize: 16,
-        fontWeight: 'bold',
+    summaryValue: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#22C55E',
     },
-    summaryValueAmount: {
-        fontSize: 24,
-        fontWeight: '900',
+    summaryTotalBox: {
+        alignItems: 'center',
+    },
+    totalLabel: {
+        fontSize: 13,
+        color: '#6B7280',
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+    totalAmount: {
+        fontSize: 28,
+        fontWeight: '800',
+        color: '#22C55E',
     },
     listContainer: {
         paddingBottom: 40,
     },
     card: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 18,
+        padding: 16,
         marginBottom: 12,
-        padding: 0,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.03,
+        shadowRadius: 10,
+        elevation: 2,
     },
     cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: undefined,
+        marginBottom: 14,
+    },
+    supplierBrand: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    supplierIconBg: {
+        width: 32,
+        height: 32,
+        borderRadius: 10,
+        backgroundColor: '#EEF2FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    supplierName: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1F2937',
+    },
+    dateTimeBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F3F4F6',
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 6,
+    },
+    dateTimeText: {
+        fontSize: 11,
+        color: '#6B7280',
+        fontWeight: '600',
     },
     gridContainer: {
         flexDirection: 'row',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 12,
         padding: 12,
         justifyContent: 'space-between',
-        borderBottomWidth: 1,
-        borderBottomColor: undefined,
+        marginBottom: 14,
     },
     gridItem: {
         alignItems: 'center',
         flex: 1,
     },
+    gridBorder: {
+        borderLeftWidth: 1,
+        borderLeftColor: '#E2E8F0',
+    },
     gridLabel: {
-        fontSize: 12,
-        fontWeight: 'bold',
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#94A3B8',
         marginBottom: 4,
+        textTransform: 'uppercase',
     },
     gridValue: {
-        fontSize: 14,
-        fontWeight: 'bold',
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#334155',
     },
     cardFooter: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 12,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+    },
+    totalBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#DCFCE7',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+    },
+    totalText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#166534',
+    },
+    actionButtons: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    actionBtn: {
+        width: 34,
+        height: 34,
+        borderRadius: 8,
+        backgroundColor: '#F9FAFB',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+    },
+    deleteBtn: {
+        backgroundColor: '#FEF2F2',
+        borderColor: '#FEE2E2',
     },
 });

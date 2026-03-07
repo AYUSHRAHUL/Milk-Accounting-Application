@@ -32,9 +32,11 @@ export default function ProductionScreen() {
 
     useEffect(() => {
         const checkStock = async () => {
+            if (!user?.id) return;
             setIsCheckingStock(true);
             try {
-                const res = await fetch(`/api/products/production?source=${source}&fatType=${fatType}`);
+                // We now aggregate by source and userId only to match Milk Collection data
+                const res = await fetch(`/api/products/production?source=${source}&userId=${user.id}`);
                 if (res.ok) {
                     const data = await res.json();
                     setAvailableStock(data.availableStock);
@@ -49,7 +51,7 @@ export default function ProductionScreen() {
             }
         };
         checkStock();
-    }, [source, fatType]);
+    }, [source, user?.id]);
 
     const handleSave = async () => {
         if (!date || !milkUsed || !quantityProduced) {
@@ -106,7 +108,11 @@ export default function ProductionScreen() {
     };
 
     const renderSelector = (options: string[], selectedValue: string, onSelect: (val: string) => void) => (
-        <View style={styles.selectorGrid}>
+        <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            contentContainerStyle={styles.selectorScroll}
+        >
             {options.map((option) => {
                 const isSelected = selectedValue === option;
                 return (
@@ -132,7 +138,7 @@ export default function ProductionScreen() {
                     </TouchableOpacity>
                 );
             })}
-        </View>
+        </ScrollView>
     );
 
     return (
@@ -156,8 +162,8 @@ export default function ProductionScreen() {
                                 <Ionicons name="water" size={20} color={theme.primary} />
                             </View>
                             <View>
-                                <ThemedText style={styles.stockLabel}>Available Milk Stock</ThemedText>
-                                <ThemedText style={styles.stockSublabel}>{source} Milk ({fatType})</ThemedText>
+                                <ThemedText style={styles.stockLabel}>Total Collected {source} Milk</ThemedText>
+                                <ThemedText style={styles.stockSublabel}>Available for Production</ThemedText>
                             </View>
                         </View>
                         <View style={styles.stockValueContainer}>
@@ -370,18 +376,19 @@ const styles = StyleSheet.create({
         width: '100%',
         marginVertical: 20,
     },
-    selectorGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
+    selectorScroll: {
+        paddingVertical: 4,
+        paddingRight: 20,
         gap: 8,
     },
     selectorChip: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 8,
-        paddingHorizontal: 14,
-        borderRadius: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 18,
+        borderRadius: 12,
         borderWidth: 1,
+        marginRight: 8,
     },
     selectorText: {
         fontSize: 13,
