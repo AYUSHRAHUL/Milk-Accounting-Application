@@ -1,13 +1,14 @@
+import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
-import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Alert, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface SupplierData {
     _id: string;
@@ -87,108 +88,221 @@ export default function SuppliersListScreen() {
     };
 
     const renderSupplier = ({ item }: { item: SupplierData }) => (
-        <TouchableOpacity
-            style={styles.cardPressable}
-            onPress={() => handleViewDetails(item._id)}
-            activeOpacity={0.7}
-        >
-            <Card variant="elevated" style={[styles.card, { backgroundColor: theme.surface, shadowColor: theme.shadow }]}>
-            <View style={styles.cardInfo}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <ThemedText style={{ fontSize: 18, fontWeight: 'bold' }}>{item.name}</ThemedText>
-                    {item.supplierId && (
-                        <View style={{ backgroundColor: theme.primaryMuted, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                            <ThemedText style={{ fontSize: 12, color: theme.primary, fontWeight: 'bold' }}>{item.supplierId}</ThemedText>
+        <Card variant="elevated" style={styles.card}>
+            <TouchableOpacity 
+                activeOpacity={0.7} 
+                onPress={() => handleViewDetails(item._id)}
+                style={styles.cardMain}
+            >
+                <View style={styles.cardHeader}>
+                    <View style={styles.avatar}>
+                        <Ionicons name="person" size={20} color={theme.primary} />
+                    </View>
+                    <View style={styles.mainInfo}>
+                        <View style={styles.nameRow}>
+                            <ThemedText style={styles.supplierName}>{item.name}</ThemedText>
+                            {item.supplierId && (
+                                <View style={[styles.idBadge, { backgroundColor: theme.primaryMuted }]}>
+                                    <ThemedText style={[styles.idText, { color: theme.primary }]}>{item.supplierId}</ThemedText>
+                                </View>
+                            )}
                         </View>
-                    )}
-                </View>
-                <ThemedText style={{ color: theme.textSecondary, marginTop: 4 }}>📞 {item.phone}</ThemedText>
-                <ThemedText style={{ color: theme.textSecondary, marginTop: 2 }}>📍 {item.address}</ThemedText>
-                <View style={{ flexDirection: 'row', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
-                    {item.animalType?.map(type => (
-                        <View key={type} style={[styles.badge, { backgroundColor: theme.background }]}>
-                            <ThemedText style={{ fontSize: 12, color: theme.primary, fontWeight: '600' }}>{type}</ThemedText>
+                        <View style={styles.detailsRow}>
+                            <View style={styles.detailItem}>
+                                <Ionicons name="call" size={10} color={theme.textSecondary} />
+                                <ThemedText style={styles.contactText}>{item.phone}</ThemedText>
+                            </View>
+                            <View style={styles.detailItem}>
+                                <Ionicons name="location" size={10} color={theme.textSecondary} />
+                                <ThemedText style={styles.contactText} numberOfLines={1}>{item.address}</ThemedText>
+                            </View>
                         </View>
-                    ))}
+                    </View>
+                    <TouchableOpacity 
+                        onPress={() => handleDelete(item._id, item.name)} 
+                        style={[styles.deleteBtn, { backgroundColor: theme.error + '15' }]}
+                    >
+                        <Ionicons name="trash" size={16} color={theme.error} />
+                    </TouchableOpacity>
                 </View>
-            </View>
-            <View style={styles.actions}>
-                <TouchableOpacity onPress={() => handleEdit(item)} style={styles.actionBtn}>
-                    <ThemedText style={{ fontSize: 20 }}>✏️</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleDelete(item._id, item.name)} style={styles.actionBtn}>
-                    <ThemedText style={{ fontSize: 20 }}>🗑️</ThemedText>
-                </TouchableOpacity>
-            </View>
-            </Card>
-        </TouchableOpacity>
+
+                <View style={styles.bottomSection}>
+                    <View style={styles.animalBadges}>
+                        {item.animalType?.map(type => (
+                            <View key={type} style={[styles.animalBadge, { backgroundColor: theme.background, borderColor: theme.borderMuted }]}>
+                                <ThemedText style={[styles.animalText, { color: theme.primary }]}>
+                                    {type === 'Cow' ? '🐄 ' : '🐃 '}{type}
+                                </ThemedText>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+            </TouchableOpacity>
+        </Card>
     );
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
-            <View style={styles.topRow}>
-                 
-                <Button title="Add New" onPress={() => router.push('/suppliers/manage')} style={styles.addBtn} />
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+            {/* Header Section */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Ionicons name="arrow-back" size={24} color={theme.primary} />
+                </TouchableOpacity>
+                <ThemedText style={styles.headerTitle}>Suppliers</ThemedText>
+                <TouchableOpacity 
+                    style={[styles.addNewBtn, { backgroundColor: theme.primary }]} 
+                    onPress={() => router.push('/suppliers/manage')}
+                >
+                    <Ionicons name="add" size={20} color="#FFFFFF" />
+                    <ThemedText style={styles.addNewText}>Add New</ThemedText>
+                </TouchableOpacity>
             </View>
 
             {isLoading ? (
                 <LoadingIndicator />
-            ) : suppliers.length === 0 ? (
-                <EmptyState title="No suppliers yet" description="Add your first supplier to get started." />
             ) : (
                 <FlatList
                     data={suppliers}
                     keyExtractor={(item) => item._id}
                     renderItem={renderSupplier}
-                    contentContainerStyle={{ paddingBottom: 40 }}
+                    contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl 
+                            refreshing={isLoading && suppliers.length > 0} 
+                            onRefresh={fetchSuppliers}
+                            colors={[theme.primary]}
+                        />
+                    }
+                    ListEmptyComponent={
+                        <EmptyState 
+                            title="No suppliers yet" 
+                            description="Add your first supplier to begin managing collections." 
+                        />
+                    }
                 />
             )}
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: Spacing.xl,
     },
-    topRow: {
+    header: {
         flexDirection: 'row',
         alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
         justifyContent: 'space-between',
-        marginBottom: Spacing.lg,
     },
-    backBtn: {
-        paddingVertical: 8,
-        paddingRight: 12,
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
     },
-    addBtn: {
-        height: 40,
-        minWidth: 120,
-    },
-    cardPressable: { marginBottom: Spacing.lg },
-    card: {
+    addNewBtn: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        padding: Spacing.xl,
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 12,
+        gap: 4,
     },
-    cardInfo: {
+    addNewText: {
+        color: '#FFFFFF',
+        fontWeight: '700',
+        fontSize: 14,
+    },
+    listContent: {
+        padding: 16,
+        paddingBottom: 40,
+    },
+    card: {
+        marginBottom: 16,
+        padding: 0,
+        overflow: 'hidden',
+    },
+    cardMain: {
+        padding: 16,
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        marginBottom: 6,
+    },
+    avatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#DCFCE7', // Light Green
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    mainInfo: {
         flex: 1,
+        justifyContent: 'center',
     },
-    badge: {
-        alignSelf: 'flex-start',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
+    nameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 0,
+    },
+    supplierName: {
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    idBadge: {
+        paddingHorizontal: 6,
+        paddingVertical: 1,
+        borderRadius: 4,
+    },
+    idText: {
+        fontSize: 10,
+        fontWeight: '800',
+    },
+    contactText: {
+        fontSize: 12,
+        color: '#6B7280', // Secondary Text
+    },
+    detailsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginTop: 2,
+    },
+    detailItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    deleteBtn: {
+        width: 32,
+        height: 32,
         borderRadius: 8,
-        marginTop: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 2,
     },
-    actions: {
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        marginLeft: Spacing.lg,
+    bottomSection: {
+        marginTop: 4,
     },
-    actionBtn: {
-        padding: 8,
-    }
+    animalBadges: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+    },
+    animalBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 6,
+        borderWidth: 1,
+    },
+    animalText: {
+        fontSize: 11,
+        fontWeight: '600',
+    },
 });

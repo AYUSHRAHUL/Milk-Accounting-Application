@@ -194,7 +194,7 @@ export default function MilkCollectionHistoryScreen() {
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>
             <View style={styles.content}>
-                
+
                 {/* Search Bar Row */}
                 <View style={styles.searchRow}>
                     <TouchableOpacity style={[styles.allFarmersBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}>

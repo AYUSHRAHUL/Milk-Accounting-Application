@@ -1,12 +1,13 @@
+import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PRODUCT_TYPES = ['Paneer', 'Ghee', 'Butter', 'Curd', 'Other'];
 const MILK_SOURCES = ['Cow', 'Buffalo', 'Goat', 'Other'];
@@ -97,22 +98,23 @@ export default function ProductionScreen() {
     };
 
     const renderSelector = (options: string[], selectedValue: string, onSelect: (val: string) => void) => (
-        <View style={styles.selectorContainer}>
+        <View style={styles.selectorGrid}>
             {options.map((option) => {
                 const isSelected = selectedValue === option;
                 return (
                     <TouchableOpacity
                         key={option}
                         style={[
-                            styles.selectorPill,
+                            styles.selectorChip,
                             {
-                                backgroundColor: isSelected ? theme.warning : theme.card,
-                                borderColor: isSelected ? theme.warning : theme.border
+                                backgroundColor: isSelected ? theme.primary : theme.surface,
+                                borderColor: isSelected ? theme.primary : theme.border
                             }
                         ]}
                         onPress={() => onSelect(option)}
                         activeOpacity={0.7}
                     >
+                        {isSelected && <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />}
                         <ThemedText style={[
                             styles.selectorText,
                             { color: isSelected ? '#FFFFFF' : theme.textSecondary }
@@ -126,145 +128,282 @@ export default function ProductionScreen() {
     );
 
     return (
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
-              
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Ionicons name="arrow-back" size={24} color={theme.primary} />
+                </TouchableOpacity>
+                <ThemedText style={styles.headerTitle}>Production</ThemedText>
+                <View style={{ width: 24 }} />
+            </View>
 
-                <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.textSecondary }]}>
-                    <Input
-                        label="Date (YYYY-MM-DD)"
-                        value={date}
-                        onChangeText={setDate}
-                        placeholder="2024-10-15"
-                    />
-
-                    <ThemedText style={[styles.sectionTitle, { color: theme.textSecondary, marginTop: 10 }]}>Select Product</ThemedText>
-                    {renderSelector(PRODUCT_TYPES, productType, setProductType)}
-
-                    <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-                    <ThemedText style={[styles.sectionTitle, { color: theme.textSecondary }]}>Which Milk was used?</ThemedText>
-                    {renderSelector(MILK_SOURCES, source, setSource)}
-
-                    <View style={{ marginTop: 5 }} />
-                    {renderSelector(FAT_TYPES, fatType, setFatType)}
-
-                    <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-                    <View style={{ marginBottom: 16 }}>
-                        <ThemedText style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 4 }}>
-                            Available Milk Stock:
-                        </ThemedText>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    
+                    {/* Stock Information Card */}
+                    <Card variant="elevated" style={styles.stockCard}>
+                        <View style={styles.stockHeader}>
+                            <View style={styles.stockIconContainer}>
+                                <Ionicons name="water" size={20} color={theme.primary} />
+                            </View>
+                            <View>
+                                <ThemedText style={styles.stockLabel}>Available Milk Stock</ThemedText>
+                                <ThemedText style={styles.stockSublabel}>{source} Milk ({fatType})</ThemedText>
+                            </View>
+                        </View>
+                        <View style={styles.stockValueContainer}>
                             {isCheckingStock ? (
-                                <ActivityIndicator size="small" color={theme.warning} />
+                                <ActivityIndicator size="small" color={theme.primary} />
                             ) : (
-                                <ThemedText style={{
-                                    fontSize: 18,
-                                    fontWeight: 'bold',
-                                    color: availableStock && availableStock > 0 ? theme.success : theme.error
-                                }}>
-                                    {availableStock !== null ? `${availableStock.toFixed(2)} Liters` : '0.00 Liters'}
+                                <ThemedText style={[
+                                    styles.stockValue,
+                                    { color: availableStock && availableStock > 0 ? theme.primary : '#EF4444' }
+                                ]}>
+                                    {availableStock !== null ? `${availableStock.toFixed(2)}` : '0.00'}
+                                    <ThemedText style={styles.unitText}> Liters</ThemedText>
                                 </ThemedText>
                             )}
                         </View>
-                    </View>
+                    </Card>
 
-                    <View style={styles.row}>
-                        <View style={{ flex: 1, marginRight: 8 }}>
-                            <Input
-                                label="Milk Used (Liters)"
-                                value={milkUsed}
-                                onChangeText={setMilkUsed}
-                                keyboardType="numeric"
-                                placeholder="0.0"
-                            />
+                    <Card variant="default" style={styles.formCard}>
+                        <View style={styles.inputGroup}>
+                            <ThemedText style={styles.inputLabel}>Production Date</ThemedText>
+                            <View style={[styles.inputContainer, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+                                <Ionicons name="calendar-outline" size={18} color={theme.textSecondary} style={{ marginRight: 10 }} />
+                                <TextInput
+                                    style={[styles.textInput, { color: theme.text }]}
+                                    value={date}
+                                    onChangeText={setDate}
+                                    placeholder="YYYY-MM-DD"
+                                    placeholderTextColor={theme.textSecondary}
+                                />
+                            </View>
                         </View>
-                        <View style={{ flex: 1, marginLeft: 8 }}>
-                            <Input
-                                label="Yield Produced"
-                                value={quantityProduced}
-                                onChangeText={setQuantityProduced}
-                                keyboardType="numeric"
-                                placeholder="0.0"
-                            />
-                        </View>
-                    </View>
 
-                    <Button
-                        title="Save Production"
-                        onPress={handleSave}
-                        loading={isLoading}
-                        style={{ marginTop: 24, backgroundColor: theme.warning }} /* Warning color to match products theme */
-                    />
-                    <Button
-                        title="Cancel"
-                        onPress={() => router.back()}
-                        style={[styles.cancelButton, { backgroundColor: 'transparent', borderColor: theme.border, shadowOpacity: 0, elevation: 0 }]}
-                        textStyle={{ color: theme.textSecondary }}
-                        disabled={isLoading}
-                    />
-                </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+                        <View style={styles.sectionHeader}>
+                            <Ionicons name="cube-outline" size={18} color={theme.primary} />
+                            <ThemedText style={styles.sectionTitle}>Select Product</ThemedText>
+                        </View>
+                        {renderSelector(PRODUCT_TYPES, productType, setProductType)}
+
+                        <View style={styles.divider} />
+
+                        <View style={styles.sectionHeader}>
+                            <Ionicons name="flask-outline" size={18} color={theme.primary} />
+                            <ThemedText style={styles.sectionTitle}>Milk Source & Quality</ThemedText>
+                        </View>
+                        {renderSelector(MILK_SOURCES, source, setSource)}
+                        <View style={{ marginTop: 8 }}>
+                            {renderSelector(FAT_TYPES, fatType, setFatType)}
+                        </View>
+
+                        <View style={styles.divider} />
+
+                        <View style={styles.row}>
+                            <View style={{ flex: 1, marginRight: 8 }}>
+                                <ThemedText style={styles.inputLabel}>Milk Used (L)</ThemedText>
+                                <View style={[styles.inputContainer, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+                                    <TextInput
+                                        style={[styles.textInput, { color: theme.text }]}
+                                        value={milkUsed}
+                                        onChangeText={setMilkUsed}
+                                        keyboardType="numeric"
+                                        placeholder="0.0"
+                                        placeholderTextColor={theme.textSecondary}
+                                    />
+                                </View>
+                            </View>
+                            <View style={{ flex: 1, marginLeft: 8 }}>
+                                <ThemedText style={styles.inputLabel}>Yield Produced</ThemedText>
+                                <View style={[styles.inputContainer, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+                                    <TextInput
+                                        style={[styles.textInput, { color: theme.text }]}
+                                        value={quantityProduced}
+                                        onChangeText={setQuantityProduced}
+                                        keyboardType="numeric"
+                                        placeholder="0.0"
+                                        placeholderTextColor={theme.textSecondary}
+                                    />
+                                </View>
+                            </View>
+                        </View>
+
+                        <TouchableOpacity 
+                            style={[styles.saveButton, { backgroundColor: theme.primary }]} 
+                            onPress={handleSave}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                            ) : (
+                                <>
+                                    <Ionicons name="save-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                                    <ThemedText style={styles.saveButtonText}>Save Production</ThemedText>
+                                </>
+                            )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity 
+                            style={styles.cancelButton} 
+                            onPress={() => router.back()}
+                            disabled={isLoading}
+                        >
+                            <ThemedText style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Cancel</ThemedText>
+                        </TouchableOpacity>
+                    </Card>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flexGrow: 1,
-        padding: 24,
+    safeArea: {
+        flex: 1,
     },
-    backBtn: {
-        paddingVertical: 8,
-        paddingRight: 12,
-        marginBottom: 24,
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        justifyContent: 'space-between',
     },
-    card: {
-        width: '100%',
-        padding: 24,
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
+    scrollContent: {
+        padding: 20,
+        paddingBottom: 40,
+    },
+    stockCard: {
+        marginBottom: 20,
+        padding: 16,
+        borderRadius: 16,
+    },
+    stockHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    stockIconContainer: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#DCFCE7',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    stockLabel: {
+        fontSize: 12,
+        color: '#6B7280',
+        fontWeight: '600',
+    },
+    stockSublabel: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    stockValueContainer: {
+        alignItems: 'flex-start',
+    },
+    stockValue: {
+        fontSize: 28,
+        fontWeight: '800',
+    },
+    unitText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#6B7280',
+    },
+    formCard: {
+        padding: 20,
         borderRadius: 20,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.08,
-        shadowRadius: 24,
-        elevation: 8,
-        marginBottom: 30,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 12,
+        marginTop: 4,
     },
     sectionTitle: {
         fontSize: 14,
+        fontWeight: '700',
+    },
+    inputGroup: {
+        marginBottom: 16,
+    },
+    inputLabel: {
+        fontSize: 13,
         fontWeight: '600',
-        marginBottom: 8,
+        color: '#6B7280',
+        marginBottom: 6,
         marginLeft: 4,
+    },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: 48,
+        borderWidth: 1,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+    },
+    textInput: {
+        flex: 1,
+        fontSize: 15,
+        fontWeight: '500',
     },
     divider: {
         height: 1,
+        backgroundColor: '#E5E7EB',
         width: '100%',
-        marginVertical: 15,
-        opacity: 0.5,
+        marginVertical: 20,
     },
-    selectorContainer: {
+    selectorGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 8,
-        marginBottom: 10,
     },
-    selectorPill: {
+    selectorChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
         paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 20,
+        paddingHorizontal: 14,
+        borderRadius: 10,
         borderWidth: 1,
     },
     selectorText: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '600',
     },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 5,
+        marginTop: 4,
+    },
+    saveButton: {
+        height: 52,
+        borderRadius: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 24,
+    },
+    saveButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '700',
     },
     cancelButton: {
-        borderWidth: 1,
-        marginTop: 10,
+        height: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 8,
+    },
+    cancelButtonText: {
+        fontSize: 15,
+        fontWeight: '600',
     },
 });
