@@ -9,6 +9,7 @@ import { LineChart, BarChart } from 'react-native-chart-kit';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
+import { apiFetch } from '@/lib/api';
 
 interface MilkEntryRow {
   _id: string;
@@ -27,7 +28,7 @@ export default function ReportMilkVisualsScreen() {
   const fetchEntries = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/milk/collection');
+      const response = await apiFetch('/api/milk/collection');
       if (!response.ok) return;
 
       const data = await response.json();

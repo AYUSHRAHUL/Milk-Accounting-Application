@@ -5,6 +5,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { apiFetch } from '@/lib/api';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { 
@@ -48,7 +49,7 @@ export default function MilkCollectionHistoryScreen() {
 
     const fetchHistory = async () => {
         try {
-            const response = await fetch('/api/milk/collection');
+            const response = await apiFetch('/api/milk/collection');
             if (response.ok) {
                 const data = await response.json();
                 setEntries(data);
@@ -89,7 +90,7 @@ export default function MilkCollectionHistoryScreen() {
                     style: "destructive",
                     onPress: async () => {
                         try {
-                            const response = await fetch(`/api/milk/collection/${id}`, { method: 'DELETE' });
+                            const response = await apiFetch(`/api/milk/collection/${id}`, { method: 'DELETE' });
                             if (response.ok) {
                                 fetchHistory(); // Refresh
                             } else {

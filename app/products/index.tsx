@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { apiFetch } from '@/lib/api';
 import { router, Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
@@ -36,7 +37,7 @@ export default function ProductionScreen() {
             setIsCheckingStock(true);
             try {
                 // We now aggregate by source and userId only to match Milk Collection data
-                const res = await fetch(`/api/products/production?source=${source}&userId=${user.id}`);
+                const res = await apiFetch(`/api/products/production?source=${source}&userId=${user.id}`);
                 if (res.ok) {
                     const data = await res.json();
                     setAvailableStock(data.availableStock);
@@ -67,7 +68,7 @@ export default function ProductionScreen() {
 
         setIsLoading(true);
         try {
-            const response = await fetch('/api/products/production', {
+            const response = await apiFetch('/api/products/production', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

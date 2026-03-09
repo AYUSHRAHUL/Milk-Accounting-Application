@@ -4,6 +4,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -52,7 +53,7 @@ export default function ReportProductsScreen() {
   const fetchEntries = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/products/production');
+      const res = await apiFetch('/api/products/production');
       if (!res.ok) return;
       const data = await res.json();
       setEntries(

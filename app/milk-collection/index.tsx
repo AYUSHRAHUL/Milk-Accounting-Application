@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
+import { apiFetch } from '@/lib/api';
 import { router, Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -85,7 +86,7 @@ export default function MilkCollectionScreen() {
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const res = await fetch('/api/suppliers');
+        const res = await apiFetch('/api/suppliers');
         if (res.ok) {
           const data = await res.json();
           setAllSuppliers(data);
@@ -160,7 +161,7 @@ export default function MilkCollectionScreen() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/milk/collection', {
+      const response = await apiFetch('/api/milk/collection', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

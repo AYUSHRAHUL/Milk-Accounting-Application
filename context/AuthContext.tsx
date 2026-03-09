@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { apiFetch } from '@/lib/api';
 
 type User = {
   id: string;
@@ -46,16 +47,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // In development, Expo API routes run on localhost
-  // We use relative paths for web, but React Native needs absolute paths for fetch
-  const getApiUrl = (endpoint: string) => {
-    return `/api/auth/${endpoint}`;
-  };
-
   const login = async (email: string, password?: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(getApiUrl('login'), {
+      const response = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -80,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (name: string, email: string, password?: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(getApiUrl('register'), {
+      const response = await apiFetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),

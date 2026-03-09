@@ -9,6 +9,7 @@ import { LineChart, BarChart } from 'react-native-chart-kit';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
+import { apiFetch } from '@/lib/api';
 
 interface ProductionRow {
   _id: string;
@@ -28,7 +29,7 @@ export default function ReportProductsVisualsScreen() {
   const fetchEntries = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/products/production');
+      const response = await apiFetch('/api/products/production');
       if (!response.ok) return;
 
       const data = await response.json();

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { apiFetch } from '@/lib/api';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -35,7 +36,7 @@ export default function SupplierDetailsScreen() {
 
             try {
                 console.log('[Frontend] Fetching supplier details for:', id);
-                const response = await fetch(`/api/suppliers/${id}`);
+                const response = await apiFetch(`/api/suppliers/${id}`);
                 const data = await response.json();
                 
                 if (response.ok) {

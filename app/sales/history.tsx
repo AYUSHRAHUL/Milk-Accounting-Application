@@ -8,6 +8,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { apiFetch } from '@/lib/api';
 
 interface SaleEntryData {
     _id: string;
@@ -30,7 +31,7 @@ export default function SalesHistoryScreen() {
 
     const fetchHistory = async () => {
         try {
-            const response = await fetch('/api/sales');
+            const response = await apiFetch('/api/sales');
             if (response.ok) {
                 const data = await response.json();
                 setEntries(data);

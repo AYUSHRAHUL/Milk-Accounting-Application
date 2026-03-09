@@ -4,6 +4,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
@@ -29,7 +30,7 @@ export default function SuppliersListScreen() {
     const fetchSuppliers = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch('/api/suppliers');
+            const response = await apiFetch('/api/suppliers');
             if (response.ok) {
                 const data = await response.json();
                 setSuppliers(data);
@@ -61,7 +62,7 @@ export default function SuppliersListScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            const response = await fetch(`/api/suppliers/${id}`, { method: 'DELETE' });
+                            const response = await apiFetch(`/api/suppliers/${id}`, { method: 'DELETE' });
                             if (response.ok) {
                                 setSuppliers(prev => prev.filter(s => s._id !== id));
                             } else {

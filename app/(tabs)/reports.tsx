@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { apiFetch } from '@/lib/api';
 
 export default function ReportsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -24,7 +25,7 @@ export default function ReportsScreen() {
 
   const fetchReports = useCallback(async () => {
     try {
-      const response = await fetch(`/api/reports?filter=month`);
+      const response = await apiFetch(`/api/reports?filter=month`);
       if (response.ok) {
         const data = await response.json();
         setMetrics(data);

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -57,7 +58,7 @@ export default function SalesScreen() {
         const checkStock = async () => {
             setIsCheckingStock(true);
             try {
-                const res = await fetch(`/api/sales?productType=${productType}`);
+                const res = await apiFetch(`/api/sales?productType=${productType}`);
                 if (res.ok) {
                     const data = await res.json();
                     setAvailableStock(data.availableStock);
@@ -95,7 +96,7 @@ export default function SalesScreen() {
 
         setIsLoading(true);
         try {
-            const response = await fetch('/api/sales', {
+            const response = await apiFetch('/api/sales', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
