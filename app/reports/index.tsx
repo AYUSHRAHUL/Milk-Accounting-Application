@@ -64,6 +64,17 @@ export default function ReportsScreen() {
                 <ThemedText style={{ fontSize: 18, color: theme.primary, fontWeight: '700' }}>← Back</ThemedText>
             </TouchableOpacity>
 
+            <View style={styles.headerRow}>
+                <ThemedText style={styles.headerTitle}>Reports Overview</ThemedText>
+                <TouchableOpacity
+                    onPress={() => router.push('/report-detailed')}
+                    style={styles.detailedBtn}
+                    activeOpacity={0.85}
+                >
+                    <ThemedText style={styles.detailedBtnText}>View Detailed</ThemedText>
+                </TouchableOpacity>
+            </View>
+
             {isLoading ? (
                 <LoadingIndicator style={{ marginTop: Spacing.xl }} />
             ) : (
@@ -173,6 +184,27 @@ const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
         padding: Spacing.xl,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: Spacing.lg,
+    },
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+    },
+    detailedBtn: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 999,
+        backgroundColor: '#2563EB',
+    },
+    detailedBtnText: {
+        color: '#FFFFFF',
+        fontWeight: '600',
+        fontSize: 13,
     },
     backBtn: {
         paddingVertical: 8,

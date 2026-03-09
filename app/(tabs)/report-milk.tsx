@@ -31,6 +31,7 @@ interface MilkEntryRow {
 
 type ShiftFilter = 'All' | 'Morning' | 'Evening';
 type SourceFilter = 'All' | 'Cow' | 'Buffalo' | 'Goat' | 'Other';
+type PeriodFilter = 'All' | 'Today' | '7D' | '30D';
 
 export default function ReportMilkScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -40,6 +41,7 @@ export default function ReportMilkScreen() {
   const [entries, setEntries] = useState<MilkEntryRow[]>([]);
   const [shiftFilter, setShiftFilter] = useState<ShiftFilter>('All');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('All');
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('All');
   const [exportModalVisible, setExportModalVisible] = useState(false);
 
   const fetchEntries = useCallback(async () => {
@@ -73,12 +75,24 @@ export default function ReportMilkScreen() {
   );
 
   const filtered = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const sevenDaysAgo = today - 7 * 24 * 60 * 60 * 1000;
+    const thirtyDaysAgo = today - 30 * 24 * 60 * 60 * 1000;
+
     return entries.filter((e) => {
       const shiftOk = shiftFilter === 'All' || e.shift === shiftFilter;
       const sourceOk = sourceFilter === 'All' || e.source === sourceFilter;
-      return shiftOk && sourceOk;
+
+      const entryDate = new Date(e.date).getTime();
+      let periodOk = true;
+      if (periodFilter === 'Today') periodOk = entryDate >= today;
+      else if (periodFilter === '7D') periodOk = entryDate >= sevenDaysAgo;
+      else if (periodFilter === '30D') periodOk = entryDate >= thirtyDaysAgo;
+
+      return shiftOk && sourceOk && periodOk;
     });
-  }, [entries, shiftFilter, sourceFilter]);
+  }, [entries, shiftFilter, sourceFilter, periodFilter]);
 
   // ── Summary stats ──────────────────────────────────────────
   const totalLiters = filtered.reduce((s, e) => s + e.quantity, 0);
@@ -138,7 +152,7 @@ export default function ReportMilkScreen() {
     >
       {/* ── Header ── */}
       <View style={[styles.header, { backgroundColor: theme.primary }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/reports')} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerText}>
@@ -199,6 +213,33 @@ export default function ReportMilkScreen() {
           <View style={styles.filtersTitleRow}>
             <Ionicons name="filter" size={15} color={theme.textSecondary} />
             <ThemedText style={[styles.filtersTitle, { color: theme.textSecondary }]}>Filters</ThemedText>
+          </View>
+
+          {/* Period */}
+          <View style={styles.filterGroup}>
+            <ThemedText style={[styles.filterLabel, { color: theme.textSecondary }]}>Period</ThemedText>
+            <View style={styles.pillsRow}>
+              {(['All', 'Today', '7D', '30D'] as PeriodFilter[]).map((val) => {
+                const active = periodFilter === val;
+                return (
+                  <TouchableOpacity
+                    key={val}
+                    onPress={() => setPeriodFilter(val)}
+                    style={[
+                      styles.pill,
+                      {
+                        backgroundColor: active ? theme.primary : theme.surfaceMuted,
+                        borderColor: active ? theme.primary : theme.borderMuted,
+                      },
+                    ]}
+                  >
+                    <ThemedText style={[styles.pillText, { color: active ? '#fff' : theme.text }]}>
+                      {val}
+                    </ThemedText>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           {/* Shift */}
@@ -285,8 +326,8 @@ export default function ReportMilkScreen() {
                   const rowBg = isEven
                     ? theme.background
                     : colorScheme === 'dark'
-                    ? 'rgba(255,255,255,0.03)'
-                    : 'rgba(34,197,94,0.04)';
+                      ? 'rgba(255,255,255,0.03)'
+                      : 'rgba(34,197,94,0.04)';
                   return (
                     <View
                       key={entry._id}

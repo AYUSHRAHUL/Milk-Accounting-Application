@@ -3,12 +3,12 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import React from 'react';
 import {
     ActivityIndicator,
+    Pressable,
+    PressableProps,
     StyleSheet,
     Text,
     TextStyle,
     ViewStyle,
-    Pressable,
-    PressableProps,
 } from 'react-native';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
@@ -58,7 +58,7 @@ export const Button = ({ title, loading, style, textStyle, variant = 'primary', 
                 return [
                     containerBase,
                     variantStyle,
-                    styles.shadow,
+                    (variant === 'primary' || variant === 'secondary' || variant === 'danger') && styles.shadow,
                     state.pressed && styles.pressed,
                     (props.disabled || loading) && styles.disabled,
                     resolvedStyle,

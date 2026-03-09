@@ -1,102 +1,282 @@
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/Card';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors, Radii } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+// Dark Green Palette for Premium Look
+const DARK_GREEN = '#064E3B';
+const EMERALD_GREEN = '#059669';
 
 export default function HelpScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScreenHeader title="Need Help" subtitle="FAQs & how to use the app" onBack={() => router.back()} />
+    <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Premium Dark Green Hero Header */}
+        <View style={styles.headerHero}>
+          <LinearGradient
+            colors={[DARK_GREEN, EMERALD_GREEN]}
+            start={{ x: 0.2, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* Subtle Decorative Circle */}
+          <View style={styles.headerDecoration} />
 
-      <Card variant="elevated" style={styles.card}>
-        <SectionTitle>Quick Start</SectionTitle>
-        <Bullet text="Go to Milk Collection to record daily milk entries." />
-        <Bullet text="Add suppliers from Suppliers and manage their details." />
-        <Bullet text="Use Sales to record customer sales and payments." />
-        <Bullet text="Open Reports to filter, export CSV, and view charts." />
+          <SafeAreaView edges={['top']} style={styles.headerContent}>
+            <View style={styles.headerRow}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backButtonCorner}>
+                <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+              <ThemedText type="title" style={styles.headerTitleCentered}>Need Help?</ThemedText>
+              <View style={{ width: 44 }} />
+            </View>
+          </SafeAreaView>
+        </View>
 
-        <View style={{ height: Spacing.lg }} />
+        {/* Content Container */}
+        <View style={styles.contentContainer}>
 
-        <SectionTitle>Frequently Asked Questions</SectionTitle>
-        <Faq q="How do I export report data?" a="Open any report and tap Export Data. On web it downloads a CSV file." />
-        <Faq q="How do I change language?" a="Open the side menu and select Language, then pick your preference." />
-        <Faq q="How do I switch dark mode?" a="Open the side menu and select Mode, then choose Light or Dark." />
-        <Faq q="I can’t find a record I entered." a="Check the filters and search fields; refresh the list to reload data." />
+          {/* Quick Start Section */}
+          <View style={styles.section}>
+            <ThemedText style={[styles.sectionHeading, { color: theme.textSecondary }]}>QUICK START GUIDE</ThemedText>
+            <Card variant="elevated" style={styles.infoCard}>
+              <HelpBullet
+                icon="water-outline"
+                text="Go to Milk Collection to record daily milk entries."
+                theme={theme}
+              />
+              <View style={[styles.itemDivider, { backgroundColor: theme.border }]} />
+              <HelpBullet
+                icon="people-outline"
+                text="Add suppliers and manage their details effortlessly."
+                theme={theme}
+              />
+              <View style={[styles.itemDivider, { backgroundColor: theme.border }]} />
+              <HelpBullet
+                icon="cash-outline"
+                text="Use Sales to record customer transactions and payments."
+                theme={theme}
+              />
+              <View style={[styles.itemDivider, { backgroundColor: theme.border }]} />
+              <HelpBullet
+                icon="bar-chart-outline"
+                text="Open Reports to filter, export CSV, and view charts."
+                theme={theme}
+              />
+            </Card>
+          </View>
 
-        <View style={{ height: Spacing.lg }} />
+          {/* FAQ Section */}
+          <View style={[styles.section, { marginTop: 24 }]}>
+            <ThemedText style={[styles.sectionHeading, { color: theme.textSecondary }]}>FREQUENTLY ASKED QUESTIONS</ThemedText>
+            <FaqItem
+              q="How do I export report data?"
+              a="Open any report and tap 'Export Data'. On web, it downloads a CSV file instantly."
+              theme={theme}
+            />
+            <FaqItem
+              q="How do I change language?"
+              a="Open the side menu and select 'Language', then pick your preferred language."
+              theme={theme}
+            />
+            <FaqItem
+              q="How do I switch dark mode?"
+              a="Open the side menu and select 'Mode', then choose between Light or Dark."
+              theme={theme}
+            />
+          </View>
 
-        <SectionTitle>Contact</SectionTitle>
-        <ThemedText style={{ color: theme.textSecondary, lineHeight: 22 }}>
-          If you need assistance, contact support from the Support screen, or email us at{' '}
-          <ThemedText type="link" style={{ color: theme.primary }}>
-            support@milkaccounting.app
-          </ThemedText>
-          .
-        </ThemedText>
-      </Card>
+          {/* Contact Section */}
+          <View style={[styles.section, { marginTop: 24 }]}>
+            <ThemedText style={[styles.sectionHeading, { color: theme.textSecondary }]}>CONTACT US</ThemedText>
+            <Card variant="elevated" style={styles.infoCard}>
+              <View style={styles.contactContent}>
+                <View style={[styles.contactIconBox, { backgroundColor: 'rgba(5, 150, 105, 0.1)' }]}>
+                  <Ionicons name="chatbubbles-outline" size={24} color={EMERALD_GREEN} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <ThemedText style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>Direct Assistance</ThemedText>
+                  <ThemedText style={{ color: theme.textSecondary, fontSize: 14, marginTop: 4, lineHeight: 20 }}>
+                    If you need further help, please email us or use the support chat.
+                  </ThemedText>
+                  <TouchableOpacity style={{ marginTop: 12 }}>
+                    <ThemedText type="link" style={{ color: EMERALD_GREEN, fontWeight: '700' }}>
+                      support@kaamwalah.com
+                    </ThemedText>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Card>
+          </View>
+
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
-function SectionTitle({ children }: { children: string }) {
-  const colorScheme = useColorScheme() ?? 'light';
-  const theme = Colors[colorScheme];
+function HelpBullet({ icon, text, theme }: { icon: any; text: string; theme: any }) {
   return (
-    <ThemedText style={{ color: theme.text, fontSize: 14, fontWeight: '900', marginBottom: Spacing.sm }}>
-      {children}
-    </ThemedText>
-  );
-}
-
-function Bullet({ text }: { text: string }) {
-  const colorScheme = useColorScheme() ?? 'light';
-  const theme = Colors[colorScheme];
-  return (
-    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 8 }}>
-      <View style={[styles.dot, { backgroundColor: theme.primary }]} />
-      <ThemedText style={{ color: theme.textSecondary, flex: 1, lineHeight: 22 }}>{text}</ThemedText>
+    <View style={styles.helpBullet}>
+      <View style={[styles.bulletIconBox, { backgroundColor: 'rgba(5, 150, 105, 0.1)' }]}>
+        <Ionicons name={icon} size={20} color={EMERALD_GREEN} />
+      </View>
+      <ThemedText style={[styles.bulletText, { color: theme.textSecondary }]}>{text}</ThemedText>
     </View>
   );
 }
 
-function Faq({ q, a }: { q: string; a: string }) {
-  const colorScheme = useColorScheme() ?? 'light';
-  const theme = Colors[colorScheme];
+function FaqItem({ q, a, theme }: { q: string; a: string; theme: any }) {
+  const [expanded, setExpanded] = React.useState(false);
+
   return (
-    <View style={[styles.faq, { borderColor: theme.border, backgroundColor: theme.surfaceMuted }]}>
-      <ThemedText style={{ color: theme.text, fontWeight: '900' }}>{q}</ThemedText>
-      <ThemedText style={{ color: theme.textSecondary, marginTop: 4, lineHeight: 22 }}>{a}</ThemedText>
-    </View>
+    <Card variant="elevated" style={[styles.faqCard, { marginBottom: 12 }]}>
+      <TouchableOpacity
+        onPress={() => setExpanded(!expanded)}
+        style={styles.faqHeader}
+        activeOpacity={0.7}
+      >
+        <ThemedText style={[styles.faqQuestion, { color: theme.text }]}>{q}</ThemedText>
+        <Ionicons
+          name={expanded ? "chevron-up" : "chevron-down"}
+          size={18}
+          color={theme.icon}
+        />
+      </TouchableOpacity>
+      {expanded && (
+        <ThemedText style={[styles.faqAnswer, { color: theme.textSecondary }]}>{a}</ThemedText>
+      )}
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  mainContainer: {
     flex: 1,
-    padding: Spacing.xl,
   },
-  card: {
-    padding: Spacing.xl,
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginTop: 7,
+  headerHero: {
+    height: 180,
+    justifyContent: 'flex-start',
+    overflow: 'hidden',
   },
-  faq: {
-    borderWidth: 1,
+  headerDecoration: {
+    position: 'absolute',
+    top: -50,
+    right: -50,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  headerContent: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  backButtonCorner: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitleCentered: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    flex: 1,
+  },
+  contentContainer: {
+    marginTop: -40,
+    paddingHorizontal: 20,
+  },
+  section: {
+    marginBottom: 4,
+  },
+  sectionHeading: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    marginBottom: 12,
+    marginLeft: 4,
+  },
+  infoCard: {
+    padding: 16,
+    borderRadius: Radii.lg,
+  },
+  helpBullet: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  bulletIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  itemDivider: {
+    height: 1,
+    width: '100%',
+    marginVertical: 4,
+  },
+  faqCard: {
+    padding: 16,
+    borderRadius: Radii.lg,
+  },
+  faqHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  faqQuestion: {
+    fontSize: 15,
+    fontWeight: '700',
+    flex: 1,
+    marginRight: 12,
+  },
+  faqAnswer: {
+    fontSize: 14,
+    lineHeight: 22,
+    marginTop: 12,
+  },
+  contactContent: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  contactIconBox: {
+    width: 52,
+    height: 52,
     borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
-

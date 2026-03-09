@@ -3,11 +3,11 @@ import { Card } from '@/components/ui/Card';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { apiFetch } from '@/lib/api';
 
 export default function ReportsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -67,7 +67,13 @@ export default function ReportsScreen() {
           <ThemedText style={styles.headerTitle}>Reports</ThemedText>
           <ThemedText style={styles.headerSub}>Monthly Overview</ThemedText>
         </View>
-        <Ionicons name="bar-chart-outline" size={28} color="rgba(255,255,255,0.35)" />
+        <TouchableOpacity
+          onPress={() => router.push('/report-detailed')}
+          style={styles.detailedBtn}
+          activeOpacity={0.85}
+        >
+          <ThemedText style={styles.detailedBtnText}>View Detailed</ThemedText>
+        </TouchableOpacity>
       </View>
 
       {isLoading ? (
@@ -264,5 +270,18 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 14,
     fontWeight: '800',
+  },
+  detailedBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  detailedBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 12,
   },
 });

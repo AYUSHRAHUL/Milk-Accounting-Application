@@ -34,9 +34,9 @@ type PaymentFilter = 'All' | 'Cash' | 'UPI' | 'Credit';
 
 // Payment mode → color mapping
 const PAYMENT_COLORS: Record<string, { bg: string; text: string }> = {
-  Cash:   { bg: 'rgba(34,197,94,0.12)',   text: '#16A34A' },
-  UPI:    { bg: 'rgba(99,102,241,0.12)',  text: '#6366F1' },
-  Credit: { bg: 'rgba(245,158,11,0.12)',  text: '#D97706' },
+  Cash: { bg: 'rgba(34,197,94,0.12)', text: '#16A34A' },
+  UPI: { bg: 'rgba(99,102,241,0.12)', text: '#6366F1' },
+  Credit: { bg: 'rgba(245,158,11,0.12)', text: '#D97706' },
 };
 
 export default function ReportSalesScreen() {
@@ -88,9 +88,9 @@ export default function ReportSalesScreen() {
   }, [entries, productFilter, paymentFilter]);
 
   // ── Summary stats ──────────────────────────────────────────
-  const totalRevenue  = filtered.reduce((s, e) => s + e.totalAmount, 0);
-  const totalQty      = filtered.reduce((s, e) => s + e.quantity, 0);
-  const totalEntries  = filtered.length;
+  const totalRevenue = filtered.reduce((s, e) => s + e.totalAmount, 0);
+  const totalQty = filtered.reduce((s, e) => s + e.quantity, 0);
+  const totalEntries = filtered.length;
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
@@ -141,7 +141,7 @@ export default function ReportSalesScreen() {
     >
       {/* ── Header ── */}
       <View style={[styles.header, { backgroundColor: theme.success }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/reports')} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerText}>
@@ -293,8 +293,8 @@ export default function ReportSalesScreen() {
                   const rowBg = isEven
                     ? theme.background
                     : colorScheme === 'dark'
-                    ? 'rgba(255,255,255,0.03)'
-                    : 'rgba(34,197,94,0.04)';
+                      ? 'rgba(255,255,255,0.03)'
+                      : 'rgba(34,197,94,0.04)';
                   const pm = PAYMENT_COLORS[entry.paymentMode] ?? { bg: theme.surfaceMuted, text: theme.textSecondary };
                   return (
                     <View

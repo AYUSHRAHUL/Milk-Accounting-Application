@@ -1,12 +1,18 @@
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/Card';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors, Radii } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+// Dark Green Palette for Premium Look
+const DARK_GREEN = '#064E3B';
+const EMERALD_GREEN = '#059669';
 
 export default function AboutScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -14,55 +20,247 @@ export default function AboutScreen() {
   const version = Constants.expoConfig?.version ?? '1.0.0';
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScreenHeader title="About Us" subtitle="App information & version" onBack={() => router.back()} />
+    <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Premium Dark Green Hero Header */}
+        <View style={styles.headerHero}>
+          <LinearGradient
+            colors={[DARK_GREEN, EMERALD_GREEN]}
+            start={{ x: 0.2, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* Subtle Decorative Circle */}
+          <View style={styles.headerDecoration} />
 
-      <Card variant="elevated" style={styles.card}>
-        <ThemedText type="title" style={{ color: theme.text }}>
-          Milk Accounting
-        </ThemedText>
-        <ThemedText style={{ color: theme.textSecondary, marginTop: 6, lineHeight: 22 }}>
-          Milk Accounting helps dairy businesses record daily milk collection, manage suppliers, track production, and
-          maintain sales records with clean reports and visuals.
-        </ThemedText>
+          <SafeAreaView edges={['top']} style={styles.headerContent}>
+            <View style={styles.headerRow}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backButtonCorner}>
+                <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+              <ThemedText type="title" style={styles.headerTitleCentered}>About Us</ThemedText>
+              <View style={{ width: 44 }} />
+            </View>
+          </SafeAreaView>
+        </View>
 
-        <View style={{ height: Spacing.lg }} />
+        {/* Content Container */}
+        <View style={styles.contentContainer}>
 
-        <InfoRow label="Version" value={version} />
-        <InfoRow label="Purpose" value="Daily accounting & reporting for milk operations" />
-        <InfoRow label="Developer" value="Milk Accounting Team" />
-      </Card>
+          {/* App Info Card - Overlapping */}
+          <Card variant="elevated" style={styles.appCard}>
+            <View style={[styles.logoPlaceholder, { backgroundColor: theme.primaryMuted }]}>
+              <Ionicons name="water" size={40} color={DARK_GREEN} />
+            </View>
+            <ThemedText style={[styles.appName, { color: theme.text }]}>Milk Accounting</ThemedText>
+            <View style={[styles.versionBadge, { backgroundColor: 'rgba(5, 150, 105, 0.1)' }]}>
+              <ThemedText style={{ color: EMERALD_GREEN, fontSize: 12, fontWeight: '700' }}>Version {version}</ThemedText>
+            </View>
+          </Card>
+
+          {/* Mission Section */}
+          <View style={styles.section}>
+            <ThemedText style={[styles.sectionHeading, { color: theme.textSecondary }]}>OUR MISSION</ThemedText>
+            <Card variant="elevated" style={styles.infoCard}>
+              <ThemedText style={[styles.descriptionText, { color: theme.textSecondary }]}>
+                Milk Accounting is designed to empower dairy businesses with professional-grade tools for daily operations.
+                We simplify recording milk collections, managing supplier relationships, and generating detailed financial reports,
+                allowing you to focus on growth and efficiency.
+              </ThemedText>
+            </Card>
+          </View>
+
+          {/* Technical Details Section */}
+          <View style={[styles.section, { marginTop: 24 }]}>
+            <ThemedText style={[styles.sectionHeading, { color: theme.textSecondary }]}>TECHNICAL DETAILS</ThemedText>
+            <Card variant="elevated" style={styles.infoCard}>
+              <AboutInfoItem
+                icon="flask-outline"
+                label="Environment"
+                value="Production"
+                theme={theme}
+              />
+              <View style={[styles.itemDivider, { backgroundColor: theme.border }]} />
+              <AboutInfoItem
+                icon="shield-checkmark-outline"
+                label="Developer"
+                value="Milk Accounting Team"
+                theme={theme}
+              />
+              <View style={[styles.itemDivider, { backgroundColor: theme.border }]} />
+              <AboutInfoItem
+                icon="document-text-outline"
+                label="License"
+                value="Proprietary"
+                theme={theme}
+              />
+            </Card>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <ThemedText style={[styles.footerText, { color: theme.textSecondary }]}>
+              © 2026 Milk Accounting Application. All rights reserved.
+            </ThemedText>
+          </View>
+
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  const colorScheme = useColorScheme() ?? 'light';
-  const theme = Colors[colorScheme];
-
+function AboutInfoItem({ icon, label, value, theme }: { icon: any; label: string; value: string; theme: any }) {
   return (
-    <View style={[styles.row, { borderColor: theme.border, backgroundColor: theme.surfaceMuted }]}>
-      <ThemedText style={{ color: theme.textSecondary, fontSize: 12, fontWeight: '800' }}>{label}</ThemedText>
-      <ThemedText style={{ color: theme.text, fontSize: 14, fontWeight: '800' }}>{value}</ThemedText>
+    <View style={styles.infoItem}>
+      <View style={[styles.infoIconBox, { backgroundColor: 'rgba(5, 150, 105, 0.1)' }]}>
+        <Ionicons name={icon} size={20} color={EMERALD_GREEN} />
+      </View>
+      <View style={styles.infoContent}>
+        <ThemedText style={[styles.infoLabel, { color: theme.textSecondary }]}>{label}</ThemedText>
+        <ThemedText style={[styles.infoValue, { color: theme.text }]}>{value}</ThemedText>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  mainContainer: {
     flex: 1,
-    padding: Spacing.xl,
   },
-  card: {
-    padding: Spacing.xl,
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
   },
-  row: {
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    gap: 4,
-    marginTop: Spacing.sm,
+  headerHero: {
+    height: 180,
+    justifyContent: 'flex-start',
+    overflow: 'hidden',
+  },
+  headerDecoration: {
+    position: 'absolute',
+    top: -50,
+    right: -50,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  headerContent: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  backButtonCorner: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitleCentered: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    flex: 1,
+  },
+  contentContainer: {
+    marginTop: -40,
+    paddingHorizontal: 20,
+  },
+  appCard: {
+    alignItems: 'center',
+    padding: 24,
+    borderRadius: Radii.xl,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  logoPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  appName: {
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+  versionBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  section: {
+    marginBottom: 4,
+  },
+  sectionHeading: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    marginBottom: 12,
+    marginLeft: 4,
+  },
+  infoCard: {
+    padding: 20,
+    borderRadius: Radii.lg,
+  },
+  descriptionText: {
+    fontSize: 15,
+    lineHeight: 24,
+    textAlign: 'justify',
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  infoIconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  itemDivider: {
+    height: 1,
+    width: '100%',
+    marginVertical: 4,
+  },
+  footer: {
+    marginTop: 32,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });
-

@@ -19,8 +19,8 @@ import {
 } from 'react-native';
 
 // ── Green palette (consistent with all other report pages) ──
-const PURPLE       = '#22C55E';
-const PURPLE_BG    = 'rgba(34,197,94,0.12)';
+const PURPLE = '#22C55E';
+const PURPLE_BG = 'rgba(34,197,94,0.12)';
 const PURPLE_LIGHT = 'rgba(34,197,94,0.05)';
 
 interface SupplierRow {
@@ -41,10 +41,10 @@ export default function ReportSuppliersScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 
-  const [isLoading, setIsLoading]           = useState(true);
-  const [entries, setEntries]               = useState<SupplierRow[]>([]);
-  const [activeFilter, setActiveFilter]     = useState<ActiveFilter>('All');
-  const [animalFilter, setAnimalFilter]     = useState<AnimalFilter>('All');
+  const [isLoading, setIsLoading] = useState(true);
+  const [entries, setEntries] = useState<SupplierRow[]>([]);
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('All');
+  const [animalFilter, setAnimalFilter] = useState<AnimalFilter>('All');
   const [exportModalVisible, setExportModal] = useState(false);
 
   const fetchEntries = useCallback(async () => {
@@ -84,12 +84,12 @@ export default function ReportSuppliersScreen() {
         animalFilter === 'All' || (e.animalType || []).includes(animalFilter);
       return activeOk && animalOk;
     }),
-  [entries, activeFilter, animalFilter]);
+    [entries, activeFilter, animalFilter]);
 
   // ── Summary stats ────────────────────────────────────────
   const totalSuppliers = filtered.length;
-  const activeCount    = filtered.filter((e) => e.isActive).length;
-  const inactiveCount  = filtered.filter((e) => !e.isActive).length;
+  const activeCount = filtered.filter((e) => e.isActive).length;
+  const inactiveCount = filtered.filter((e) => !e.isActive).length;
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
@@ -97,7 +97,7 @@ export default function ReportSuppliersScreen() {
   const handleExport = () => {
     if (!filtered.length) { Alert.alert('No data to export'); return; }
     const header = ['Supplier ID', 'Name', 'Phone', 'Address', 'Animal Types', 'Status', 'Joined On'];
-    const rows   = filtered.map((e) => [
+    const rows = filtered.map((e) => [
       e.supplierId, e.name, e.phone, e.address,
       (e.animalType || []).join(' / '),
       e.isActive ? 'Active' : 'Inactive',
@@ -109,8 +109,8 @@ export default function ReportSuppliersScreen() {
 
     if (Platform.OS === 'web') {
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
       a.href = url;
       a.setAttribute('download', 'suppliers-report.csv');
       document.body.appendChild(a);
@@ -128,7 +128,7 @@ export default function ReportSuppliersScreen() {
 
       {/* ── Header ── */}
       <View style={[styles.header, { backgroundColor: PURPLE }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/reports')} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerText}>
@@ -194,11 +194,11 @@ export default function ReportSuppliersScreen() {
               {(['All', 'Active', 'Inactive'] as ActiveFilter[]).map((val) => {
                 const active = activeFilter === val;
                 const pillColor =
-                  val === 'Active'   ? theme.success :
-                  val === 'Inactive' ? theme.error   : PURPLE;
+                  val === 'Active' ? theme.success :
+                    val === 'Inactive' ? theme.error : PURPLE;
                 const pillBg =
-                  val === 'Active'   ? theme.successMuted :
-                  val === 'Inactive' ? theme.errorMuted   : PURPLE_BG;
+                  val === 'Active' ? theme.successMuted :
+                    val === 'Inactive' ? theme.errorMuted : PURPLE_BG;
                 return (
                   <TouchableOpacity
                     key={val}
@@ -274,13 +274,13 @@ export default function ReportSuppliersScreen() {
                 {/* Data rows */}
                 {filtered.map((entry, idx) => {
                   const isEven = idx % 2 === 0;
-                  const rowBg  = isEven
+                  const rowBg = isEven
                     ? theme.background
                     : colorScheme === 'dark'
-                    ? 'rgba(255,255,255,0.03)'
-                    : PURPLE_LIGHT;
+                      ? 'rgba(255,255,255,0.03)'
+                      : PURPLE_LIGHT;
 
-                  const statusBg   = entry.isActive ? theme.successMuted : theme.errorMuted;
+                  const statusBg = entry.isActive ? theme.successMuted : theme.errorMuted;
                   const statusText = entry.isActive ? theme.success : theme.error;
 
                   return (
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   },
   headerText: { flex: 1 },
   headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
-  headerSub:   { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 1 },
+  headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 1 },
   body: { padding: Spacing.lg, gap: Spacing.md, paddingBottom: 40 },
   // Stats
   statsRow: { flexDirection: 'row', gap: Spacing.sm },
@@ -419,8 +419,8 @@ const styles = StyleSheet.create({
   modalBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.xl },
   modalContent: { width: '100%', maxWidth: 380, borderRadius: 24, padding: Spacing.xl, alignItems: 'center' },
   modalIconBox: { width: 64, height: 64, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.md },
-  modalTitle:   { fontSize: 20, fontWeight: '800', marginBottom: Spacing.sm, textAlign: 'center' },
-  modalDesc:    { fontSize: 14, textAlign: 'center', lineHeight: 21, marginBottom: Spacing.xl },
+  modalTitle: { fontSize: 20, fontWeight: '800', marginBottom: Spacing.sm, textAlign: 'center' },
+  modalDesc: { fontSize: 14, textAlign: 'center', lineHeight: 21, marginBottom: Spacing.xl },
   modalActions: { flexDirection: 'row', gap: Spacing.sm, width: '100%' },
   modalBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 13, borderRadius: 12 },
   modalBtnText: { fontSize: 14, fontWeight: '700' },

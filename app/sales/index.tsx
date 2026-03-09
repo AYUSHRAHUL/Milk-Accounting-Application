@@ -7,12 +7,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
+import * as Print from 'expo-print';
 import { router, Stack } from 'expo-router';
+import * as Sharing from 'expo-sharing';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
 
 const PRODUCT_TYPES = [
     'Butter',
@@ -83,8 +83,8 @@ export default function SalesScreen() {
     }, [quantity, pricePerUnit]);
 
     const handleSave = async () => {
-        if (!date || !productType || !quantity || !pricePerUnit) {
-            Alert.alert('Missing Fields', 'Please fill in all mandatory fields (Date, Product, Quantity, Price).');
+        if (!date || !productType || !quantity || !pricePerUnit || !customerName.trim()) {
+            Alert.alert('Missing Fields', 'Please fill in all mandatory fields (Date, Customer Name, Product, Quantity, Price).');
             return;
         }
 
@@ -220,7 +220,7 @@ export default function SalesScreen() {
     const handleDownloadReceipt = async () => {
         if (!lastSaleData) return;
         const html = generateReceiptHTML(lastSaleData);
-        
+
         try {
             if (Platform.OS === 'web') {
                 // On Web, printToFileAsync is not supported or returns an empty object/undefined
@@ -299,10 +299,10 @@ export default function SalesScreen() {
                         />
 
                         <Input
-                            label="Customer Name (Optional)"
+                            label="Customer Name *"
                             value={customerName}
                             onChangeText={setCustomerName}
-                            placeholder="Walk-in Customer"
+                            placeholder="Customer Name"
                         />
 
                         <View style={[styles.divider, { backgroundColor: theme.border }]} />
@@ -417,24 +417,24 @@ export default function SalesScreen() {
                         </View>
 
                         <View style={styles.modalButtons}>
-                            <TouchableOpacity 
-                                style={[styles.modalButton, { backgroundColor: theme.primary }]} 
+                            <TouchableOpacity
+                                style={[styles.modalButton, { backgroundColor: theme.primary }]}
                                 onPress={handlePrintReceipt}
                             >
                                 <Ionicons name="eye-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
                                 <ThemedText style={styles.modalButtonText}>View Receipt</ThemedText>
                             </TouchableOpacity>
 
-                            <TouchableOpacity 
-                                style={[styles.modalButton, { backgroundColor: '#3B82F6' }]} 
+                            <TouchableOpacity
+                                style={[styles.modalButton, { backgroundColor: '#3B82F6' }]}
                                 onPress={handleDownloadReceipt}
                             >
                                 <Ionicons name="download-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
                                 <ThemedText style={styles.modalButtonText}>Download Receipt</ThemedText>
                             </TouchableOpacity>
 
-                            <TouchableOpacity 
-                                style={styles.closeButton} 
+                            <TouchableOpacity
+                                style={styles.closeButton}
                                 onPress={() => {
                                     setShowSuccessModal(false);
                                     router.back();
@@ -536,7 +536,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     cancelButton: {
-        borderWidth: 1,
         marginTop: 10,
     },
     modalOverlay: {

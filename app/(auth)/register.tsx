@@ -24,7 +24,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const { register, isLoading } = useAuth();
@@ -71,12 +71,12 @@ export default function RegisterScreen() {
           style={styles.keyboardAvoidingView}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <ScrollView 
-            contentContainerStyle={styles.scrollContainer} 
-            keyboardShouldPersistTaps="handled" 
+          <ScrollView
+            contentContainerStyle={styles.scrollContainer}
+            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            
+
             {/* Header Area (in Green section) */}
             <View style={styles.headerArea}>
               <View style={styles.logoContainer}>
@@ -88,7 +88,7 @@ export default function RegisterScreen() {
 
             {/* Floating Form Card */}
             <View style={styles.card}>
-              
+
               {/* Name Input */}
               <View style={styles.inputGroup}>
                 <View style={[
@@ -230,9 +230,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   logoContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: '#DCFCE7',
     justifyContent: 'center',
     alignItems: 'center',

@@ -20,31 +20,33 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import DashboardBannerImage from '@/assets/dashboard_banner.png';
 import MilkCollectionImage from '@/assets/milkcollection.png';
+import ProductsImage from '@/assets/protection.png';
 import ReportsImage from '@/assets/reports.png';
 import SalesImage from '@/assets/sales.png';
 import SuppliersImage from '@/assets/supplier.png';
 import ViewCollectionsImage from '@/assets/view collection.png';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 interface FeatureCard {
   title: string;
   route: string;
-  image?: number;
+  image?: any;
   icon: string;
+  useTint?: boolean;
 }
 
-// Products: use require() so the image always resolves (avoids "product image is not defined" when import is undefined)
-const ProductsImage = require('@/assets/milkcollection.png');
 
 const FEATURES: FeatureCard[] = [
-  { title: 'Milk Collection', route: '/milk-collection', image: MilkCollectionImage, icon: 'water' },
-  { title: 'View Collections', route: '/milk-collection/history', image: ViewCollectionsImage, icon: 'list' },
-  { title: 'Suppliers', route: '/suppliers', image: SuppliersImage, icon: 'people' },
-  { title: 'Products', route: '/products', image: ProductsImage, icon: 'cube' },
-  { title: 'Sales', route: '/sales', image: SalesImage, icon: 'cash' },
-  { title: 'Reports', route: '/(tabs)/reports', image: ReportsImage, icon: 'bar-chart' },
+  { title: 'Milk Collection', route: '/milk-collection', image: MilkCollectionImage, icon: 'water', useTint: true },
+  { title: 'View Collections', route: '/milk-collection/history', image: ViewCollectionsImage, icon: 'list', useTint: true },
+  { title: 'Suppliers', route: '/suppliers', image: SuppliersImage, icon: 'people', useTint: true },
+  { title: 'Products', route: '/products', image: ProductsImage, icon: 'cube', useTint: true },
+  { title: 'Sales', route: '/sales', image: SalesImage, icon: 'cash', useTint: true },
+  { title: 'Reports', route: '/(tabs)/reports', image: ReportsImage, icon: 'bar-chart', useTint: true },
 ];
 
 // Dashboard Card
@@ -84,7 +86,13 @@ function DashboardCard({ item, index }: { item: FeatureCard; index: number }) {
       activeOpacity={1}
     >
       {hasValidImage ? (
-        <Image source={imageSource} style={styles.cardImage} />
+        <Image
+          source={imageSource}
+          style={[
+            styles.cardImage,
+            item.useTint === false && { tintColor: undefined }
+          ]}
+        />
       ) : (
         <View style={styles.cardImagePlaceholder}>
           <Ionicons name={item.icon as any} size={40} color="#22C55E" />
@@ -92,6 +100,28 @@ function DashboardCard({ item, index }: { item: FeatureCard; index: number }) {
       )}
       <Text style={styles.cardTitle}>{item.title}</Text>
     </AnimatedTouchable>
+  );
+}
+
+function DashboardBanner() {
+  return (
+    <View style={styles.bannerContainer}>
+      <Image source={DashboardBannerImage} style={styles.bannerBackground} />
+      <LinearGradient
+        colors={['rgba(6, 78, 59, 0.8)', 'rgba(5, 150, 105, 0.4)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.bannerGradient}
+      />
+      <View style={styles.bannerContent}>
+        <View style={styles.bannerBadge}>
+          <Ionicons name="sparkles" size={12} color="#FDE047" />
+          <Text style={styles.bannerBadgeText}>Premium Version</Text>
+        </View>
+        <Text style={styles.bannerTitle}>Precision Dairy Accounting</Text>
+        <Text style={styles.bannerSubtitle}>Monitor your growth in real-time</Text>
+      </View>
+    </View>
   );
 }
 
@@ -124,6 +154,9 @@ export default function DashboardScreen() {
             Manage your dairy operations efficiently
           </Text>
         </View>
+
+        {/* Banner */}
+        <DashboardBanner />
 
         {/* Feature Grid */}
         <View style={styles.grid}>
@@ -223,5 +256,63 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
     textAlign: 'center',
+  },
+
+  bannerContainer: {
+    height: 160,
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginBottom: 24,
+    position: 'relative',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+  },
+  bannerBackground: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  bannerGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  bannerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  bannerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 8,
+    gap: 4,
+  },
+  bannerBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  bannerTitle: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '800',
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  bannerSubtitle: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 4,
   },
 });

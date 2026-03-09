@@ -29,26 +29,26 @@ interface ProductionRow {
 }
 
 type ProductFilter = 'All' | 'Paneer' | 'Ghee' | 'Butter' | 'Curd' | 'Other';
-type SourceFilter  = 'All' | 'Cow' | 'Buffalo' | 'Goat' | 'Other';
+type SourceFilter = 'All' | 'Cow' | 'Buffalo' | 'Goat' | 'Other';
 
 // Product type → badge colour
 const PRODUCT_COLORS: Record<string, { bg: string; text: string }> = {
-  Paneer: { bg: 'rgba(245,158,11,0.13)',  text: '#D97706' },
-  Ghee:   { bg: 'rgba(234,179,8,0.13)',   text: '#A16207' },
-  Butter: { bg: 'rgba(249,115,22,0.13)',  text: '#C2410C' },
-  Curd:   { bg: 'rgba(34,197,94,0.13)',   text: '#15803D' },
-  Other:  { bg: 'rgba(107,114,128,0.13)', text: '#374151' },
+  Paneer: { bg: 'rgba(245,158,11,0.13)', text: '#D97706' },
+  Ghee: { bg: 'rgba(234,179,8,0.13)', text: '#A16207' },
+  Butter: { bg: 'rgba(249,115,22,0.13)', text: '#C2410C' },
+  Curd: { bg: 'rgba(34,197,94,0.13)', text: '#15803D' },
+  Other: { bg: 'rgba(107,114,128,0.13)', text: '#374151' },
 };
 
 export default function ReportProductsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 
-  const [isLoading, setIsLoading]             = useState(true);
-  const [entries, setEntries]                 = useState<ProductionRow[]>([]);
-  const [productFilter, setProductFilter]     = useState<ProductFilter>('All');
-  const [sourceFilter, setSourceFilter]       = useState<SourceFilter>('All');
-  const [exportModalVisible, setExportModal]  = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [entries, setEntries] = useState<ProductionRow[]>([]);
+  const [productFilter, setProductFilter] = useState<ProductFilter>('All');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('All');
+  const [exportModalVisible, setExportModal] = useState(false);
 
   const fetchEntries = useCallback(async () => {
     try {
@@ -79,23 +79,23 @@ export default function ReportProductsScreen() {
   const filtered = useMemo(() =>
     entries.filter((e) => {
       const pOk = productFilter === 'All' || e.productType === productFilter;
-      const sOk = sourceFilter  === 'All' || e.source       === sourceFilter;
+      const sOk = sourceFilter === 'All' || e.source === sourceFilter;
       return pOk && sOk;
     }),
-  [entries, productFilter, sourceFilter]);
+    [entries, productFilter, sourceFilter]);
 
   // ── Summary stats ──────────────────────────────────────────
-  const totalBatches   = filtered.length;
-  const totalMilkUsed  = filtered.reduce((s, e) => s + e.milkUsedLiters,   0);
-  const totalProduced  = filtered.reduce((s, e) => s + e.quantityProduced,  0);
+  const totalBatches = filtered.length;
+  const totalMilkUsed = filtered.reduce((s, e) => s + e.milkUsedLiters, 0);
+  const totalProduced = filtered.reduce((s, e) => s + e.quantityProduced, 0);
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
 
   const handleExport = () => {
     if (!filtered.length) { Alert.alert('No data to export'); return; }
-    const header = ['Date','Product','Source','Fat Type','Milk Used (L)','Qty Produced'];
-    const rows   = filtered.map((e) => [
+    const header = ['Date', 'Product', 'Source', 'Fat Type', 'Milk Used (L)', 'Qty Produced'];
+    const rows = filtered.map((e) => [
       formatDate(e.date), e.productType, e.source, e.fatType,
       e.milkUsedLiters.toString(), e.quantityProduced.toString(),
     ]);
@@ -105,8 +105,8 @@ export default function ReportProductsScreen() {
 
     if (Platform.OS === 'web') {
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
       a.href = url;
       a.setAttribute('download', 'products-report.csv');
       document.body.appendChild(a);
@@ -124,7 +124,7 @@ export default function ReportProductsScreen() {
 
       {/* ── Header ── */}
       <View style={[styles.header, { backgroundColor: theme.primary }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/reports')} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerText}>
@@ -191,9 +191,9 @@ export default function ReportProductsScreen() {
           <View style={styles.filterGroup}>
             <ThemedText style={[styles.filterLabel, { color: theme.textSecondary }]}>Product</ThemedText>
             <View style={styles.pillsRow}>
-              {(['All','Paneer','Ghee','Butter','Curd','Other'] as ProductFilter[]).map((val) => {
+              {(['All', 'Paneer', 'Ghee', 'Butter', 'Curd', 'Other'] as ProductFilter[]).map((val) => {
                 const active = productFilter === val;
-                const col    = val !== 'All' ? PRODUCT_COLORS[val]?.text : theme.primary;
+                const col = val !== 'All' ? PRODUCT_COLORS[val]?.text : theme.primary;
                 return (
                   <TouchableOpacity
                     key={val}
@@ -221,7 +221,7 @@ export default function ReportProductsScreen() {
           <View style={[styles.filterGroup, { marginBottom: 0 }]}>
             <ThemedText style={[styles.filterLabel, { color: theme.textSecondary }]}>Milk Source</ThemedText>
             <View style={styles.pillsRow}>
-              {(['All','Cow','Buffalo','Goat','Other'] as SourceFilter[]).map((val) => {
+              {(['All', 'Cow', 'Buffalo', 'Goat', 'Other'] as SourceFilter[]).map((val) => {
                 const active = sourceFilter === val;
                 return (
                   <TouchableOpacity
@@ -261,7 +261,7 @@ export default function ReportProductsScreen() {
               <View>
                 {/* Column headers */}
                 <View style={[styles.tableRow, { backgroundColor: theme.surfaceMuted }]}>
-                  {['Date','Product','Source','Fat Type','Milk (L)','Produced'].map((h) => (
+                  {['Date', 'Product', 'Source', 'Fat Type', 'Milk (L)', 'Produced'].map((h) => (
                     <ThemedText key={h} style={[styles.cell, styles.colHeader, { color: theme.text }]}>
                       {h}
                     </ThemedText>
@@ -271,12 +271,12 @@ export default function ReportProductsScreen() {
                 {/* Data rows */}
                 {filtered.map((entry, idx) => {
                   const isEven = idx % 2 === 0;
-                  const rowBg  = isEven
+                  const rowBg = isEven
                     ? theme.background
                     : colorScheme === 'dark'
-                    ? 'rgba(255,255,255,0.03)'
-                    : 'rgba(245,158,11,0.04)';
-                  const badge  = PRODUCT_COLORS[entry.productType] ?? { bg: theme.surfaceMuted, text: theme.textSecondary };
+                      ? 'rgba(255,255,255,0.03)'
+                      : 'rgba(245,158,11,0.04)';
+                  const badge = PRODUCT_COLORS[entry.productType] ?? { bg: theme.surfaceMuted, text: theme.textSecondary };
                   return (
                     <View
                       key={entry._id}
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   },
   headerText: { flex: 1 },
   headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
-  headerSub:   { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 1 },
+  headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 1 },
   body: { padding: Spacing.lg, gap: Spacing.md, paddingBottom: 40 },
   // Stats
   statsRow: { flexDirection: 'row', gap: Spacing.sm },
@@ -410,8 +410,8 @@ const styles = StyleSheet.create({
   modalBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.xl },
   modalContent: { width: '100%', maxWidth: 380, borderRadius: 24, padding: Spacing.xl, alignItems: 'center' },
   modalIconBox: { width: 64, height: 64, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.md },
-  modalTitle:   { fontSize: 20, fontWeight: '800', marginBottom: Spacing.sm, textAlign: 'center' },
-  modalDesc:    { fontSize: 14, textAlign: 'center', lineHeight: 21, marginBottom: Spacing.xl },
+  modalTitle: { fontSize: 20, fontWeight: '800', marginBottom: Spacing.sm, textAlign: 'center' },
+  modalDesc: { fontSize: 14, textAlign: 'center', lineHeight: 21, marginBottom: Spacing.xl },
   modalActions: { flexDirection: 'row', gap: Spacing.sm, width: '100%' },
   modalBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 13, borderRadius: 12 },
   modalBtnText: { fontSize: 14, fontWeight: '700' },

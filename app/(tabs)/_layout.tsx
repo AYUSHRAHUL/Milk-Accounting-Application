@@ -26,7 +26,7 @@ export default function TabLayout() {
         name="reports"
         options={{
           drawerItemStyle: { display: 'none' },
-          headerShown: true,
+          headerShown: false,
           title: 'Reports',
           headerTitleAlign: 'center',
           headerTitleStyle: { fontWeight: '700' },

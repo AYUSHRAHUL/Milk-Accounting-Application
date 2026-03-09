@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -6,18 +5,22 @@ import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
+import { Ionicons } from '@expo/vector-icons';
+import * as Print from 'expo-print';
 import { router, Stack, useFocusEffect } from 'expo-router';
+import * as Sharing from 'expo-sharing';
 import React, { useCallback, useMemo, useState } from 'react';
-import { 
-    Alert, 
-    FlatList, 
+import {
+    Alert,
+    FlatList,
+    Modal,
     Platform,
-    RefreshControl, 
-    ScrollView, 
-    StyleSheet, 
-    TextInput, 
-    TouchableOpacity, 
-    View 
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -45,7 +48,7 @@ export default function MilkCollectionHistoryScreen() {
 
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeChip, setActiveChip] = useState('This Month');
+    const [activeChip, setActiveChip] = useState('All');
 
     const fetchHistory = async () => {
         try {
@@ -105,8 +108,117 @@ export default function MilkCollectionHistoryScreen() {
         );
     };
 
-    const handlePrint = (item: MilkEntryData) => {
-        Alert.alert("Print Receipt", `Printing receipt for ${item.supplier}...`);
+    const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+    const [editingItem, setEditingItem] = useState<MilkEntryData | null>(null);
+    const [editForm, setEditForm] = useState({
+        quantity: '',
+        fatType: '',
+        snf: '',
+        clr: '',
+        costPerLiter: ''
+    });
+
+    const openEditModal = (item: MilkEntryData) => {
+        setEditingItem(item);
+        setEditForm({
+            quantity: item.quantity.toString(),
+            fatType: item.fatType.toString(),
+            snf: (item.snf || '').toString(),
+            clr: (item.clr || '').toString(),
+            costPerLiter: item.costPerLiter.toString()
+        });
+        setIsEditModalVisible(true);
+    };
+
+    const handleUpdate = async () => {
+        if (!editingItem) return;
+
+        const updatedData = {
+            quantity: parseFloat(editForm.quantity),
+            fatType: editForm.fatType,
+            snf: parseFloat(editForm.snf) || 0,
+            clr: parseFloat(editForm.clr) || 0,
+            costPerLiter: parseFloat(editForm.costPerLiter),
+            totalCost: parseFloat(editForm.quantity) * parseFloat(editForm.costPerLiter)
+        };
+
+        try {
+            const response = await apiFetch(`/api/milk/collection/${editingItem._id}`, {
+                method: 'PUT',
+                body: JSON.stringify(updatedData)
+            });
+
+            if (response.ok) {
+                setIsEditModalVisible(false);
+                fetchHistory(); // Refresh
+                Alert.alert("Success", "Record updated successfully.");
+            } else {
+                Alert.alert("Error", "Failed to update record.");
+            }
+        } catch (error) {
+            Alert.alert("Error", "An unexpected error occurred.");
+        }
+    };
+
+    const handlePrint = async (item: MilkEntryData) => {
+        const html = `
+            <html>
+                <body style="font-family: sans-serif; padding: 40px; color: #333;">
+                    <div style="text-align: center; border: 2px solid #4338CA; padding: 20px; border-radius: 10px;">
+                        <h1 style="color: #4338CA; margin-bottom: 5px;">Milk Receipt</h1>
+                        <p style="margin-top: 0; font-weight: bold;">Milk Accounting Application</p>
+                        <hr style="border: 1px solid #eee;"/>
+                        
+                        <div style="display: flex; justify-content: space-between; text-align: left; margin-top: 20px;">
+                            <div>
+                                <p><strong>Supplier:</strong> ${item.supplier}</p>
+                                <p><strong>Source:</strong> ${item.source}</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <p><strong>Date:</strong> ${formatDate(item.date)}</p>
+                                <p><strong>Shift:</strong> ${item.shift}</p>
+                            </div>
+                        </div>
+
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 30px; border: 1px solid #ddd;">
+                            <thead style="background: #EEF2FF;">
+                                <tr>
+                                    <th style="border: 1px solid #ddd; padding: 12px; text-align: center;">Qty (Ltrs)</th>
+                                    <th style="border: 1px solid #ddd; padding: 12px; text-align: center;">Fat %</th>
+                                    <th style="border: 1px solid #ddd; padding: 12px; text-align: center;">SNF/CLR</th>
+                                    <th style="border: 1px solid #ddd; padding: 12px; text-align: center;">Rate (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="border: 1px solid #ddd; padding: 12px; text-align: center;">${item.quantity.toFixed(2)}</td>
+                                    <td style="border: 1px solid #ddd; padding: 12px; text-align: center;">${item.fatType}</td>
+                                    <td style="border: 1px solid #ddd; padding: 12px; text-align: center;">${item.snf || 0} / ${item.clr || 0}</td>
+                                    <td style="border: 1px solid #ddd; padding: 12px; text-align: center;">${item.costPerLiter.toFixed(2)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div style="margin-top: 40px; text-align: center; background: #DCFCE7; padding: 15px; border-radius: 8px;">
+                            <h2 style="color: #166534; margin: 0;">Total Amount: ₹ ${item.totalCost.toFixed(2)}</h2>
+                        </div>
+                        
+                        <div style="margin-top: 40px; font-size: 10px; color: #9a9a9a; border-top: 1px solid #eee; padding-top: 10px;">
+                            <p>Thank you for your business!</p>
+                            <p>Generated on ${new Date().toLocaleString()}</p>
+                        </div>
+                    </div>
+                </body>
+            </html>
+        `;
+
+        try {
+            const { uri } = await Print.printToFileAsync({ html });
+            await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+        } catch (error) {
+            console.error("Print error:", error);
+            Alert.alert("Error", "Failed to generate receipt.");
+        }
     };
 
     // Derived State
@@ -114,11 +226,22 @@ export default function MilkCollectionHistoryScreen() {
         let filtered = entries;
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(e => 
+            filtered = filtered.filter(e =>
                 (e.supplier?.toLowerCase() || '').includes(query)
             );
         }
-        if (activeChip === 'Morning') {
+        if (activeChip === 'Today') {
+            const today = new Date().toDateString();
+            filtered = filtered.filter(e => new Date(e.date).toDateString() === today);
+        } else if (activeChip === 'This Month') {
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            filtered = filtered.filter(e => {
+                const d = new Date(e.date);
+                return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            });
+        } else if (activeChip === 'Morning') {
             filtered = filtered.filter(e => e.shift === 'Morning');
         } else if (activeChip === 'Evening') {
             filtered = filtered.filter(e => e.shift === 'Evening');
@@ -201,7 +324,7 @@ export default function MilkCollectionHistoryScreen() {
                     <TouchableOpacity style={styles.actionBtn} onPress={() => handlePrint(item)}>
                         <Ionicons name="print-outline" size={18} color="#4B5563" />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionBtn} onPress={() => Alert.alert("Edit", "Edit feature coming soon!")}>
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => openEditModal(item)}>
                         <Ionicons name="pencil-outline" size={18} color="#4B5563" />
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDelete(item._id)}>
@@ -212,12 +335,12 @@ export default function MilkCollectionHistoryScreen() {
         </Card>
     );
 
-    const filterChips = ['Today', 'This Month', 'Morning', 'Evening'];
+    const filterChips = ['All', 'Today', 'This Month', 'Morning', 'Evening'];
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
             <Stack.Screen options={{ headerShown: false }} />
-            
+
             {/* Header Section */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -322,6 +445,85 @@ export default function MilkCollectionHistoryScreen() {
                     />
                 )}
             </View>
+
+            {/* Edit Modal */}
+            <Modal
+                visible={isEditModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setIsEditModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <ThemedText style={styles.modalTitle}>Edit Milk Entry</ThemedText>
+                            <TouchableOpacity onPress={() => setIsEditModalVisible(false)}>
+                                <Ionicons name="close" size={24} color="#6B7280" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.modalBody}>
+                            <ThemedText style={styles.inputLabel}>Quantity (Liters)</ThemedText>
+                            <TextInput
+                                style={styles.modalInput}
+                                value={editForm.quantity}
+                                onChangeText={(t) => setEditForm(prev => ({ ...prev, quantity: t }))}
+                                keyboardType="numeric"
+                            />
+
+                            <View style={styles.inputRow}>
+                                <View style={{ flex: 1, marginRight: 8 }}>
+                                    <ThemedText style={styles.inputLabel}>FAT %</ThemedText>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        value={editForm.fatType}
+                                        onChangeText={(t) => setEditForm(prev => ({ ...prev, fatType: t }))}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                                <View style={{ flex: 1, marginLeft: 8 }}>
+                                    <ThemedText style={styles.inputLabel}>Rate (₹/L)</ThemedText>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        value={editForm.costPerLiter}
+                                        onChangeText={(t) => setEditForm(prev => ({ ...prev, costPerLiter: t }))}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                            </View>
+
+                            <View style={styles.inputRow}>
+                                <View style={{ flex: 1, marginRight: 8 }}>
+                                    <ThemedText style={styles.inputLabel}>SNF</ThemedText>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        value={editForm.snf}
+                                        onChangeText={(t) => setEditForm(prev => ({ ...prev, snf: t }))}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                                <View style={{ flex: 1, marginLeft: 8 }}>
+                                    <ThemedText style={styles.inputLabel}>CLR</ThemedText>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        value={editForm.clr}
+                                        onChangeText={(t) => setEditForm(prev => ({ ...prev, clr: t }))}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                            </View>
+
+                            <TouchableOpacity
+                                style={styles.saveBtn}
+                                onPress={handleUpdate}
+                                activeOpacity={0.8}
+                            >
+                                <ThemedText style={styles.saveBtnText}>Save Changes</ThemedText>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -627,5 +829,71 @@ const styles = StyleSheet.create({
     deleteBtn: {
         backgroundColor: '#FEF2F2',
         borderColor: '#FEE2E2',
+    },
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        padding: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#111827',
+    },
+    modalBody: {
+        gap: 16,
+    },
+    inputLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#6B7280',
+        marginBottom: 6,
+    },
+    modalInput: {
+        backgroundColor: '#F9FAFB',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        height: 48,
+        fontSize: 15,
+        color: '#111827',
+    },
+    inputRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    saveBtn: {
+        backgroundColor: '#4338CA',
+        borderRadius: 12,
+        height: 52,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 10,
+    },
+    saveBtnText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '700',
     },
 });

@@ -1,15 +1,15 @@
 import { ThemedText } from '@/components/themed-text';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { BarChart } from 'react-native-chart-kit';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { apiFetch } from '@/lib/api';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
-import { apiFetch } from '@/lib/api';
+import { BarChart } from 'react-native-chart-kit';
 
 interface SupplierRow {
   _id: string;
@@ -82,7 +82,7 @@ export default function ReportSuppliersVisualsScreen() {
       <ScreenHeader
         title="Supplier Visuals"
         subtitle="Distribution of suppliers by animal type."
-        onBack={() => router.back()}
+        onBack={() => router.push('/(tabs)/report-suppliers')}
       />
 
       {isLoading ? (

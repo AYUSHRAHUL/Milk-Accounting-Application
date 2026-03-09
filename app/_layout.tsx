@@ -1,8 +1,8 @@
+import { Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold, useFonts } from '@expo-google-fonts/outfit';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, router, useSegments } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold, useFonts } from '@expo-google-fonts/outfit';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 
@@ -74,6 +74,10 @@ function RootLayoutNav() {
         />
         <Stack.Screen
           name="reports/index"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="report-detailed"
           options={{ headerShown: false }}
         />
         <Stack.Screen name="settlement" options={{ headerShown: false }} />
