@@ -3,11 +3,11 @@ import { Card } from '@/components/ui/Card';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { apiFetch } from '@/lib/api';
 
 export default function ReportsScreen() {
     const colorScheme = useColorScheme() ?? 'light';
@@ -63,17 +63,6 @@ export default function ReportsScreen() {
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                 <ThemedText style={{ fontSize: 18, color: theme.primary, fontWeight: '700' }}>← Back</ThemedText>
             </TouchableOpacity>
-
-            <View style={styles.headerRow}>
-                <ThemedText style={styles.headerTitle}>Reports Overview</ThemedText>
-                <TouchableOpacity
-                    onPress={() => router.push('/report-detailed')}
-                    style={styles.detailedBtn}
-                    activeOpacity={0.85}
-                >
-                    <ThemedText style={styles.detailedBtnText}>View Detailed</ThemedText>
-                </TouchableOpacity>
-            </View>
 
             {isLoading ? (
                 <LoadingIndicator style={{ marginTop: Spacing.xl }} />
@@ -184,27 +173,6 @@ const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
         padding: Spacing.xl,
-    },
-    headerRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: Spacing.lg,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-    },
-    detailedBtn: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 999,
-        backgroundColor: '#2563EB',
-    },
-    detailedBtnText: {
-        color: '#FFFFFF',
-        fontWeight: '600',
-        fontSize: 13,
     },
     backBtn: {
         paddingVertical: 8,
