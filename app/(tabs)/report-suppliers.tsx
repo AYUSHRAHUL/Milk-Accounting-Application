@@ -6,6 +6,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/context/AuthContext';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
@@ -38,6 +39,7 @@ type ActiveFilter = 'All' | 'Active' | 'Inactive';
 type AnimalFilter = 'All' | 'Cow' | 'Buffalo' | 'Goat' | 'Other';
 
 export default function ReportSuppliersScreen() {
+  const { user } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 
@@ -50,7 +52,7 @@ export default function ReportSuppliersScreen() {
   const fetchEntries = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await apiFetch('/api/suppliers');
+      const res = await apiFetch(`/api/suppliers?userId=${user?.id}`);
       if (!res.ok) return;
       const data = await res.json();
       setEntries(

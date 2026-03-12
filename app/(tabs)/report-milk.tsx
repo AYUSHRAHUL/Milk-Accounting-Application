@@ -6,6 +6,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/context/AuthContext';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
@@ -34,6 +35,7 @@ type SourceFilter = 'All' | 'Cow' | 'Buffalo' | 'Goat' | 'Other';
 type PeriodFilter = 'All' | 'Today' | '7D' | '30D';
 
 export default function ReportMilkScreen() {
+  const { user } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 
@@ -47,7 +49,7 @@ export default function ReportMilkScreen() {
   const fetchEntries = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await apiFetch('/api/milk/collection');
+      const response = await apiFetch(`/api/milk/collection?userId=${user?.id}`);
       if (!response.ok) return;
       const data = await response.json();
       const mapped: MilkEntryRow[] = data.map((item: any) => ({

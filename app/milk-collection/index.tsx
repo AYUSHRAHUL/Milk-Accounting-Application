@@ -28,6 +28,30 @@ const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 const MILK_SOURCES = ['Cow', 'Buffalo', 'Goat', 'Other'];
 const SHIFTS = ['Morning', 'Evening'];
 
+// ─── Source Card ──────────────────────────────────────────────────
+function SourceCard({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  return (
+    <AnimatedTouchable
+      style={[
+        styles.sourceCard,
+        selected ? styles.sourceCardSelected : styles.sourceCardUnselected,
+        animStyle
+      ]}
+      onPress={onPress}
+      onPressIn={() => { scale.value = withTiming(0.95, { duration: 100 }); }}
+      onPressOut={() => { scale.value = withSpring(1); }}
+      activeOpacity={1}
+    >
+      <Text style={[styles.sourceLabel, selected ? styles.sourceLabelSelected : styles.sourceLabelUnselected]}>
+        {label}
+      </Text>
+    </AnimatedTouchable>
+  );
+}
+
 // ─── Pill Button ─────────────────────────────────────────────────
 function PillButton({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   const scale = useSharedValue(1);
@@ -86,7 +110,7 @@ export default function MilkCollectionScreen() {
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const res = await apiFetch('/api/suppliers');
+        const res = await apiFetch(`/api/suppliers?userId=${user?.id}`);
         if (res.ok) {
           const data = await res.json();
           setAllSuppliers(data);
@@ -165,7 +189,7 @@ export default function MilkCollectionScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: user?.id || 'static-user-id',
+          userId: user?.id,
           supplier,
           date: new Date(`${date}T${time}:00`).toISOString(),
           shift,
@@ -228,9 +252,7 @@ export default function MilkCollectionScreen() {
               <Ionicons name="arrow-back" size={24} color="#22C55E" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Milk Entry</Text>
-          <TouchableOpacity style={styles.ledgerButton} onPress={() => router.push('/milk-collection/history')}>
-              <Text style={styles.ledgerText}>Ledger</Text>
-          </TouchableOpacity>
+          <View style={{ width: 36 }} />
       </View>
       
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -337,38 +359,43 @@ export default function MilkCollectionScreen() {
             <View style={styles.sectionCard}>
               <SectionTitle title="Schedule" />
 
-              <View style={styles.row}>
-                <View style={styles.halfField}>
-                  <Text style={styles.label}>Date</Text>
-                  <TextInput
-                    style={inputStyle('date')}
-                    value={date}
-                    onChangeText={setDate}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#9CA3AF"
-                    onFocus={() => setFocusedField('date')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </View>
-                <View style={styles.halfField}>
-                  <Text style={styles.label}>Time</Text>
-                  <TextInput
-                    style={inputStyle('time')}
-                    value={time}
-                    onChangeText={setTime}
-                    placeholder="HH:MM"
-                    placeholderTextColor="#9CA3AF"
-                    onFocus={() => setFocusedField('time')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </View>
-              </View>
+              <View style={{ gap: 12 }}>
+                <View style={styles.row}>
+                  <View style={styles.halfField}>
+                    <Text style={styles.label}>Date</Text>
+                    <TextInput
+                      style={[inputStyle('date'), { height: 44, paddingHorizontal: 12 }]}
+                      value={date}
+                      onChangeText={setDate}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor="#9CA3AF"
+                      onFocus={() => setFocusedField('date')}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                  </View>
 
-              <Text style={styles.label}>Shift</Text>
-              <View style={styles.pillRow}>
-                {SHIFTS.map((s) => (
-                  <PillButton key={s} label={s} selected={shift === s} onPress={() => setShift(s)} />
-                ))}
+                  <View style={styles.halfField}>
+                    <Text style={styles.label}>Time</Text>
+                    <TextInput
+                      style={[inputStyle('time'), { height: 44, paddingHorizontal: 12 }]}
+                      value={time}
+                      onChangeText={setTime}
+                      placeholder="HH:MM"
+                      placeholderTextColor="#9CA3AF"
+                      onFocus={() => setFocusedField('time')}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inlineFieldRow}>
+                  <Text style={styles.inlineLabel}>Shift</Text>
+                  <View style={styles.inlinePillRow}>
+                    {SHIFTS.map((s) => (
+                      <PillButton key={s} label={s} selected={shift === s} onPress={() => setShift(s)} />
+                    ))}
+                  </View>
+                </View>
               </View>
             </View>
 
@@ -376,9 +403,14 @@ export default function MilkCollectionScreen() {
             <View style={styles.sectionCard}>
               <SectionTitle title="Milk Source" />
 
-              <View style={styles.pillRow}>
+              <View style={styles.sourceGrid}>
                 {MILK_SOURCES.map((s) => (
-                  <PillButton key={s} label={s} selected={source === s} onPress={() => setSource(s)} />
+                  <SourceCard 
+                    key={s} 
+                    label={s} 
+                    selected={source === s} 
+                    onPress={() => setSource(s)} 
+                  />
                 ))}
               </View>
 
@@ -514,8 +546,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingHorizontal: 16,
+    paddingTop: 8,
     paddingBottom: 40,
   },
 
@@ -524,49 +556,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: 12,
+    marginBottom: 6,
+    paddingHorizontal: 16,
   },
   headerIcon: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   headerTitle: {
     fontSize: 22,
     fontWeight: '700',
     color: '#111827',
   },
-  ledgerButton: {
-    borderWidth: 1.5,
-    borderColor: '#22C55E',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-  },
-  ledgerText: {
-    color: '#22C55E',
-    fontWeight: '600',
-    fontSize: 14,
-  },
   headerSubtitle: {
     fontSize: 13,
     color: '#6B7280',
-    marginBottom: 16,
-    marginTop: 2,
+    marginBottom: 12,
+    paddingHorizontal: 2,
+    marginTop: 0,
   },
 
   // ── Section Cards ──
   sectionCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 18,
-    marginBottom: 14,
+    padding: 12,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: '#F3F4F6',
     shadowColor: '#000',
@@ -580,7 +607,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   sectionDot: {
     width: 8,
@@ -600,7 +627,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: '#374151',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   textInput: {
     height: 48,
@@ -618,11 +645,28 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 14,
+    gap: 10,
+    marginBottom: 10,
   },
   halfField: {
     flex: 1,
+  },
+  // ── Inline Fields ──
+  inlineFieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  inlineLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    width: 50,
+  },
+  inlinePillRow: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 10,
   },
 
   // ── Pills ──
@@ -632,9 +676,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   pill: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 24,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     borderWidth: 1.5,
   },
   pillSelected: {
@@ -660,8 +704,8 @@ const styles = StyleSheet.create({
   totalCard: {
     backgroundColor: '#DCFCE7',
     borderRadius: 14,
-    padding: 16,
-    marginTop: 16,
+    padding: 12,
+    marginTop: 12,
     alignItems: 'center',
   },
   totalLabel: {
@@ -711,12 +755,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  // ── Source Grid Styles ──
+  sourceGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  sourceCard: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  sourceCardSelected: {
+    backgroundColor: '#22C55E',
+    borderColor: '#22C55E',
+  },
+  sourceCardUnselected: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E5E7EB',
+  },
+  sourceLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  sourceLabelSelected: {
+    color: '#FFFFFF',
+  },
+  sourceLabelUnselected: {
+    color: '#4B5563',
+  },
   // New Structured Search Styles
   searchSectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 20,
+    borderRadius: 18,
+    padding: 12,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -767,9 +844,9 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     position: 'absolute',
-    top: 65,
-    left: 16,
-    right: 16,
+    top: 58,
+    left: 12,
+    right: 12,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     borderWidth: 1,
@@ -829,10 +906,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F0FDF4',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    marginTop: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    marginTop: 8,
     alignSelf: 'flex-start',
   },
   selectedBadgeText: {

@@ -1,4 +1,5 @@
 import { ThemedText } from '@/components/themed-text';
+import { useAuth } from '@/context/AuthContext';
 import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Card } from '@/components/ui/Card';
@@ -22,6 +23,7 @@ interface SaleEntryData {
 }
 
 export default function SalesHistoryScreen() {
+    const { user } = useAuth();
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
 
@@ -31,7 +33,7 @@ export default function SalesHistoryScreen() {
 
     const fetchHistory = async () => {
         try {
-            const response = await apiFetch('/api/sales');
+            const response = await apiFetch(`/api/sales?userId=${user?.id}`);
             if (response.ok) {
                 const data = await response.json();
                 setEntries(data);

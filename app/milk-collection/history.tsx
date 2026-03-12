@@ -7,6 +7,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
+import { useAuth } from '@/context/AuthContext';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -39,6 +40,7 @@ interface MilkEntryData {
 }
 
 export default function MilkCollectionHistoryScreen() {
+    const { user } = useAuth();
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
 
@@ -52,7 +54,7 @@ export default function MilkCollectionHistoryScreen() {
 
     const fetchHistory = async () => {
         try {
-            const response = await apiFetch('/api/milk/collection');
+            const response = await apiFetch(`/api/milk/collection?userId=${user?.id}`);
             if (response.ok) {
                 const data = await response.json();
                 setEntries(data);
@@ -93,7 +95,7 @@ export default function MilkCollectionHistoryScreen() {
                     style: "destructive",
                     onPress: async () => {
                         try {
-                            const response = await apiFetch(`/api/milk/collection/${id}`, { method: 'DELETE' });
+                            const response = await apiFetch(`/api/milk/collection/${id}?userId=${user?.id}`, { method: 'DELETE' });
                             if (response.ok) {
                                 fetchHistory(); // Refresh
                             } else {
@@ -134,6 +136,7 @@ export default function MilkCollectionHistoryScreen() {
         if (!editingItem) return;
 
         const updatedData = {
+            userId: user?.id,
             quantity: parseFloat(editForm.quantity),
             fatType: editForm.fatType,
             snf: parseFloat(editForm.snf) || 0,
@@ -145,6 +148,7 @@ export default function MilkCollectionHistoryScreen() {
         try {
             const response = await apiFetch(`/api/milk/collection/${editingItem._id}`, {
                 method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updatedData)
             });
 

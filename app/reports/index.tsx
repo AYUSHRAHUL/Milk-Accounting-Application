@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/Card';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
@@ -10,6 +11,7 @@ import React, { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function ReportsScreen() {
+    const { user } = useAuth();
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
 
@@ -26,7 +28,7 @@ export default function ReportsScreen() {
 
     const fetchReports = useCallback(async () => {
         try {
-            const response = await apiFetch(`/api/reports?filter=month`);
+            const response = await apiFetch(`/api/reports?filter=month&userId=${user?.id}`);
             if (response.ok) {
                 const data = await response.json();
                 setMetrics(data);
@@ -61,7 +63,7 @@ export default function ReportsScreen() {
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
         >
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                <ThemedText style={{ fontSize: 18, color: theme.primary, fontWeight: '700' }}>← Back</ThemedText>
+                <Ionicons name="arrow-back" size={24} color={theme.primary} />
             </TouchableOpacity>
 
             {isLoading ? (
@@ -116,24 +118,26 @@ export default function ReportsScreen() {
                         </Card>
                     </TouchableOpacity>
 
-                    {/* Products Report */}
-                    <TouchableOpacity onPress={() => router.push('/(tabs)/report-products')} activeOpacity={0.85}>
+
+
+                    {/* Production Report */}
+                    <TouchableOpacity onPress={() => router.push('/(tabs)/report-production')} activeOpacity={0.85}>
                         <Card variant="elevated" style={styles.moduleCard}>
                             <View style={styles.cardHeader}>
-                                <View style={[styles.iconBox, { backgroundColor: theme.warningMuted }]}>
-                                    <Ionicons name="cube" size={24} color={theme.warning} />
+                                <View style={[styles.iconBox, { backgroundColor: 'rgba(245,158,11,0.1)' }]}>
+                                    <Ionicons name="flask" size={24} color="#F59E0B" />
                                 </View>
-                                <ThemedText style={styles.cardTitle}>Products Report</ThemedText>
+                                <ThemedText style={styles.cardTitle}>Production Report</ThemedText>
                             </View>
                             <View style={[styles.cardBody, { borderTopColor: theme.borderMuted }]}>
                                 <View style={styles.statRow}>
-                                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Batches Made</ThemedText>
-                                    <ThemedText style={styles.statValue}>{metrics.products.batches}</ThemedText>
+                                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Output</ThemedText>
+                                    <ThemedText style={styles.statValue}>{metrics.products.produced.toFixed(1)}</ThemedText>
                                 </View>
                                 <View style={[styles.statRow, { marginTop: Spacing.sm }]}>
-                                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Yield</ThemedText>
-                                    <ThemedText style={[styles.statValue, { color: theme.warning }]}>
-                                        {metrics.products.produced.toFixed(1)} Units
+                                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Batches</ThemedText>
+                                    <ThemedText style={[styles.statValue, { color: '#F59E0B' }]}>
+                                        {metrics.products.batches}
                                     </ThemedText>
                                 </View>
                             </View>

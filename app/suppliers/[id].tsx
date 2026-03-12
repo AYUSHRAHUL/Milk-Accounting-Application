@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/context/AuthContext';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -20,6 +21,7 @@ interface SupplierData {
 
 export default function SupplierDetailsScreen() {
     const { id } = useLocalSearchParams();
+    const { user } = useAuth();
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
 
@@ -36,7 +38,7 @@ export default function SupplierDetailsScreen() {
 
             try {
                 console.log('[Frontend] Fetching supplier details for:', id);
-                const response = await apiFetch(`/api/suppliers/${id}`);
+                const response = await apiFetch(`/api/suppliers/${id}?userId=${user?.id}`);
                 const data = await response.json();
                 
                 if (response.ok) {

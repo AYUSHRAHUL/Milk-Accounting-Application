@@ -8,9 +8,9 @@ import { connectToDatabase } from './db';
 import { User } from './models/User';
 import { Supplier } from './models/Supplier';
 import { MilkEntry } from './models/MilkEntry';
-import { ProductionEntry } from './models/ProductionEntry';
 import { SaleEntry } from './models/SaleEntry';
 import { MilkProduction } from './models/MilkProduction';
+import { ProductProduction } from './models/ProductProduction';
 
 const app = express();
 
@@ -91,10 +91,13 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // --- Suppliers ---
-app.get('/api/suppliers', async (_req, res) => {
+app.get('/api/suppliers', async (req, res) => {
   try {
     await connectToDatabase();
-    const suppliers = await Supplier.find({ isActive: true }).sort({ createdAt: -1 });
+    const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+
+    const suppliers = await Supplier.find({ userId, isActive: true }).sort({ createdAt: -1 });
     return res.status(200).json(suppliers);
   } catch (error: any) {
     console.error('Fetch Suppliers Error:', error);
@@ -129,11 +132,17 @@ app.get('/api/suppliers/:id', async (req, res) => {
   try {
     await connectToDatabase();
     const id = req.params.id;
+    const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
     if (!id) return res.status(400).json({ message: 'Supplier ID is required or invalid' });
 
-    let supplier = await Supplier.findById(id).catch(() => null);
+    let query: any = { _id: id, isActive: true };
+    if (userId) query.userId = userId;
+
+    let supplier = await Supplier.findOne(query).catch(() => null);
     if (!supplier) {
-      supplier = await Supplier.findOne({ supplierId: id, isActive: true });
+      query = { supplierId: id, isActive: true };
+      if (userId) query.userId = userId;
+      supplier = await Supplier.findOne(query);
     }
     if (!supplier) return res.status(404).json({ message: `Supplier not found for ID: ${id}` });
     return res.status(200).json(supplier);
@@ -149,9 +158,11 @@ app.put('/api/suppliers/:id', async (req, res) => {
     const id = req.params.id;
     const body = req.body ?? {};
     if (!id) return res.status(400).json({ message: 'Supplier ID is required or invalid' });
+    if (!body.userId) return res.status(400).json({ message: 'userId is required' });
 
     if (body.supplierId) {
       const existingWithSameId = await Supplier.findOne({
+        userId: body.userId,
         supplierId: body.supplierId,
         _id: { $ne: id },
         isActive: true,
@@ -159,7 +170,11 @@ app.put('/api/suppliers/:id', async (req, res) => {
       if (existingWithSameId) return res.status(409).json({ message: 'already Exist' });
     }
 
-    const updatedSupplier = await Supplier.findByIdAndUpdate(id, { $set: body }, { new: true, runValidators: true });
+    const updatedSupplier = await Supplier.findOneAndUpdate(
+      { _id: id, userId: body.userId },
+      { $set: body },
+      { new: true, runValidators: true }
+    );
     if (!updatedSupplier) return res.status(404).json({ message: 'Supplier not found' });
     return res.status(200).json({ message: 'Supplier updated successfully', supplier: updatedSupplier });
   } catch (error: any) {
@@ -174,7 +189,10 @@ app.delete('/api/suppliers/:id', async (req, res) => {
     const id = req.params.id;
     if (!id) return res.status(400).json({ message: 'Supplier ID is required or invalid' });
 
-    const deletedSupplier = await Supplier.findByIdAndUpdate(id, { isActive: false }, { new: true });
+    const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+
+    const deletedSupplier = await Supplier.findOneAndUpdate({ _id: id, userId }, { isActive: false }, { new: true });
     if (!deletedSupplier) return res.status(404).json({ message: 'Supplier not found' });
     return res.status(200).json({ message: 'Supplier removed successfully' });
   } catch (error: any) {
@@ -184,10 +202,13 @@ app.delete('/api/suppliers/:id', async (req, res) => {
 });
 
 // --- Milk collection ---
-app.get('/api/milk/collection', async (_req, res) => {
+app.get('/api/milk/collection', async (req, res) => {
   try {
     await connectToDatabase();
-    const entries = await MilkEntry.find({}).sort({ date: -1, createdAt: -1 });
+    const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+
+    const entries = await MilkEntry.find({ userId }).sort({ date: -1, createdAt: -1 });
     return res.status(200).json(entries);
   } catch (error: any) {
     console.error('Fetch Milk Entries Error:', error);
@@ -233,9 +254,11 @@ app.delete('/api/milk/collection/:id', async (req, res) => {
   try {
     await connectToDatabase();
     const id = req.params.id;
+    const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
     if (!id) return res.status(400).json({ error: 'Milk Entry ID is required' });
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
 
-    const deletedEntry = await MilkEntry.findByIdAndDelete(id);
+    const deletedEntry = await MilkEntry.findOneAndDelete({ _id: id, userId });
     if (!deletedEntry) return res.status(404).json({ error: 'Milk Entry not found' });
     return res.status(200).json({ message: 'Milk Entry deleted successfully' });
   } catch (error: any) {
@@ -244,98 +267,41 @@ app.delete('/api/milk/collection/:id', async (req, res) => {
   }
 });
 
-// --- Products / Production ---
-app.get('/api/products/production', async (req, res) => {
+app.put('/api/milk/collection/:id', async (req, res) => {
   try {
     await connectToDatabase();
-    const source = typeof req.query.source === 'string' ? req.query.source : null;
-    const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
-
-    if (source && userId) {
-      const collectedMilk = await MilkEntry.aggregate([
-        { $match: { userId, source } },
-        { $group: { _id: null, total: { $sum: '$quantity' } } },
-      ]);
-      const totalCollected = collectedMilk.length > 0 ? collectedMilk[0].total : 0;
-
-      const usedMilk = await ProductionEntry.aggregate([
-        { $match: { userId, source } },
-        { $group: { _id: null, total: { $sum: '$milkUsedLiters' } } },
-      ]);
-      const totalUsed = usedMilk.length > 0 ? usedMilk[0].total : 0;
-
-      return res.status(200).json({ availableStock: totalCollected - totalUsed, totalCollected, totalUsed });
-    }
-
-    const filter = userId ? { userId } : {};
-    const entries = await ProductionEntry.find(filter).sort({ date: -1, createdAt: -1 });
-    return res.status(200).json(entries);
-  } catch (error: any) {
-    console.error('Error fetching production/stock:', error);
-    return res.status(500).json({ message: 'Error checking stock' });
-  }
-});
-
-app.post('/api/products/production', async (req, res) => {
-  try {
-    await connectToDatabase();
+    const id = req.params.id;
     const body = req.body ?? {};
-    const { userId, date, productType, source, fatType, milkUsedLiters, quantityProduced } = body;
+    const { userId } = body;
 
-    const missingFields: string[] = [];
-    if (!userId) missingFields.push('userId');
-    if (!date) missingFields.push('date');
-    if (!productType) missingFields.push('productType');
-    if (!source) missingFields.push('source');
-    if (!fatType) missingFields.push('fatType');
-    if (milkUsedLiters === undefined || Number.isNaN(Number(milkUsedLiters))) missingFields.push('milkUsedLiters');
-    if (quantityProduced === undefined || Number.isNaN(Number(quantityProduced))) missingFields.push('quantityProduced');
+    if (!id) return res.status(400).json({ message: 'Milk Entry ID is required' });
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
 
-    if (missingFields.length > 0) {
-      return res.status(400).json({ message: `Missing required fields: ${missingFields.join(', ')}` });
+    // recalculate totalCost if quantity or costPerLiter is provided
+    if (body.quantity !== undefined || body.costPerLiter !== undefined) {
+      const current = await MilkEntry.findById(id);
+      if (current) {
+        const q = body.quantity !== undefined ? body.quantity : current.quantity;
+        const c = body.costPerLiter !== undefined ? body.costPerLiter : current.costPerLiter;
+        body.totalCost = q * c;
+      }
     }
 
-    const collectedMilk = await MilkEntry.aggregate([
-      { $match: { userId, source } },
-      { $group: { _id: null, total: { $sum: '$quantity' } } },
-    ]);
-    const totalCollected = collectedMilk.length > 0 ? collectedMilk[0].total : 0;
+    const updatedEntry = await MilkEntry.findOneAndUpdate(
+      { _id: id, userId },
+      { $set: body },
+      { new: true, runValidators: true }
+    );
 
-    const usedMilk = await ProductionEntry.aggregate([
-      { $match: { userId, source } },
-      { $group: { _id: null, total: { $sum: '$milkUsedLiters' } } },
-    ]);
-    const totalUsed = usedMilk.length > 0 ? usedMilk[0].total : 0;
-
-    const availableStock = totalCollected - totalUsed;
-    const requested = Number(milkUsedLiters);
-    if (requested > availableStock) {
-      return res.status(422).json({
-        message: `Insufficient milk stock. You only have ${availableStock.toFixed(2)}L of ${source} milk available in your collection.`,
-      });
-    }
-
-    const newEntry = new ProductionEntry({
-      userId,
-      date,
-      productType,
-      source,
-      fatType,
-      milkUsedLiters: requested,
-      quantityProduced: Number(quantityProduced),
-    });
-    await newEntry.save();
-
-    return res.status(201).json({
-      message: 'Production entry saved successfully!',
-      entry: newEntry,
-      remainingStock: availableStock - requested,
-    });
+    if (!updatedEntry) return res.status(404).json({ message: 'Milk Entry not found' });
+    return res.status(200).json({ message: 'Milk Entry updated successfully', entry: updatedEntry });
   } catch (error: any) {
-    console.error('Save Production Entry Error:', error);
+    console.error('Update Milk Entry Error:', error);
     return res.status(500).json({ message: error?.message || 'Internal Server Error' });
   }
 });
+
+
 
 // --- Milk Separation (Production) ---
 app.get('/api/production/milk-summary', async (req, res) => {
@@ -359,12 +325,19 @@ app.get('/api/production/milk-summary', async (req, res) => {
       { $match: { userId: matchUserId } },
       { $group: { _id: null, total: { $sum: '$separationMilk' } } },
     ]);
-    const totalUsed = usedMilk.length > 0 ? usedMilk[0].total : 0;
+    const totalSeparated = usedMilk.length > 0 ? usedMilk[0].total : 0;
+
+    // Sum of all whole milk used in product production
+    const usedWholeInProducts = await ProductProduction.aggregate([
+      { $match: { userId: matchUserId } },
+      { $group: { _id: null, total: { $sum: '$milkUsed.wholeMilk' } } }
+    ]);
+    const totalWholeUsed = usedWholeInProducts.length > 0 ? usedWholeInProducts[0].total : 0;
 
     return res.status(200).json({
-      availableMilk: totalCollected - totalUsed,
+      availableMilk: totalCollected - totalSeparated - totalWholeUsed,
       totalCollected,
-      totalUsed
+      totalUsed: totalSeparated + totalWholeUsed
     });
   } catch (error: any) {
     console.error('Milk Summary Error:', error);
@@ -403,7 +376,9 @@ app.get('/api/production/separation', async (req, res) => {
   try {
     await connectToDatabase();
     const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
-    const filter = userId ? { userId } : {};
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+
+    const filter = { userId };
     const history = await MilkProduction.find(filter).sort({ date: -1, createdAt: -1 });
     return res.status(200).json(history);
   } catch (error: any) {
@@ -412,26 +387,155 @@ app.get('/api/production/separation', async (req, res) => {
   }
 });
 
+app.get('/api/production/inventory', async (req, res) => {
+  try {
+    await connectToDatabase();
+    const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+
+    const { ObjectId } = mongoose.Types;
+    const matchUserId = ObjectId.isValid(userId) ? { $in: [userId, new ObjectId(userId)] } : userId;
+
+    const collectedMilk = await MilkEntry.aggregate([
+      { $match: { userId: matchUserId } },
+      { $group: { _id: null, total: { $sum: '$quantity' } } },
+    ]);
+    const totalCollected = collectedMilk.length > 0 ? collectedMilk[0].total : 0;
+
+    // 1. Total produced from separation
+    const production = await MilkProduction.aggregate([
+      { $match: { userId: matchUserId } },
+      {
+        $group: {
+          _id: null,
+          totalSeparated: { $sum: '$separationMilk' },
+          totalSkim: { $sum: '$skimMilk' },
+          totalCream: { $sum: '$creamMilk' },
+        },
+      },
+    ]);
+
+    // 2. Total used in products
+    const used = await ProductProduction.aggregate([
+      { $match: { userId: matchUserId } },
+      {
+        $group: {
+          _id: null,
+          usedWhole: { $sum: '$milkUsed.wholeMilk' },
+          usedSkim: { $sum: '$milkUsed.skimMilk' },
+          usedCream: { $sum: '$milkUsed.creamMilk' },
+        },
+      },
+    ]);
+
+    const prod = production[0] || { totalSeparated: 0, totalSkim: 0, totalCream: 0 };
+    const use = used[0] || { usedWhole: 0, usedSkim: 0, usedCream: 0 };
+
+    const wholeMilk = totalCollected - prod.totalSeparated - use.usedWhole;
+
+    return res.status(200).json({
+      wholeMilk: wholeMilk,
+      skimMilk: prod.totalSkim - use.usedSkim,
+      creamMilk: prod.totalCream - use.usedCream,
+    });
+  } catch (error: any) {
+    console.error('Production Inventory Error:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/production/make-product', async (req, res) => {
+  try {
+    await connectToDatabase();
+    const { userId, date, productName, quantityProduced, unit, milkUsed } = req.body ?? {};
+
+    if (!userId || !date || !productName || quantityProduced === undefined || !milkUsed) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const newProduct = new ProductProduction({
+      userId,
+      date,
+      productName,
+      quantityProduced,
+      unit: unit || 'kg',
+      milkUsed,
+    });
+
+    await newProduct.save();
+    return res.status(201).json({ message: 'Product created successfully', product: newProduct });
+  } catch (error: any) {
+    console.error('Make Product Error:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/production/separation-history', async (req, res) => {
+  try {
+    await connectToDatabase();
+    const userId = req.query.userId;
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+    const history = await MilkProduction.find({ userId }).sort({ date: -1, createdAt: -1 });
+    return res.status(200).json(history);
+  } catch (error) {
+    console.error('Separation History Error:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/production/product-history', async (req, res) => {
+  try {
+    await connectToDatabase();
+    const userId = req.query.userId;
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+    const history = await ProductProduction.find({ userId }).sort({ date: -1, createdAt: -1 });
+    return res.status(200).json(history);
+  } catch (error) {
+    console.error('Product History Error:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 // --- Sales ---
+app.get('/api/sales/product-stock', async (req, res) => {
+  try {
+    await connectToDatabase();
+    const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+
+    // Total produced per product
+    const produced = await ProductProduction.aggregate([
+      { $match: { userId } },
+      { $group: { _id: '$productName', total: { $sum: '$quantityProduced' } } }
+    ]);
+
+    // Total sold per product type
+    const sold = await SaleEntry.aggregate([
+      { $match: { userId } },
+      { $group: { _id: '$productType', total: { $sum: '$quantity' } } }
+    ]);
+
+    const soldMap: Record<string, number> = {};
+    sold.forEach((s: any) => { soldMap[s._id] = s.total; });
+
+    const stock: Record<string, number> = {};
+    produced.forEach((p: any) => {
+      stock[p._id] = Math.max(0, p.total - (soldMap[p._id] || 0));
+    });
+
+    return res.status(200).json(stock);
+  } catch (error: any) {
+    console.error('Product Stock Error:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 app.get('/api/sales', async (req, res) => {
   try {
     await connectToDatabase();
-    const productType = typeof req.query.productType === 'string' ? req.query.productType : null;
-    if (productType) {
-      const productionResult = await ProductionEntry.aggregate([
-        { $match: { productType } },
-        { $group: { _id: null, totalProduced: { $sum: '$quantityProduced' } } },
-      ]);
-      const salesResult = await SaleEntry.aggregate([
-        { $match: { productType } },
-        { $group: { _id: null, totalSold: { $sum: '$quantity' } } },
-      ]);
-      const totalProduced = productionResult[0]?.totalProduced || 0;
-      const totalSold = salesResult[0]?.totalSold || 0;
-      return res.status(200).json({ availableStock: totalProduced - totalSold });
-    }
-
-    const sales = await SaleEntry.find({}).sort({ date: -1, createdAt: -1 });
+    const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+    const sales = await SaleEntry.find({ userId }).sort({ date: -1, createdAt: -1 });
     return res.status(200).json(sales);
   } catch (error: any) {
     console.error('Sales GET Error:', error);
@@ -454,31 +558,28 @@ app.post('/api/sales', async (req, res) => {
       return res.status(400).json({ message: 'Quantity must be greater than zero' });
     }
 
-    const productionResult = await ProductionEntry.aggregate([
-      { $match: { productType } },
-      { $group: { _id: null, totalProduced: { $sum: '$quantityProduced' } } },
+    // Check available stock from production minus previous sales
+    const produced = await ProductProduction.aggregate([
+      { $match: { userId, productName: productType } },
+      { $group: { _id: null, total: { $sum: '$quantityProduced' } } }
     ]);
-    const salesResult = await SaleEntry.aggregate([
-      { $match: { productType } },
-      { $group: { _id: null, totalSold: { $sum: '$quantity' } } },
+    const soldSoFar = await SaleEntry.aggregate([
+      { $match: { userId, productType } },
+      { $group: { _id: null, total: { $sum: '$quantity' } } }
     ]);
+    const totalProduced = produced[0]?.total || 0;
+    const totalSold = soldSoFar[0]?.total || 0;
+    const availableStock = Math.max(0, totalProduced - totalSold);
 
-    const totalProduced = productionResult[0]?.totalProduced || 0;
-    const totalSold = salesResult[0]?.totalSold || 0;
-    const availableStock = totalProduced - totalSold;
-
-    if (availableStock < parsedQuantity) {
-      return res.status(422).json({
-        message: `Insufficient stock! You only have ${availableStock.toFixed(2)} units of ${productType} available.`,
-        availableStock,
+    if (parsedQuantity > availableStock) {
+      return res.status(400).json({
+        message: `Insufficient stock! Only ${availableStock.toFixed(2)} units of ${productType} available.`,
+        availableStock
       });
     }
 
     const newSale = new SaleEntry({
-      userId,
-      date,
-      customerName,
-      productType,
+      userId, date, customerName, productType,
       quantity: parsedQuantity,
       pricePerUnit: Number(pricePerUnit),
       totalAmount: Number(totalAmount),
@@ -501,12 +602,13 @@ app.post('/api/sales', async (req, res) => {
 app.get('/api/reports/detailed', async (req, res) => {
   try {
     await connectToDatabase();
-    
-    // Fetch all entries from different collections
-    const [milkEntries, saleEntries, productionEntries] = await Promise.all([
-      MilkEntry.find({}).sort({ date: -1 }),
-      SaleEntry.find({}).sort({ date: -1 }),
-      ProductionEntry.find({}).sort({ date: -1 }),
+    const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+
+    // Fetch all entries from milk collection and sales for THIS user
+    const [milkEntries, saleEntries] = await Promise.all([
+      MilkEntry.find({ userId }).sort({ date: -1 }),
+      SaleEntry.find({ userId }).sort({ date: -1 }),
     ]);
 
     // Format all entries into a unified ReportEntry format
@@ -532,22 +634,11 @@ app.get('/api/reports/detailed', async (req, res) => {
         amount: e.totalAmount,
         currency: 'INR',
         unit: 'Units'
-      })),
-      ...productionEntries.map(e => ({
-        _id: e._id,
-        date: e.date,
-        type: 'Production',
-        category: e.productType,
-        details: `${e.source} (${e.milkUsedLiters}L used)`,
-        quantity: e.quantityProduced,
-        amount: 0,
-        currency: 'INR',
-        unit: 'Units'
       }))
     ];
 
     // Sort all combined entries by date descending
-    reportEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    reportEntries.sort((a, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return res.status(200).json(reportEntries);
   } catch (error: any) {
@@ -560,14 +651,17 @@ app.get('/api/reports', async (req, res) => {
   try {
     await connectToDatabase();
     const filter = typeof req.query.filter === 'string' ? req.query.filter : 'all';
+    const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
+
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
 
     const now = new Date();
     let startDate = new Date(0);
     if (filter === 'month') startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     else if (filter === 'today') startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    const dateQuery = filter === 'all' ? {} : { createdAt: { $gte: startDate } };
-    const milkDateQuery = filter === 'all' ? {} : { date: { $gte: startDate } };
+    const dateQuery: any = filter === 'all' ? { userId } : { userId, createdAt: { $gte: startDate } };
+    const milkDateQuery: any = filter === 'all' ? { userId } : { userId, date: { $gte: startDate } };
 
     const salesResult = await SaleEntry.aggregate([
       { $match: dateQuery },
@@ -581,14 +675,14 @@ app.get('/api/reports', async (req, res) => {
     ]);
     const milkCollection = { cost: milkResult[0]?.totalCost || 0, liters: milkResult[0]?.totalLiters || 0 };
 
-    const productsResult = await ProductionEntry.aggregate([
-      { $match: dateQuery },
-      { $group: { _id: null, totalProduced: { $sum: '$quantityProduced' }, totalBatches: { $sum: 1 } } },
+    const productResult = await ProductProduction.aggregate([
+      { $match: milkDateQuery },
+      { $group: { _id: null, totalProduced: { $sum: '$quantityProduced' }, totalBatches: { $sum: 1 } } }
     ]);
-    const products = { produced: productsResult[0]?.totalProduced || 0, batches: productsResult[0]?.totalBatches || 0 };
+    const products = { produced: productResult[0]?.totalProduced || 0, batches: productResult[0]?.totalBatches || 0 };
 
-    const activeSuppliers = await Supplier.countDocuments(dateQuery as any);
-    const totalSuppliers = await Supplier.countDocuments();
+    const activeSuppliers = await Supplier.countDocuments(dateQuery);
+    const totalSuppliers = await Supplier.countDocuments({ userId });
 
     return res.status(200).json({
       sales,

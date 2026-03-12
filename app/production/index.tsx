@@ -138,25 +138,27 @@ export default function MilkProductionScreen() {
         <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#0B1220' : '#F0FDF4' }]}>
             <Stack.Screen options={{ headerShown: false }} />
 
-            {/* ─── Compact Header ─── */}
-            <View style={[styles.topBar, { backgroundColor: isDark ? '#111827' : '#FFFFFF', borderBottomColor: isDark ? '#1F2937' : '#E9FBF0' }]}>
+            {/* ─── Premium Centered Header ─── */}
+            <View style={[styles.topBar, { backgroundColor: isDark ? '#111827' : '#FFFFFF', borderBottomColor: isDark ? '#1F2937' : '#DCFCE7' }]}>
                 <TouchableOpacity
-                    style={[styles.backBtn, { backgroundColor: isDark ? '#1F2937' : '#DCFCE7' }]}
+                    style={[styles.backBtn, { backgroundColor: isDark ? '#1F2937' : '#F1F5F9' }]}
                     onPress={() => router.back()}
                     activeOpacity={0.7}
                 >
-                    <Ionicons name="chevron-back" size={20} color={isDark ? '#34D399' : '#16A34A'} />
+                    <Ionicons name="arrow-back" size={22} color={isDark ? '#F8FAFC' : '#1E293B'} />
                 </TouchableOpacity>
+                
                 <View style={styles.topBarCenter}>
                     <ThemedText style={[styles.topBarTitle, { color: isDark ? '#F8FAFC' : '#111827' }]}>
                         Milk Production
                     </ThemedText>
-                    <ThemedText style={[styles.topBarSub, { color: isDark ? '#94A3B8' : '#6B7280' }]}>
+                    <ThemedText style={[styles.topBarSub, { color: isDark ? '#94A3B8' : '#64748B' }]}>
                         Separation & Processing
                     </ThemedText>
                 </View>
-                <View style={[styles.headerIconBox, { backgroundColor: isDark ? '#1F2937' : '#DCFCE7' }]}>
-                    <Ionicons name="flask-outline" size={20} color={isDark ? '#34D399' : '#16A34A'} />
+
+                <View style={[styles.headerIconBox, { backgroundColor: isDark ? '#064E3B' : '#DCFCE7' }]}>
+                    <Ionicons name="flask" size={20} color={isDark ? '#34D399' : '#16A34A'} />
                 </View>
             </View>
 
@@ -360,7 +362,11 @@ export default function MilkProductionScreen() {
                         {/* ─── Bottom Row: Summary & Action ─── */}
                         <View style={[styles.rowConfig, isLargeScreen ? { flexDirection: 'row', alignItems: 'stretch' } : { flexDirection: 'column' }]}>
                             {/* Summary Box */}
-                            <View style={[styles.summaryStripCompact, isLargeScreen && { flex: 2, marginBottom: 0 }, { backgroundColor: isDark ? '#111827' : '#FFFFFF', borderColor: isDark ? '#1F2937' : '#E9FBF0' }]}>
+                            <View style={[
+                                styles.summaryStripCompact, 
+                                isLargeScreen ? { flex: 2, marginBottom: 0 } : { marginBottom: 4 },
+                                { backgroundColor: isDark ? '#111827' : '#FFFFFF', borderColor: isDark ? '#1F2937' : '#E9FBF0' }
+                            ]}>
                                 <View style={styles.summaryStripGridCompact}>
                                     {[
                                         { label: 'Avail', value: `${totalAvailable.toFixed(1)}L`, color: '#22C55E' },
@@ -377,29 +383,48 @@ export default function MilkProductionScreen() {
                                 </View>
                             </View>
 
-                            {/* Action Button */}
-                            <TouchableOpacity
-                                onPress={handleSave}
-                                disabled={isLoading}
-                                activeOpacity={0.85}
-                                style={[styles.saveButtonWrapCompact, isLargeScreen && { flex: 1, marginTop: 0, marginLeft: 12 }]}
-                            >
-                                <LinearGradient
-                                    colors={isLoading ? ['#9CA3AF', '#9CA3AF'] : ['#16A34A', '#22C55E']}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                    style={styles.saveButtonCompact}
+                            {/* Action Buttons */}
+                            <View style={[isLargeScreen ? { flex: 1, marginLeft: 12 } : { width: '100%', marginTop: 8 }, { gap: 10 }]}>
+                                {/* Complete Production Button */}
+                                <TouchableOpacity
+                                    onPress={handleSave}
+                                    disabled={isLoading}
+                                    activeOpacity={0.85}
+                                    style={styles.saveButtonWrapCompact}
                                 >
-                                    {isLoading ? (
-                                        <ActivityIndicator color="#FFFFFF" />
-                                    ) : (
-                                        <>
-                                            <Ionicons name="checkmark-done-circle" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                                            <ThemedText style={styles.saveButtonTextCompact}>Complete</ThemedText>
-                                        </>
-                                    )}
-                                </LinearGradient>
-                            </TouchableOpacity>
+                                    <LinearGradient
+                                        colors={isLoading ? ['#9CA3AF', '#9CA3AF'] : ['#16A34A', '#22C55E']}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        style={styles.saveButtonCompact}
+                                    >
+                                        {isLoading ? (
+                                            <ActivityIndicator color="#FFFFFF" />
+                                        ) : (
+                                            <>
+                                                <Ionicons name="checkmark-done-circle" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                                                <ThemedText style={styles.saveButtonTextCompact}>Complete Production</ThemedText>
+                                            </>
+                                        )}
+                                    </LinearGradient>
+                                </TouchableOpacity>
+
+                                {/* Make Products Button */}
+                                <TouchableOpacity
+                                    onPress={() => router.push('/production/make-products')}
+                                    activeOpacity={0.85}
+                                    style={styles.saveButtonWrapCompact}
+                                >
+                                    <LinearGradient
+                                        colors={['#3B82F6', '#2563EB']} // Blue shade for distinction
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        style={styles.saveButtonCompact}
+                                    >
+                                        <ThemedText style={styles.saveButtonTextCompact}>Make Products</ThemedText>
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            </View>
                         </View>
 
                     </View>
@@ -416,48 +441,69 @@ const styles = StyleSheet.create({
     topBar: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingVertical: 12,
         borderBottomWidth: 1,
-        gap: 12,
-        height: 56,
+        height: 64,
+        zIndex: 10,
     },
     backBtn: {
-        width: 32,
-        height: 32,
-        borderRadius: 8,
+        width: 40,
+        height: 40,
+        borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
     },
-    topBarCenter: { flex: 1 },
-    topBarTitle: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
-    topBarSub: { fontSize: 11, fontWeight: '500' },
+    topBarCenter: { 
+        flex: 1, 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        paddingHorizontal: 8,
+    },
+    topBarTitle: { 
+        fontSize: 18, 
+        fontWeight: '800', 
+        letterSpacing: -0.5,
+        textAlign: 'center',
+    },
+    topBarSub: { 
+        fontSize: 12, 
+        fontWeight: '600',
+        textAlign: 'center',
+        marginTop: -2,
+    },
     headerIconBox: {
-        width: 32,
-        height: 32,
-        borderRadius: 8,
+        width: 40,
+        height: 40,
+        borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
     },
 
     // ── Layout
-    scrollContent: { paddingBottom: 20 },
+    scrollContent: { paddingBottom: 60 },
     innerContainer: {
         width: '100%',
         alignSelf: 'center',
         paddingHorizontal: 12,
-        paddingTop: 12,
-        gap: 12,
+        paddingTop: 8,
+        gap: 8,
     },
     rowConfig: {
-        gap: 12,
+        gap: 8,
     },
 
     // ── Banner (Compact)
     bannerCard: {
         borderRadius: 16,
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingVertical: 10,
         position: 'relative',
         shadowColor: '#22C55E',
         shadowOffset: { width: 0, height: 4 },
@@ -466,7 +512,7 @@ const styles = StyleSheet.create({
         elevation: 4,
         overflow: 'hidden',
         justifyContent: 'center',
-        marginBottom: 12,
+        marginBottom: 8,
     },
     decoCircle1: {
         position: 'absolute',
@@ -504,24 +550,24 @@ const styles = StyleSheet.create({
     // ── Section Cards (Compact)
     section: {
         borderRadius: 16,
-        padding: 14,
+        padding: 10,
         borderWidth: 1,
-        marginBottom: 12,
+        marginBottom: 8,
         justifyContent: 'center',
     },
-    sectionTitleRowCompact: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+    sectionTitleRowCompact: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
     sectionIconBoxCompact: { width: 24, height: 24, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
     sectionTitleCompact: { fontSize: 14, fontWeight: '700' },
     
     // ── Step Headers
-    stepHeaderCompact: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+    stepHeaderCompact: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
     stepBadgeCompact: { width: 24, height: 24, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
     stepBadgeTextCompact: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
     stepSubtitleCompact: { fontSize: 11, fontWeight: '500' },
     infoChipTextCompact: { fontSize: 11, fontWeight: '700' },
 
     // ── Inputs (Compact)
-    inputGroupCompact: { marginBottom: 10 },
+    inputGroupCompact: { marginBottom: 6 },
     inputContainerCompact: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -568,10 +614,10 @@ const styles = StyleSheet.create({
     // ── Summary Strip (Compact)
     summaryStripCompact: {
         borderRadius: 16,
-        padding: 14,
+        padding: 10,
         borderWidth: 1,
         justifyContent: 'center',
-        marginBottom: 12,
+        marginBottom: 8,
     },
     summaryStripGridCompact: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     summaryStripItemCompact: { alignItems: 'center' },
@@ -579,7 +625,7 @@ const styles = StyleSheet.create({
     summaryStripLabelCompact: { fontSize: 10, fontWeight: '600' },
 
     // ── Save Button (Compact)
-    saveButtonWrapCompact: { borderRadius: 16, overflow: 'hidden', elevation: 4 },
-    saveButtonCompact: { height: '100%', minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12 },
-    saveButtonTextCompact: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
+    saveButtonWrapCompact: { borderRadius: 16, overflow: 'hidden', elevation: 4, shadowColor: '#16A34A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+    saveButtonCompact: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 20 },
+    saveButtonTextCompact: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
 });

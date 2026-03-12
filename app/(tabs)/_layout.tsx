@@ -34,11 +34,10 @@ export default function TabLayout() {
       />
       <Drawer.Screen name="report-milk" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="report-sales" options={{ drawerItemStyle: { display: 'none' } }} />
-      <Drawer.Screen name="report-products" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="report-suppliers" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="report-production" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="report-milk-visuals" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="report-sales-visuals" options={{ drawerItemStyle: { display: 'none' } }} />
-      <Drawer.Screen name="report-products-visuals" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="report-suppliers-visuals" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="profile" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="help" options={{ drawerItemStyle: { display: 'none' } }} />

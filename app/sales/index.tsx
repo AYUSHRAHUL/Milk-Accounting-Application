@@ -1,7 +1,4 @@
 import { ThemedText } from '@/components/themed-text';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -10,439 +7,550 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import { router, Stack } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 
-const PRODUCT_TYPES = [
-    'Butter',
-    'Ghee',
-    'S-khowa',
-    'Unsweet khowa',
-    'Paneer',
-    'Shrikhand',
-    'Icecream',
-    'Gulab jamun',
-    'Rasgulla',
-    'Yoghurt',
-    'Skim milk curd'
-];
+const PRODUCT_TYPES = ['Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Raw Milk', 'Skim Milk', 'Other'];
+const PRODUCT_ICONS: Record<string, string> = {
+    Paneer: '🧀', Ghee: '🫙', Butter: '🧈', Curd: '🥛', Khoa: '🍮', 'Raw Milk': '🥛', 'Skim Milk': '🍶', Other: '📦',
+};
+const PRODUCT_COLORS: Record<string, string> = {
+    Paneer: '#10B981', Ghee: '#F59E0B', Butter: '#FCD34D', Curd: '#3B82F6', Khoa: '#8B5CF6', 'Raw Milk': '#6B7280', 'Skim Milk': '#60A5FA', Other: '#64748B',
+};
 const PAYMENT_MODES = ['Cash', 'UPI', 'Credit'];
 
 export default function SalesScreen() {
     const { user } = useAuth();
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
+    
+    // Custom Alert State
+    const [alertConfig, setAlertConfig] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'warning' as 'warning' | 'error' | 'info' | 'success'
+    });
 
-    const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const triggerAlert = (title: string, message: string, type: 'warning' | 'error' | 'info' | 'success' = 'warning') => {
+        setAlertConfig({ visible: true, title, message, type });
+    };
+
+    const [displayDate, setDisplayDate] = useState(() => {
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+    });
+
     const [customerName, setCustomerName] = useState('');
     const [productType, setProductType] = useState('Paneer');
     const [quantity, setQuantity] = useState('');
     const [pricePerUnit, setPricePerUnit] = useState('');
     const [paymentMode, setPaymentMode] = useState('Cash');
-
-    // Auto-calculated state
     const [totalAmount, setTotalAmount] = useState('0.00');
-
-    // Live Stock Tracking
-    const [availableStock, setAvailableStock] = useState<number | null>(null);
-    const [isCheckingStock, setIsCheckingStock] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
-    // Success Modal & Receipt State
+    const [isFetchingStock, setIsFetchingStock] = useState(true);
+    const [productStock, setProductStock] = useState<Record<string, number>>({});
+    const [focusedField, setFocusedField] = useState<string | null>(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showReceiptModal, setShowReceiptModal] = useState(false);
     const [lastSaleData, setLastSaleData] = useState<any>(null);
 
-    // Fetch Stock whenever the Product Type changes
-    useEffect(() => {
-        const checkStock = async () => {
-            setIsCheckingStock(true);
-            try {
-                const res = await apiFetch(`/api/sales?productType=${productType}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setAvailableStock(data.availableStock);
-                } else {
-                    setAvailableStock(0);
-                }
-            } catch (err) {
-                console.error("Failed to fetch product stock", err);
-                setAvailableStock(0);
-            } finally {
-                setIsCheckingStock(false);
-            }
-        };
-        checkStock();
-    }, [productType]);
+    const apiDate = useMemo(() => {
+        const parts = displayDate.split('/');
+        if (parts.length === 3 && parts[2].length === 4) {
+            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        return new Date().toISOString().split('T')[0];
+    }, [displayDate]);
 
-    // Live Math for Total Amount
+    const fetchStock = useCallback(async () => {
+        if (!user?.id) return;
+        setIsFetchingStock(true);
+        try {
+            const res = await apiFetch(`/api/sales/product-stock?userId=${user.id}`);
+            if (res.ok) setProductStock(await res.json());
+        } catch (e) {
+            console.error('Stock fetch error', e);
+        } finally {
+            setIsFetchingStock(false);
+        }
+    }, [user?.id]);
+
+    useFocusEffect(useCallback(() => { fetchStock(); }, [fetchStock]));
+
     useEffect(() => {
         const qty = parseFloat(quantity) || 0;
         const price = parseFloat(pricePerUnit) || 0;
         setTotalAmount((qty * price).toFixed(2));
     }, [quantity, pricePerUnit]);
 
+    const availableForSelected = productStock[productType] ?? 0;
+    const quantityNum = parseFloat(quantity) || 0;
+    const isOverLimit = quantityNum > 0 && quantityNum > availableForSelected;
+
     const handleSave = async () => {
-        if (!date || !productType || !quantity || !pricePerUnit || !customerName.trim()) {
-            Alert.alert('Missing Fields', 'Please fill in all mandatory fields (Date, Customer Name, Product, Quantity, Price).');
+        // Specific Field Validation
+        if (!displayDate) {
+            triggerAlert('Missing Field', 'Please select a Date.');
+            return;
+        }
+        if (!customerName.trim()) {
+            triggerAlert('Missing Field', 'Please enter the Customer Name.');
+            return;
+        }
+        if (!productType) {
+            triggerAlert('Missing Field', 'Please select a Product.');
+            return;
+        }
+        const qtyNum = parseFloat(quantity);
+        if (!quantity || isNaN(qtyNum) || qtyNum <= 0) {
+            triggerAlert('Invalid Quantity', 'Please enter a valid Quantity greater than 0.');
+            return;
+        }
+        const priceNum = parseFloat(pricePerUnit);
+        if (!pricePerUnit || isNaN(priceNum) || priceNum <= 0) {
+            triggerAlert('Invalid Price', 'Please enter a valid Price per Unit.');
             return;
         }
 
-        const parsedQuantity = parseFloat(quantity);
-        if (availableStock !== null && parsedQuantity > availableStock) {
-            Alert.alert('Insufficient Stock', `You only have ${availableStock.toFixed(2)} units of ${productType} available to sell.`);
+        if (isOverLimit) {
+            triggerAlert('Insufficient Stock', `Only ${availableForSelected.toFixed(2)} units of ${productType} available.`);
             return;
         }
 
         setIsLoading(true);
         try {
+            const saleData = {
+                userId: user?.id,
+                date: apiDate,
+                customerName,
+                productType,
+                quantity: qtyNum,
+                pricePerUnit: priceNum,
+                totalAmount: parseFloat(totalAmount),
+                paymentMode,
+            };
+
             const response = await apiFetch('/api/sales', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: user?.id || 'static-user-id',
-                    date,
-                    customerName,
-                    productType,
-                    quantity: parsedQuantity,
-                    pricePerUnit: parseFloat(pricePerUnit),
-                    totalAmount: parseFloat(totalAmount),
-                    paymentMode,
-                }),
+                body: JSON.stringify(saleData),
             });
-
+            
             const data = await response.json();
-
             if (response.ok) {
-                const saleInfo = {
-                    date,
-                    customerName: customerName || 'Walk-in Customer',
-                    productType,
-                    quantity: parsedQuantity,
-                    pricePerUnit: parseFloat(pricePerUnit),
-                    totalAmount: parseFloat(totalAmount),
-                    paymentMode,
-                    remainingStock: data.remainingStock
-                };
-                setLastSaleData(saleInfo);
+                // Set the receipt data BEFORE resetting inputs
+                setLastSaleData({ 
+                    date: displayDate, 
+                    customerName, 
+                    productType, 
+                    quantity, 
+                    pricePerUnit, 
+                    totalAmount, 
+                    paymentMode 
+                });
+                
+                // Clear inputs
+                setCustomerName('');
+                setQuantity('');
+                setPricePerUnit('');
+                
+                // Show success modal
                 setShowSuccessModal(true);
+                fetchStock(); // refresh stock
             } else {
-                Alert.alert('Sale Failed', data.message || 'Failed to save entry.');
+                triggerAlert('Sale Failed', data.message || 'Failed to save entry.', 'error');
             }
-        } catch (error) {
-            console.error(error);
-            Alert.alert('Error', 'An unexpected network error occurred.');
+        } catch (e) {
+            console.error('Save error:', e);
+            triggerAlert('Error', 'An unexpected network error occurred.', 'error');
         } finally {
             setIsLoading(false);
         }
     };
 
     const generateReceiptHTML = (data: any) => `
-        <html>
-        <head>
-            <style>
-                body { font-family: 'Helvetica', sans-serif; padding: 40px; color: #333; line-height: 1.6; }
-                .header { text-align: center; border-bottom: 3px solid #10B981; padding-bottom: 15px; margin-bottom: 30px; }
-                .farm-name { font-size: 32px; font-weight: 900; color: #059669; letter-spacing: 1px; margin-bottom: 5px; }
-                .receipt-title { font-size: 16px; font-weight: 600; color: #6B7280; text-transform: uppercase; }
-                .info-section { display: flex; justify-content: space-between; margin-bottom: 30px; background: #F9FAFB; padding: 20px; border-radius: 12px; }
-                .info-box { font-size: 14px; }
-                .info-label { color: #6B7280; font-weight: 600; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-                th { background-color: #F3F4F6; text-align: left; padding: 15px; border-bottom: 2px solid #E5E7EB; color: #374151; font-weight: 700; }
-                td { padding: 15px; border-bottom: 1px solid #F3F4F6; color: #4B5563; }
-                .total-section { text-align: right; padding-top: 20px; border-top: 2px solid #10B981; }
-                .total-row { display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
-                .total-label { font-size: 18px; font-weight: 600; color: #374151; }
-                .total-amount { font-size: 28px; font-weight: 800; color: #059669; }
-                .footer { margin-top: 50px; text-align: center; border-top: 1px dashed #D1D5DB; padding-top: 20px; color: #9CA3AF; font-size: 13px; }
-            </style>
-        </head>
+        <html><head><style>
+            body{font-family:'Helvetica',sans-serif;padding:40px;color:#333;}
+            .header{text-align:center;border-bottom:2px solid #10B981;padding-bottom:15px;margin-bottom:30px;}
+            .farm{font-size:28px;font-weight:800;color:#059669;}
+            .info{display:flex;justify-content:space-between;background:#f3f4f6;padding:15px;border-radius:8px;margin-bottom:30px;}
+            table{width:100%;border-collapse:collapse;}
+            th{text-align:left;padding:12px;border-bottom:2px solid #ddd;}
+            td{padding:12px;border-bottom:1px solid #eee;}
+            .total{text-align:right;margin-top:20px;font-size:22px;font-weight:800;color:#059669;}
+        </style></head>
         <body>
-            <div class="header">
-                <div class="farm-name">DHARMRAJ DAIRY FARM</div>
-                <div class="receipt-title">Official Sales Receipt</div>
+            <div class="header"><div class="farm">DAIRY SALES RECEIPT</div></div>
+            <div class="info">
+                <div><b>Customer:</b> ${data.customerName}<br><b>Date:</b> ${data.date}</div>
+                <div style="text-align:right"><b>Mode:</b> ${data.paymentMode}</div>
             </div>
-            
-            <div class="info-section">
-                <div class="info-box">
-                    <span class="info-label">CUSTOMER:</span> ${data.customerName}<br>
-                    <span class="info-label">DATE:</span> ${data.date}<br>
-                    <span class="info-label">TIME:</span> ${new Date().toLocaleTimeString()}
-                </div>
-                <div class="info-box" style="text-align: right;">
-                    <span class="info-label">PAYMENT:</span> ${data.paymentMode}<br>
-                    <span class="info-label">RECEIPT ID:</span> #SALE-${Math.floor(100000 + Math.random() * 900000)}<br>
-                    <span class="info-label">STATUS:</span> PAID
-                </div>
-            </div>
-            
             <table>
-                <thead>
-                    <tr>
-                        <th style="width: 50%">ITEM DESCRIPTION</th>
-                        <th style="text-align: center;">QTY</th>
-                        <th style="text-align: right;">PRICE</th>
-                        <th style="text-align: right;">TOTAL</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>${data.productType} (Fresh Dairy)</td>
-                        <td style="text-align: center;">${data.quantity} kg</td>
-                        <td style="text-align: right;">₹${data.pricePerUnit}</td>
-                        <td style="text-align: right; font-weight: 600;">₹${data.totalAmount}</td>
-                    </tr>
-                </tbody>
+                <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+                <tr><td>${data.productType}</td><td>${data.quantity}</td><td>₹${data.pricePerUnit}</td><td>₹${data.totalAmount}</td></tr>
             </table>
-            
-            <div class="total-section">
-                <div class="total-row">
-                    <span class="total-label">GRAND TOTAL</span>
-                    <span class="total-amount">₹${data.totalAmount}</span>
-                </div>
-            </div>
-            
-            <div class="footer">
-                <p>Thank you for choosing Dharmraj Dairy Farm for your fresh products!</p>
-                <p style="font-style: italic;">This is a computer-generated receipt.</p>
-            </div>
-        </body>
-        </html>
-    `;
+            <div class="total">GRAND TOTAL: ₹${data.totalAmount}</div>
+        </body></html>`;
 
     const handlePrintReceipt = async () => {
         if (!lastSaleData) return;
-        const html = generateReceiptHTML(lastSaleData);
-        await Print.printAsync({ html });
+        await Print.printAsync({ html: generateReceiptHTML(lastSaleData) });
     };
 
     const handleDownloadReceipt = async () => {
         if (!lastSaleData) return;
         const html = generateReceiptHTML(lastSaleData);
-
-        try {
-            if (Platform.OS === 'web') {
-                // On Web, printToFileAsync is not supported or returns an empty object/undefined
-                // We use printAsync which allows the user to 'Save as PDF'
-                await Print.printAsync({ html });
-                alert('Please select "Save as PDF" in the print destination to download.');
-            } else {
-                const result = await Print.printToFileAsync({ html });
-                if (result && result.uri) {
-                    await Sharing.shareAsync(result.uri);
-                } else {
-                    Alert.alert('Error', 'Could not generate receipt file.');
-                }
-            }
-        } catch (error) {
-            console.error('Receipt generation error:', error);
-            if (Platform.OS === 'web') alert('Failed to generate receipt.');
-            else Alert.alert('Error', 'Failed to generate receipt.');
+        if (Platform.OS === 'web') {
+            await Print.printAsync({ html });
+        } else {
+            const result = await Print.printToFileAsync({ html });
+            if (result?.uri) await Sharing.shareAsync(result.uri);
         }
     };
 
-    const renderSelector = (options: string[], selectedValue: string, onSelect: (val: string) => void) => (
-        <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.selectorScroll}
-        >
-            {options.map((option) => {
-                const isSelected = selectedValue === option;
-                return (
-                    <TouchableOpacity
-                        key={option}
-                        style={[
-                            styles.selectorPill,
-                            {
-                                backgroundColor: isSelected ? theme.primary : theme.surface,
-                                borderColor: isSelected ? theme.primary : theme.border
-                            }
-                        ]}
-                        onPress={() => onSelect(option)}
-                        activeOpacity={0.7}
-                    >
-                        {isSelected && <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />}
-                        <ThemedText style={[
-                            styles.selectorText,
-                            { color: isSelected ? '#FFFFFF' : theme.textSecondary }
-                        ]}>
-                            {option}
-                        </ThemedText>
-                    </TouchableOpacity>
-                );
-            })}
-        </ScrollView>
+    const renderInput = (
+        label: string,
+        value: string,
+        setValue: (t: string) => void,
+        placeholder: string,
+        keyboard: any = 'default',
+        fieldId: string,
+    ) => (
+        <View style={styles.inputGroup}>
+            <ThemedText style={styles.inputLabel}>{label}</ThemedText>
+            <View style={[styles.inputWrapper, focusedField === fieldId && styles.inputFocused]}>
+                <TextInput
+                    style={[styles.textInput, { color: theme.text }, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
+                    value={value}
+                    onChangeText={setValue}
+                    placeholder={placeholder}
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType={keyboard}
+                    onFocus={() => setFocusedField(fieldId)}
+                    onBlur={() => setFocusedField(null)}
+                />
+            </View>
+        </View>
     );
 
     return (
-        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: '#F9FAFB' }]}>
             <Stack.Screen options={{ headerShown: false }} />
 
+            {/* ── Header ── */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={theme.primary} />
+                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                    <Ionicons name="arrow-back" size={22} color="#10B981" />
                 </TouchableOpacity>
-                <ThemedText style={styles.headerTitle}>Sales</ThemedText>
+                <ThemedText style={styles.headerTitle}>Record Sale</ThemedText>
                 <View style={{ width: 44 }} />
             </View>
 
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
-                    <Card variant="elevated" style={[styles.card, { backgroundColor: theme.surface, shadowColor: theme.shadow }]}>
-                        <Input
-                            label="Date (YYYY-MM-DD)"
-                            value={date}
-                            onChangeText={setDate}
-                            placeholder="2024-10-15"
-                        />
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-                        <Input
-                            label="Customer Name *"
-                            value={customerName}
-                            onChangeText={setCustomerName}
-                            placeholder="Customer Name"
-                        />
-
-                        <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-                        <ThemedText style={[styles.sectionTitle, { color: theme.textSecondary }]}>Select Product *</ThemedText>
-                        {renderSelector(PRODUCT_TYPES, productType, setProductType)}
-
-                        <View style={{ marginBottom: 16, marginTop: 8 }}>
-                            <ThemedText style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 4 }}>
-                                Available {productType} Stock:
-                            </ThemedText>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                {isCheckingStock ? (
-                                    <ActivityIndicator size="small" color={theme.primary} />
-                                ) : (
-                                    <ThemedText style={{
-                                        fontSize: 18,
-                                        fontWeight: 'bold',
-                                        color: availableStock && availableStock > 0 ? theme.success : theme.error
-                                    }}>
-                                        {availableStock !== null ? `${availableStock.toFixed(2)} Units` : '0 Units'}
-                                    </ThemedText>
-                                )}
+                    {/* ── Section 1: Date & Customer ── */}
+                    <View style={styles.card}>
+                        <View style={styles.sectionHeader}>
+                            <View style={styles.sectionDot} />
+                            <ThemedText style={styles.sectionTitle}>Entry Details</ThemedText>
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                            <View style={{ width: 130 }}>
+                                {renderInput('Date', displayDate, setDisplayDate, 'DD/MM/YYYY', 'default', 'date')}
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                {renderInput('Customer Name', customerName, setCustomerName, 'Enter name', 'default', 'customer')}
                             </View>
                         </View>
+                    </View>
+
+                    {/* ── Section 2: Product Selection ── */}
+                    <View style={styles.card}>
+                        <View style={styles.sectionHeader}>
+                            <View style={[styles.sectionDot, { backgroundColor: '#F59E0B' }]} />
+                            <ThemedText style={styles.sectionTitle}>Select Product</ThemedText>
+                        </View>
+
+                        {isFetchingStock ? (
+                            <ActivityIndicator color="#10B981" style={{ marginVertical: 20 }} />
+                        ) : (
+                            <View style={styles.productGrid}>
+                                {PRODUCT_TYPES.map(p => {
+                                    const isSelected = productType === p;
+                                    const stock = productStock[p] ?? 0;
+                                    const color = PRODUCT_COLORS[p] || '#6B7280';
+                                    return (
+                                        <TouchableOpacity
+                                            key={p}
+                                            onPress={() => { setProductType(p); setQuantity(''); }}
+                                            activeOpacity={0.8}
+                                            style={[
+                                                styles.productCard,
+                                                isSelected && { borderColor: color, borderWidth: 2.5, backgroundColor: `${color}12` }
+                                            ]}
+                                        >
+                                            <ThemedText style={styles.productIcon}>{PRODUCT_ICONS[p]}</ThemedText>
+                                            <ThemedText style={[styles.productName, isSelected && { color, fontWeight: '800' }]}>{p}</ThemedText>
+                                            <View style={[styles.stockBadge, { backgroundColor: stock > 0 ? '#DCFCE7' : '#FEE2E2' }]}>
+                                                <ThemedText style={[styles.stockText, { color: stock > 0 ? '#166534' : '#991B1B' }]}>
+                                                    {stock > 0 ? `${stock.toFixed(1)} avail` : 'Out of stock'}
+                                                </ThemedText>
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        )}
+                    </View>
+
+                    {/* ── Section 3: Quantity & Price ── */}
+                    <View style={styles.card}>
+                        <View style={styles.sectionHeader}>
+                            <View style={[styles.sectionDot, { backgroundColor: '#3B82F6' }]} />
+                            <ThemedText style={styles.sectionTitle}>Quantity & Price</ThemedText>
+                        </View>
+
+                        {/* Stock warning */}
+                        {isOverLimit && (
+                            <View style={styles.warningBanner}>
+                                <Ionicons name="warning" size={16} color="#92400E" />
+                                <ThemedText style={styles.warningText}>
+                                    Exceeds stock! Only {availableForSelected.toFixed(2)} units available.
+                                </ThemedText>
+                            </View>
+                        )}
 
                         <View style={styles.row}>
-                            <View style={{ flex: 1, marginRight: 8 }}>
-                                <Input
-                                    label="Quantity Sold (kg) *"
-                                    value={quantity}
-                                    onChangeText={setQuantity}
-                                    keyboardType="numeric"
-                                    placeholder="0.0"
-                                />
+                            <View style={{ flex: 1 }}>
+                                {renderInput('Quantity', quantity, setQuantity, '0.0', 'numeric', 'qty')}
                             </View>
-                            <View style={{ flex: 1, marginLeft: 8 }}>
-                                <Input
-                                    label="Price per Unit (₹) *"
-                                    value={pricePerUnit}
-                                    onChangeText={setPricePerUnit}
-                                    keyboardType="numeric"
-                                    placeholder="0"
-                                />
+                            <View style={{ flex: 1, marginLeft: 12 }}>
+                                {renderInput('Price per Unit ₹', pricePerUnit, setPricePerUnit, '0', 'numeric', 'price')}
                             </View>
                         </View>
 
-                        <View style={[styles.totalBox, { backgroundColor: theme.surfaceMuted }]}>
-                            <ThemedText style={styles.totalLabel}>Total Amount:</ThemedText>
-                            <ThemedText style={[styles.totalValue, { color: theme.primary }]}>
+                        {/* Total */}
+                        <View style={styles.totalBox}>
+                            <ThemedText style={styles.totalLabel}>Total Payable</ThemedText>
+                            <ThemedText style={[styles.totalValue, isOverLimit && { color: '#EF4444' }]}>
                                 ₹ {totalAmount}
                             </ThemedText>
                         </View>
+                    </View>
 
-                        <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                    {/* ── Section 4: Payment Method ── */}
+                    <View style={styles.card}>
+                        <View style={styles.sectionHeader}>
+                            <View style={[styles.sectionDot, { backgroundColor: '#8B5CF6' }]} />
+                            <ThemedText style={styles.sectionTitle}>Payment Method</ThemedText>
+                        </View>
+                        <View style={styles.paymentRow}>
+                            {PAYMENT_MODES.map(m => {
+                                const icons: Record<string, string> = { Cash: 'cash', UPI: 'qr-code', Credit: 'card' };
+                                const isSelected = paymentMode === m;
+                                return (
+                                    <TouchableOpacity
+                                        key={m}
+                                        onPress={() => setPaymentMode(m)}
+                                        style={[styles.paymentCard, isSelected && styles.paymentCardSelected]}
+                                    >
+                                        <Ionicons name={icons[m] as any} size={16} color={isSelected ? '#fff' : '#6B7280'} />
+                                        <ThemedText style={[styles.paymentLabel, isSelected && { color: '#fff' }]}>{m}</ThemedText>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
 
-                        <ThemedText style={[styles.sectionTitle, { color: theme.textSecondary }]}>Payment Mode *</ThemedText>
-                        {renderSelector(PAYMENT_MODES, paymentMode, setPaymentMode)}
-
-                        <Button
-                            title="Complete Sale"
-                            onPress={handleSave}
-                            loading={isLoading}
-                            style={{ marginTop: 24 }}
-                        />
-                        <Button
-                            title="Cancel"
-                            onPress={() => router.back()}
-                            variant="outline"
-                            style={styles.cancelButton}
-                            disabled={isLoading}
-                        />
-                    </Card>
+                    {/* ── Submit ── */}
+                    <TouchableOpacity
+                        style={[styles.saveBtn, isOverLimit && { backgroundColor: '#EF4444', shadowColor: '#EF4444' }]}
+                        onPress={handleSave}
+                        disabled={isLoading}
+                    >
+                        {isLoading
+                            ? <ActivityIndicator color="#fff" />
+                            : <>
+                                <Ionicons name={isOverLimit ? 'warning-outline' : 'checkmark-circle'} size={20} color="#fff" />
+                                <ThemedText style={styles.saveBtnText}>Sale</ThemedText>
+                              </>
+                        }
+                    </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            {/* Success Modal */}
-            <Modal
-                visible={showSuccessModal}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setShowSuccessModal(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
-                        <View style={styles.modalHeader}>
-                            <View style={styles.successIconContainer}>
-                                <Ionicons name="checkmark-circle" size={50} color={theme.primary} />
-                            </View>
-                            <ThemedText style={styles.modalTitle}>Sale Completed!</ThemedText>
-                            <ThemedText style={styles.modalSubtitle}>The entry has been recorded successfully.</ThemedText>
+            {/* ── Success Modal ── */}
+            <Modal visible={showSuccessModal} transparent animationType="fade">
+                <View style={styles.modalBg}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.successBadge}>
+                            <Ionicons name="checkmark" size={36} color="#fff" />
+                        </View>
+                        <ThemedText style={styles.modalTitle}>Sale Recorded! 🎉</ThemedText>
+                        <ThemedText style={styles.modalSub}>
+                            {lastSaleData?.quantity} units of {lastSaleData?.productType} sold to {lastSaleData?.customerName}
+                        </ThemedText>
+
+                        <TouchableOpacity 
+                            style={[styles.saveBtn, { width: '100%', marginTop: 20 }]} 
+                            onPress={() => {
+                                setShowSuccessModal(false);
+                                setShowReceiptModal(true);
+                            }}
+                        >
+                            <Ionicons name="receipt-outline" size={20} color="#fff" />
+                            <ThemedText style={styles.saveBtnText}>View Receipt</ThemedText>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => { setShowSuccessModal(false); router.replace('/(tabs)'); }}
+                            style={styles.btnDismiss}
+                        >
+                            <ThemedText style={styles.btnDismissText}>Done</ThemedText>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* ── Receipt Preview Modal ── */}
+            <Modal visible={showReceiptModal} transparent animationType="slide">
+                <View style={styles.modalBg}>
+                    <View style={[styles.modalContent, { padding: 0, overflow: 'hidden', maxWidth: 450 }]}>
+                        {/* Header */}
+                        <View style={{ backgroundColor: '#10B981', width: '100%', padding: 20, alignItems: 'center' }}>
+                            <ThemedText style={{ color: '#fff', fontSize: 18, fontWeight: '800' }}>Sales Receipt</ThemedText>
+                            <TouchableOpacity 
+                                onPress={() => setShowReceiptModal(false)}
+                                style={{ position: 'absolute', right: 15, top: 18 }}
+                            >
+                                <Ionicons name="close" size={24} color="#fff" />
+                            </TouchableOpacity>
                         </View>
 
-                        <View style={[styles.billPreview, { backgroundColor: theme.background }]}>
-                            <View style={styles.billRow}>
-                                <ThemedText style={styles.billLabel}>Date</ThemedText>
-                                <ThemedText style={styles.billValue}>{lastSaleData?.date}</ThemedText>
+                        <ScrollView style={{ width: '100%', padding: 20 }}>
+                            <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                                <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#10B981' }}>DHARMRAJ DAIRY</ThemedText>
+                                <ThemedText style={{ fontSize: 12, color: '#6B7280' }}>Quality Fresh Dairy Products</ThemedText>
                             </View>
-                            <View style={styles.billRow}>
-                                <ThemedText style={styles.billLabel}>Customer</ThemedText>
-                                <ThemedText style={styles.billValue}>{lastSaleData?.customerName}</ThemedText>
-                            </View>
-                            <View style={[styles.divider, { marginVertical: 8, height: 1 }]} />
-                            <View style={styles.billRow}>
-                                <ThemedText style={styles.billLabel}>{lastSaleData?.productType}</ThemedText>
-                                <ThemedText style={styles.billValue}>{lastSaleData?.quantity} kg x ₹{lastSaleData?.pricePerUnit}</ThemedText>
-                            </View>
-                            <View style={[styles.billRow, { marginTop: 12 }]}>
-                                <ThemedText style={[styles.billLabel, { fontWeight: '800', color: theme.text }]}>Total Amount</ThemedText>
-                                <ThemedText style={[styles.billValue, { fontWeight: '800', color: theme.primary, fontSize: 18 }]}>₹{lastSaleData?.totalAmount}</ThemedText>
-                            </View>
-                        </View>
 
-                        <View style={styles.modalButtons}>
-                            <TouchableOpacity
-                                style={[styles.modalButton, { backgroundColor: theme.primary }]}
+                            <View style={styles.receiptLine} />
+
+                            <View style={styles.receiptGrid}>
+                                <View style={styles.receiptInfoRow}>
+                                    <ThemedText style={styles.receiptLabel}>Customer:</ThemedText>
+                                    <ThemedText style={styles.receiptValue}>{lastSaleData?.customerName}</ThemedText>
+                                </View>
+                                <View style={styles.receiptInfoRow}>
+                                    <ThemedText style={styles.receiptLabel}>Date:</ThemedText>
+                                    <ThemedText style={styles.receiptValue}>{lastSaleData?.date}</ThemedText>
+                                </View>
+                                <View style={styles.receiptInfoRow}>
+                                    <ThemedText style={styles.receiptLabel}>Payment:</ThemedText>
+                                    <ThemedText style={styles.receiptValue}>{lastSaleData?.paymentMode}</ThemedText>
+                                </View>
+                            </View>
+
+                            <View style={[styles.receiptLine, { marginVertical: 15 }]} />
+
+                            {/* Table Header */}
+                            <View style={{ flexDirection: 'row', paddingBottom: 8 }}>
+                                <ThemedText style={{ flex: 2, fontSize: 12, fontWeight: '800', color: '#374151' }}>ITEM</ThemedText>
+                                <ThemedText style={{ flex: 1, fontSize: 12, fontWeight: '800', color: '#374151', textAlign: 'center' }}>QTY</ThemedText>
+                                <ThemedText style={{ flex: 1.5, fontSize: 12, fontWeight: '800', color: '#374151', textAlign: 'right' }}>TOTAL</ThemedText>
+                            </View>
+
+                            {/* Item Row */}
+                            <View style={{ flexDirection: 'row', paddingVertical: 10 }}>
+                                <ThemedText style={{ flex: 2, fontSize: 14, fontWeight: '600' }}>{lastSaleData?.productType}</ThemedText>
+                                <ThemedText style={{ flex: 1, fontSize: 14, textAlign: 'center' }}>{lastSaleData?.quantity}</ThemedText>
+                                <ThemedText style={{ flex: 1.5, fontSize: 14, fontWeight: '700', textAlign: 'right' }}>₹{lastSaleData?.totalAmount}</ThemedText>
+                            </View>
+
+                            <View style={[styles.receiptLine, { marginVertical: 15 }]} />
+
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <ThemedText style={{ fontSize: 16, fontWeight: '800', color: '#374151' }}>TOTAL AMOUNT</ThemedText>
+                                <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#10B981' }}>₹{lastSaleData?.totalAmount}</ThemedText>
+                            </View>
+
+                            <View style={{ marginTop: 30, alignItems: 'center' }}>
+                                <ThemedText style={{ fontSize: 12, color: '#9CA3AF', fontStyle: 'italic' }}>Thank you for your business!</ThemedText>
+                            </View>
+                        </ScrollView>
+
+                        <View style={{ width: '100%', padding: 20, borderTopWidth: 1, borderTopColor: '#F3F4F6', flexDirection: 'row', gap: 10 }}>
+                            <TouchableOpacity 
+                                style={[styles.btnAction, { flex: 1, backgroundColor: '#1F2937' }]} 
                                 onPress={handlePrintReceipt}
                             >
-                                <Ionicons name="eye-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-                                <ThemedText style={styles.modalButtonText}>View Receipt</ThemedText>
+                                <Ionicons name="cloud-download-outline" size={18} color="#fff" />
+                                <ThemedText style={styles.btnActionText}>Download</ThemedText>
                             </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[styles.modalButton, { backgroundColor: '#3B82F6' }]}
+                            <TouchableOpacity 
+                                style={[styles.btnAction, { flex: 1, backgroundColor: '#3B82F6' }]} 
                                 onPress={handleDownloadReceipt}
                             >
-                                <Ionicons name="download-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-                                <ThemedText style={styles.modalButtonText}>Download Receipt</ThemedText>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={styles.closeButton}
-                                onPress={() => {
-                                    setShowSuccessModal(false);
-                                    router.back();
-                                }}
-                            >
-                                <ThemedText style={[styles.closeButtonText, { color: theme.textSecondary }]}>Dismiss</ThemedText>
+                                <Ionicons name="share-social-outline" size={18} color="#fff" />
+                                <ThemedText style={styles.btnActionText}>Share</ThemedText>
                             </TouchableOpacity>
                         </View>
+                    </View>
+                </View>
+            </Modal>
+            {/* ── Custom Alert Modal ── */}
+            <Modal visible={alertConfig.visible} transparent animationType="fade">
+                <View style={styles.modalBg}>
+                    <View style={[styles.modalContent, { maxWidth: 320, padding: 24 }]}>
+                        <View style={[
+                            styles.alertIconBadge, 
+                            { backgroundColor: alertConfig.type === 'error' ? '#FEE2E2' : alertConfig.type === 'warning' ? '#FEF3C7' : '#DBEAFE' }
+                        ]}>
+                            <Ionicons 
+                                name={alertConfig.type === 'error' ? 'alert-circle' : alertConfig.type === 'warning' ? 'warning' : 'information-circle'} 
+                                size={32} 
+                                color={alertConfig.type === 'error' ? '#EF4444' : alertConfig.type === 'warning' ? '#F59E0B' : '#3B82F6'} 
+                            />
+                        </View>
+                        
+                        <ThemedText style={[styles.modalTitle, { fontSize: 18, textAlign: 'center' }]}>
+                            {alertConfig.title}
+                        </ThemedText>
+                        
+                        <ThemedText style={[styles.modalSub, { marginBottom: 24 }]}>
+                            {alertConfig.message}
+                        </ThemedText>
+
+                        <TouchableOpacity 
+                            style={[
+                                styles.btnAction, 
+                                { 
+                                    width: '100%', 
+                                    backgroundColor: alertConfig.type === 'error' ? '#EF4444' : alertConfig.type === 'warning' ? '#F59E0B' : '#10B981',
+                                    height: 48
+                                }
+                            ]} 
+                            onPress={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                        >
+                            <ThemedText style={styles.btnActionText}>Understood</ThemedText>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
@@ -451,172 +559,90 @@ export default function SalesScreen() {
 }
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-    },
+    safeArea: { flex: 1 },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 20,
+        paddingHorizontal: 16,
         paddingVertical: 12,
-        justifyContent: 'space-between',
     },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        flex: 1,
-        textAlign: 'center',
-        marginRight: 24, // Offset for back button to center title
+    backBtn: {
+        width: 42, height: 42, borderRadius: 13,
+        backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
+        shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 6, elevation: 3,
     },
-    backButton: {
-        width: 44,
-        height: 44,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    container: {
-        flexGrow: 1,
-        paddingHorizontal: 20,
-        paddingBottom: 40,
-    },
+    headerTitle: { flex: 1, textAlign: 'center', fontSize: 20, fontWeight: '800', color: '#111827' },
+    scrollContent: { paddingHorizontal: 16, paddingBottom: 40 },
     card: {
-        width: '100%',
-        padding: 24,
-        marginBottom: 30,
+        backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 12,
+        shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
     },
-    sectionTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        marginBottom: 8,
-        marginLeft: 4,
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    sectionDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981', marginRight: 8 },
+    sectionTitle: { fontSize: 14, fontWeight: '700', color: '#374151' },
+    inputGroup: { marginBottom: 12 },
+    inputLabel: { fontSize: 12, fontWeight: '600', color: '#6B7280', marginBottom: 5 },
+    inputWrapper: {
+        height: 46, borderRadius: 12, borderWidth: 1.5,
+        borderColor: '#F3F4F6', backgroundColor: '#F9FAFB',
+        paddingHorizontal: 12, justifyContent: 'center',
     },
-    divider: {
-        height: 1,
-        width: '100%',
-        marginVertical: 15,
-        opacity: 0.5,
-    },
-    selectorScroll: {
-        paddingVertical: 4,
-        paddingRight: 10,
-        gap: 8,
-    },
-    selectorPill: {
-        flexDirection: 'row',
+    inputFocused: { borderColor: '#10B981', backgroundColor: '#fff' },
+    textInput: { fontSize: 15, fontWeight: '500' },
+    productGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    productCard: {
+        width: '23.5%', paddingVertical: 10, paddingHorizontal: 4, borderRadius: 12,
+        backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: '#F3F4F6',
         alignItems: 'center',
-        paddingVertical: 10,
-        paddingHorizontal: 18,
-        borderRadius: 20,
-        borderWidth: 1,
-        marginRight: 4,
     },
-    selectorText: {
-        fontSize: 14,
-        fontWeight: '600',
+    productIcon: { fontSize: 18, marginBottom: 3 },
+    productName: { fontSize: 11, fontWeight: '600', color: '#374151', marginBottom: 4, textAlign: 'center' },
+    stockBadge: { paddingHorizontal: 5, paddingVertical: 2, borderRadius: 6 },
+    stockText: { fontSize: 9, fontWeight: '700' },
+    row: { flexDirection: 'row', marginBottom: 8 },
+    warningBanner: {
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        backgroundColor: '#FEF3C7', borderRadius: 10, padding: 10, marginBottom: 12,
     },
-    row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 5,
-    },
+    warningText: { fontSize: 13, color: '#92400E', fontWeight: '600', flex: 1 },
     totalBox: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 16,
-        borderRadius: 12,
-        marginTop: 10,
+        backgroundColor: '#ECFDF5', borderRadius: 14, padding: 16,
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4,
     },
-    totalLabel: {
-        fontSize: 16,
-        fontWeight: '600',
+    totalLabel: { fontSize: 14, fontWeight: '600', color: '#065F46' },
+    totalValue: { fontSize: 24, fontWeight: '900', color: '#10B981' },
+    paymentRow: { flexDirection: 'row', gap: 8 },
+    paymentCard: {
+        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        paddingVertical: 9, paddingHorizontal: 8, borderRadius: 10,
+        borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', gap: 5,
     },
-    totalValue: {
-        fontSize: 24,
-        fontWeight: 'bold',
+    paymentCardSelected: { backgroundColor: '#10B981', borderColor: '#10B981' },
+    paymentLabel: { fontSize: 12, fontWeight: '700', color: '#6B7280' },
+    saveBtn: {
+        height: 54, backgroundColor: '#10B981', borderRadius: 16,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+        shadowColor: '#10B981', shadowOpacity: 0.35, shadowRadius: 12, elevation: 6,
+        marginBottom: 10,
     },
-    cancelButton: {
-        marginTop: 10,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 24,
-    },
-    modalContent: {
-        width: '100%',
-        maxWidth: 400,
-        borderRadius: 24,
-        padding: 24,
-        alignItems: 'center',
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-    },
-    modalHeader: {
-        alignItems: 'center',
-        marginBottom: 24,
-    },
-    successIconContainer: {
-        marginBottom: 12,
-    },
-    modalTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        marginBottom: 4,
-    },
-    modalSubtitle: {
-        fontSize: 14,
-        color: '#6B7280',
-        textAlign: 'center',
-    },
-    billPreview: {
-        width: '100%',
-        padding: 16,
-        borderRadius: 16,
-        marginBottom: 24,
-    },
-    billRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 6,
-    },
-    billLabel: {
-        fontSize: 13,
-        color: '#6B7280',
-        fontWeight: '500',
-    },
-    billValue: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    modalButtons: {
-        width: '100%',
-        gap: 12,
-    },
-    modalButton: {
-        height: 50,
-        borderRadius: 12,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    modalButtonText: {
-        color: '#FFFFFF',
-        fontSize: 15,
-        fontWeight: '700',
-    },
-    closeButton: {
-        height: 40,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    closeButtonText: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
+    saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+    // Modal
+    modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+    modalContent: { width: '100%', maxWidth: 380, backgroundColor: '#fff', borderRadius: 30, padding: 24, alignItems: 'center' },
+    successBadge: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+    alertIconBadge: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+    modalTitle: { fontSize: 22, fontWeight: '900', marginBottom: 6, color: '#111827' },
+    modalSub: { fontSize: 14, color: '#6B7280', textAlign: 'center', marginBottom: 20, lineHeight: 20 },
+    receiptRow: { flexDirection: 'row', gap: 12, width: '100%', marginBottom: 20 },
+    receiptItem: { flex: 1, alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 12, padding: 10 },
+    receiptLabel: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', marginBottom: 2 },
+    receiptValue: { fontSize: 14, fontWeight: '800', color: '#111827' },
+    modalBtns: { flexDirection: 'row', gap: 10, width: '100%' },
+    btnAction: { flex: 1, height: 46, backgroundColor: '#10B981', borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+    btnActionText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+    btnDismiss: { marginTop: 14, padding: 8 },
+    btnDismissText: { color: '#6B7280', fontWeight: '600', fontSize: 13 },
+    receiptLine: { height: 1.5, backgroundColor: '#E5E7EB', width: '100%', borderStyle: 'dashed' },
+    receiptGrid: { gap: 8 },
+    receiptInfoRow: { flexDirection: 'row', justifyContent: 'space-between' },
 });

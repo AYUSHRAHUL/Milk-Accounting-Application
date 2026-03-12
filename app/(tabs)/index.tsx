@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
+import { apiFetch } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import { router } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Image,
   ScrollView,
@@ -22,7 +24,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import DashboardBannerImage from '@/assets/dashboard_banner.png';
 import MilkCollectionImage from '@/assets/milkcollection.png';
-import ProductsImage from '@/assets/protection.png';
 import ReportsImage from '@/assets/reports.png';
 import SalesImage from '@/assets/sales.png';
 import SuppliersImage from '@/assets/supplier.png';
@@ -45,7 +46,6 @@ const FEATURES: FeatureCard[] = [
   { title: 'View Collections', route: '/milk-collection/history', image: ViewCollectionsImage, icon: 'list', useTint: true },
   { title: 'Suppliers', route: '/suppliers', image: SuppliersImage, icon: 'people', useTint: true },
   { title: 'Production', route: '/production', image: null, icon: 'flask', useTint: true },
-  { title: 'Products', route: '/products', image: ProductsImage, icon: 'cube', useTint: true },
   { title: 'Sales', route: '/sales', image: SalesImage, icon: 'cash', useTint: true },
   { title: 'Reports', route: '/(tabs)/reports', image: ReportsImage, icon: 'bar-chart', useTint: true },
 ];
@@ -128,6 +128,24 @@ function DashboardBanner() {
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
+  const { user } = useAuth();
+  const [availableMilk, setAvailableMilk] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchSummary = async () => {
+      if (!user?.id) return;
+      try {
+        const res = await apiFetch(`/api/production/milk-summary?userId=${user.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setAvailableMilk(data.availableMilk);
+        }
+      } catch (error) {
+        console.error('Dashboard Summary Error:', error);
+      }
+    };
+    fetchSummary();
+  }, [user?.id]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -158,6 +176,21 @@ export default function DashboardScreen() {
 
         {/* Banner */}
         <DashboardBanner />
+
+        {/* KPI Section */}
+        <View style={styles.kpiSection}>
+          <View style={styles.kpiCard}>
+            <View style={styles.kpiIconWrapper}>
+              <Ionicons name="cube" size={24} color="#059669" />
+            </View>
+            <View style={styles.kpiContent}>
+              <Text style={styles.kpiLabel}>Opening Balance</Text>
+              <Text style={styles.kpiValue}>
+                {availableMilk !== null ? `${availableMilk.toFixed(1)} L` : '--'}
+              </Text>
+            </View>
+          </View>
+        </View>
 
         {/* Feature Grid */}
         <View style={styles.grid}>
@@ -315,5 +348,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     marginTop: 4,
+  },
+
+  // KPI Styles
+  kpiSection: {
+    marginBottom: 24,
+  },
+  kpiCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  kpiIconWrapper: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: '#ECFDF5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  kpiContent: {
+    flex: 1,
+  },
+  kpiLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  kpiValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#111827',
+    marginTop: 2,
   },
 });

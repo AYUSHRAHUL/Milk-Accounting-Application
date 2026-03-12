@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -33,6 +34,7 @@ interface ReportEntry {
 }
 
 export default function DetailedReportScreen() {
+    const { user } = useAuth();
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
 
@@ -42,7 +44,7 @@ export default function DetailedReportScreen() {
 
     const fetchDetailedReports = async () => {
         try {
-            const response = await apiFetch('/api/reports/detailed');
+            const response = await apiFetch(`/api/reports/detailed?userId=${user?.id}`);
             if (response.ok) {
                 const data = await response.json();
                 setEntries(data);

@@ -61,7 +61,7 @@ export default function ManageSupplierScreen() {
                 method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userId: user?.id || 'static-user-id',
+                    userId: user?.id,
                     supplierId,
                     name,
                     phone,

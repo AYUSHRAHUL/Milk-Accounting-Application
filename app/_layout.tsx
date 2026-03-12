@@ -9,7 +9,8 @@ import 'react-native-reanimated';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { PreferencesProvider } from '@/context/PreferencesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { LogBox } from 'react-native';
+import { LogBox, View } from 'react-native';
+import { CustomSplashScreen } from '@/components/SplashScreen';
 
 // Suppress known React Native Web deprecation warnings that clutter the console
 LogBox.ignoreLogs([
@@ -50,6 +51,7 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
@@ -64,10 +66,7 @@ function RootLayoutNav() {
           name="suppliers/index"
           options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="products/index"
-          options={{ headerShown: false }}
-        />
+
         <Stack.Screen
           name="sales/index"
           options={{ headerShown: false }}
@@ -99,14 +98,28 @@ export default function RootLayout() {
     Outfit_700Bold,
   });
 
+  const [isAppReady, setIsAppReady] = useState(false);
+  const [isSplashScreenComplete, setIsSplashScreenComplete] = useState(false);
+
   useEffect(() => {
     if (loaded || error) {
+      // Once fonts are loaded, we can hide the native splash screen
       SplashScreen.hideAsync();
+      setIsAppReady(true);
     }
   }, [loaded, error]);
 
-  if (!loaded && !error) {
+  if (!isAppReady) {
     return null;
+  }
+
+  // Show our custom animated splash screen first
+  if (!isSplashScreenComplete) {
+    return (
+      <View style={{ flex: 1 }}>
+        <CustomSplashScreen onAnimationComplete={() => setIsSplashScreenComplete(true)} />
+      </View>
+    );
   }
 
   return (

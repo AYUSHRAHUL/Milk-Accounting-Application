@@ -6,6 +6,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/context/AuthContext';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
@@ -40,6 +41,7 @@ const PAYMENT_COLORS: Record<string, { bg: string; text: string }> = {
 };
 
 export default function ReportSalesScreen() {
+  const { user } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 
@@ -52,7 +54,7 @@ export default function ReportSalesScreen() {
   const fetchEntries = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await apiFetch('/api/sales');
+      const response = await apiFetch(`/api/sales?userId=${user?.id}`);
       if (!response.ok) return;
       const data = await response.json();
       const mapped: SaleEntryRow[] = data.map((item: any) => ({

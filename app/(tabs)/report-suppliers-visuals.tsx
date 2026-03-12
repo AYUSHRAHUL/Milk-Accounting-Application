@@ -6,6 +6,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
@@ -18,6 +19,7 @@ interface SupplierRow {
 }
 
 export default function ReportSuppliersVisualsScreen() {
+  const { user } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 
@@ -27,7 +29,7 @@ export default function ReportSuppliersVisualsScreen() {
   const fetchEntries = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await apiFetch('/api/suppliers');
+      const response = await apiFetch(`/api/suppliers?userId=${user?.id}`);
       if (!response.ok) return;
 
       const data = await response.json();

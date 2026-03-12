@@ -7,9 +7,11 @@ import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function ReportsScreen() {
+  const { user } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 
@@ -25,7 +27,7 @@ export default function ReportsScreen() {
 
   const fetchReports = useCallback(async () => {
     try {
-      const response = await apiFetch(`/api/reports?filter=month`);
+      const response = await apiFetch(`/api/reports?filter=month&userId=${user?.id}`);
       if (response.ok) {
         const data = await response.json();
         setMetrics(data);
@@ -133,24 +135,25 @@ export default function ReportsScreen() {
             </Card>
           </TouchableOpacity>
 
-          {/* Products */}
-          <TouchableOpacity onPress={() => router.push('/(tabs)/report-products')} activeOpacity={0.82}>
-            <Card variant="elevated" style={[styles.card, { borderLeftColor: theme.warning }]}>
-              <View style={[styles.iconBox, { backgroundColor: theme.warningMuted }]}>
-                <Ionicons name="cube" size={26} color={theme.warning} />
+
+          {/* Production Report */}
+          <TouchableOpacity onPress={() => router.push('/(tabs)/report-production')} activeOpacity={0.82}>
+            <Card variant="elevated" style={[styles.card, { borderLeftColor: '#F59E0B' }]}>
+              <View style={[styles.iconBox, { backgroundColor: 'rgba(245,158,11,0.10)' }]}>
+                <Ionicons name="flask" size={26} color="#F59E0B" />
               </View>
               <View style={styles.cardContent}>
-                <ThemedText style={styles.cardTitle}>Products Report</ThemedText>
+                <ThemedText style={styles.cardTitle}>Production Report</ThemedText>
                 <View style={styles.statsRow}>
                   <View style={styles.stat}>
-                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Batches</ThemedText>
-                    <ThemedText style={styles.statValue}>{metrics.products.batches}</ThemedText>
+                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Products</ThemedText>
+                    <ThemedText style={styles.statValue}>{metrics.products.produced.toFixed(1)} qty</ThemedText>
                   </View>
                   <View style={[styles.divider, { backgroundColor: theme.borderMuted }]} />
                   <View style={styles.stat}>
-                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Yield</ThemedText>
-                    <ThemedText style={[styles.statValue, { color: theme.warning }]}>
-                      {metrics.products.produced.toFixed(1)} Units
+                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Batches</ThemedText>
+                    <ThemedText style={[styles.statValue, { color: '#F59E0B' }]}>
+                      {metrics.products.batches}
                     </ThemedText>
                   </View>
                 </View>

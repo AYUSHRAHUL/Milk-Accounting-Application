@@ -6,6 +6,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/context/AuthContext';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Alert, FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -21,6 +22,7 @@ interface SupplierData {
 }
 
 export default function SuppliersListScreen() {
+    const { user } = useAuth();
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
 
@@ -30,7 +32,7 @@ export default function SuppliersListScreen() {
     const fetchSuppliers = async () => {
         setIsLoading(true);
         try {
-            const response = await apiFetch('/api/suppliers');
+            const response = await apiFetch(`/api/suppliers?userId=${user?.id}`);
             if (response.ok) {
                 const data = await response.json();
                 setSuppliers(data);
@@ -62,7 +64,7 @@ export default function SuppliersListScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            const response = await apiFetch(`/api/suppliers/${id}`, { method: 'DELETE' });
+                            const response = await apiFetch(`/api/suppliers/${id}?userId=${user?.id}`, { method: 'DELETE' });
                             if (response.ok) {
                                 setSuppliers(prev => prev.filter(s => s._id !== id));
                             } else {

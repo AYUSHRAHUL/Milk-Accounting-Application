@@ -6,6 +6,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/context/AuthContext';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -19,6 +20,7 @@ interface SaleEntryRow {
 }
 
 export default function ReportSalesVisualsScreen() {
+  const { user } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 
@@ -30,7 +32,7 @@ export default function ReportSalesVisualsScreen() {
   const fetchEntries = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await apiFetch('/api/sales');
+      const response = await apiFetch(`/api/sales?userId=${user?.id}`);
       if (!response.ok) return;
 
       const data = await response.json();
