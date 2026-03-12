@@ -86,9 +86,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         throw new Error(data.error || 'Failed to register');
       }
-
-      setUser(data.user);
-      await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
     } catch (error) {
       console.error('Registration failed:', error);
       throw error;

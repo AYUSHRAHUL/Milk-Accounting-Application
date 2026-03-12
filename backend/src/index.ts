@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import mongoose from 'mongoose';
 import cors from 'cors';
 import express from 'express';
 import bcrypt from 'bcryptjs';
@@ -9,6 +10,7 @@ import { Supplier } from './models/Supplier';
 import { MilkEntry } from './models/MilkEntry';
 import { ProductionEntry } from './models/ProductionEntry';
 import { SaleEntry } from './models/SaleEntry';
+import { MilkProduction } from './models/MilkProduction';
 
 const app = express();
 
@@ -31,7 +33,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     const existingUser = await User.findOne({ email: String(email).toLowerCase() });
     if (existingUser) {
-      return res.status(409).json({ error: 'User already exists' });
+      return res.status(409).json({ error: 'already existed' });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -335,6 +337,81 @@ app.post('/api/products/production', async (req, res) => {
   }
 });
 
+// --- Milk Separation (Production) ---
+app.get('/api/production/milk-summary', async (req, res) => {
+  try {
+    await connectToDatabase();
+    const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+
+    const { ObjectId } = mongoose.Types;
+    const matchUserId = ObjectId.isValid(userId) ? { $in: [userId, new ObjectId(userId)] } : userId;
+
+    // Sum of all milk collections
+    const collectedMilk = await MilkEntry.aggregate([
+      { $match: { userId: matchUserId } },
+      { $group: { _id: null, total: { $sum: '$quantity' } } },
+    ]);
+    const totalCollected = collectedMilk.length > 0 ? collectedMilk[0].total : 0;
+
+    // Sum of all milk used in separation
+    const usedMilk = await MilkProduction.aggregate([
+      { $match: { userId: matchUserId } },
+      { $group: { _id: null, total: { $sum: '$separationMilk' } } },
+    ]);
+    const totalUsed = usedMilk.length > 0 ? usedMilk[0].total : 0;
+
+    return res.status(200).json({
+      availableMilk: totalCollected - totalUsed,
+      totalCollected,
+      totalUsed
+    });
+  } catch (error: any) {
+    console.error('Milk Summary Error:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/production/separation', async (req, res) => {
+  try {
+    await connectToDatabase();
+    const { userId, date, totalMilk, separationMilk, wholeMilk, skimMilk, creamMilk } = req.body ?? {};
+
+    if (!userId || !date || totalMilk === undefined || separationMilk === undefined || wholeMilk === undefined || skimMilk === undefined || creamMilk === undefined) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const newSeparation = new MilkProduction({
+      userId,
+      date,
+      totalMilk,
+      separationMilk,
+      wholeMilk,
+      skimMilk,
+      creamMilk
+    });
+
+    await newSeparation.save();
+    return res.status(201).json({ message: 'Separation record saved successfully', data: newSeparation });
+  } catch (error: any) {
+    console.error('Save Separation Error:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/production/separation', async (req, res) => {
+  try {
+    await connectToDatabase();
+    const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
+    const filter = userId ? { userId } : {};
+    const history = await MilkProduction.find(filter).sort({ date: -1, createdAt: -1 });
+    return res.status(200).json(history);
+  } catch (error: any) {
+    console.error('Fetch Separation History Error:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 // --- Sales ---
 app.get('/api/sales', async (req, res) => {
   try {
@@ -421,6 +498,64 @@ app.post('/api/sales', async (req, res) => {
 });
 
 // --- Reports ---
+app.get('/api/reports/detailed', async (req, res) => {
+  try {
+    await connectToDatabase();
+    
+    // Fetch all entries from different collections
+    const [milkEntries, saleEntries, productionEntries] = await Promise.all([
+      MilkEntry.find({}).sort({ date: -1 }),
+      SaleEntry.find({}).sort({ date: -1 }),
+      ProductionEntry.find({}).sort({ date: -1 }),
+    ]);
+
+    // Format all entries into a unified ReportEntry format
+    const reportEntries = [
+      ...milkEntries.map(e => ({
+        _id: e._id,
+        date: e.date,
+        type: 'Milk Collection',
+        category: e.source,
+        details: `${e.supplier} (${e.shift})`,
+        quantity: e.quantity,
+        amount: e.totalCost,
+        currency: 'INR',
+        unit: 'Liters'
+      })),
+      ...saleEntries.map(e => ({
+        _id: e._id,
+        date: e.date,
+        type: 'Sale',
+        category: e.productType,
+        details: `${e.customerName || 'Walk-in'} (${e.paymentMode})`,
+        quantity: e.quantity,
+        amount: e.totalAmount,
+        currency: 'INR',
+        unit: 'Units'
+      })),
+      ...productionEntries.map(e => ({
+        _id: e._id,
+        date: e.date,
+        type: 'Production',
+        category: e.productType,
+        details: `${e.source} (${e.milkUsedLiters}L used)`,
+        quantity: e.quantityProduced,
+        amount: 0,
+        currency: 'INR',
+        unit: 'Units'
+      }))
+    ];
+
+    // Sort all combined entries by date descending
+    reportEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return res.status(200).json(reportEntries);
+  } catch (error: any) {
+    console.error('Fetch Detailed Reports Error:', error);
+    return res.status(500).json({ message: error?.message || 'Internal Server Error' });
+  }
+});
+
 app.get('/api/reports', async (req, res) => {
   try {
     await connectToDatabase();

@@ -44,6 +44,7 @@ const FEATURES: FeatureCard[] = [
   { title: 'Milk Collection', route: '/milk-collection', image: MilkCollectionImage, icon: 'water', useTint: true },
   { title: 'View Collections', route: '/milk-collection/history', image: ViewCollectionsImage, icon: 'list', useTint: true },
   { title: 'Suppliers', route: '/suppliers', image: SuppliersImage, icon: 'people', useTint: true },
+  { title: 'Production', route: '/production', image: null, icon: 'flask', useTint: true },
   { title: 'Products', route: '/products', image: ProductsImage, icon: 'cube', useTint: true },
   { title: 'Sales', route: '/sales', image: SalesImage, icon: 'cash', useTint: true },
   { title: 'Reports', route: '/(tabs)/reports', image: ReportsImage, icon: 'bar-chart', useTint: true },

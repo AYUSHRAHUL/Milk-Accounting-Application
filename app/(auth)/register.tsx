@@ -2,6 +2,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
+import { SuccessOverlay } from '@/components/ui/SuccessOverlay';
 import {
   ActivityIndicator,
   Animated,
@@ -14,6 +15,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -26,6 +28,7 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [isSuccessVisible, setIsSuccessVisible] = useState(false);
 
   const { register, isLoading } = useAuth();
 
@@ -37,11 +40,20 @@ export default function RegisterScreen() {
     try {
       if (register) {
         await register(name, email, password);
-        router.replace('/(tabs)');
+        setIsSuccessVisible(true);
       }
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      if (Platform.OS === 'web') {
+        alert(error.message || 'Registration failed');
+      } else {
+        Alert.alert('Error', error.message || 'Registration failed');
+      }
     }
+  };
+
+  const handleSuccessComplete = () => {
+    setIsSuccessVisible(false);
+    router.replace('/(auth)/login');
   };
 
   const handlePressIn = () => {
@@ -62,6 +74,11 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.container}>
+      <SuccessOverlay 
+        visible={isSuccessVisible} 
+        message="Succees full register" 
+        onAnimationComplete={handleSuccessComplete}
+      />
       {/* Split background */}
       <View style={styles.topBackground} />
       <View style={styles.bottomBackground} />

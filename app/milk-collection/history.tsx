@@ -233,6 +233,19 @@ export default function MilkCollectionHistoryScreen() {
         if (activeChip === 'Today') {
             const today = new Date().toDateString();
             filtered = filtered.filter(e => new Date(e.date).toDateString() === today);
+        } else if (activeChip === 'Yesterday') {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toDateString();
+            filtered = filtered.filter(e => new Date(e.date).toDateString() === yesterdayStr);
+        } else if (activeChip === 'This Week') {
+            const now = new Date();
+            const startOfWeek = new Date(now);
+            const day = now.getDay(); // 0 is Sunday, 1 is Monday...
+            const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
+            startOfWeek.setDate(diff);
+            startOfWeek.setHours(0, 0, 0, 0);
+            filtered = filtered.filter(e => new Date(e.date) >= startOfWeek);
         } else if (activeChip === 'This Month') {
             const now = new Date();
             const currentMonth = now.getMonth();
@@ -253,25 +266,25 @@ export default function MilkCollectionHistoryScreen() {
     const summary = useMemo(() => {
         let totalQty = 0;
         let totalAmount = 0;
-        let sumFat = 0;
-        let sumSnf = 0;
-        let sumClr = 0;
-        let count = filteredEntries.length;
+        let weightedFat = 0;
+        let weightedSnf = 0;
+        let weightedClr = 0;
 
         filteredEntries.forEach(e => {
-            totalQty += e.quantity;
-            totalAmount += e.totalCost;
-            sumFat += parseFloat(e.fatType) || 0;
-            sumSnf += e.snf || 0;
-            sumClr += e.clr || 0;
+            const qty = e.quantity || 0;
+            totalQty += qty;
+            totalAmount += e.totalCost || 0;
+            weightedFat += (parseFloat(e.fatType) || 0) * qty;
+            weightedSnf += (e.snf || 0) * qty;
+            weightedClr += (e.clr || 0) * qty;
         });
 
         return {
             totalQty,
             totalAmount,
-            avgFat: count ? (sumFat / count).toFixed(1) : '0.0',
-            avgSnf: count ? (sumSnf / count).toFixed(1) : '0.0',
-            avgClr: count ? (sumClr / count).toFixed(1) : '0.0'
+            avgFat: totalQty > 0 ? (weightedFat / totalQty).toFixed(1) : '0.0',
+            avgSnf: totalQty > 0 ? (weightedSnf / totalQty).toFixed(1) : '0.0',
+            avgClr: totalQty > 0 ? (weightedClr / totalQty).toFixed(1) : '0.0'
         };
     }, [filteredEntries]);
 
@@ -335,7 +348,7 @@ export default function MilkCollectionHistoryScreen() {
         </Card>
     );
 
-    const filterChips = ['All', 'Today', 'This Month', 'Morning', 'Evening'];
+    const filterChips = ['All', 'Today', 'Yesterday', 'This Week', 'This Month', 'Morning', 'Evening'];
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -353,63 +366,66 @@ export default function MilkCollectionHistoryScreen() {
             <View style={styles.content}>
                 {/* Search Bar Row */}
                 <View style={styles.filterSection}>
-                    <View style={styles.searchRow}>
-                        <TouchableOpacity style={styles.allSuppliersChip}>
-                            <ThemedText style={styles.allSuppliersText}>All Suppliers</ThemedText>
-                        </TouchableOpacity>
-                        <View style={styles.searchInputContainer}>
-                            <Ionicons name="search" size={20} color="#9CA3AF" />
-                            <TextInput
-                                style={[styles.searchInput, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
-                                placeholder="Search supplier..."
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                                placeholderTextColor="#9CA3AF"
-                            />
-                        </View>
+                    <View style={styles.searchInputContainer}>
+                        <Ionicons name="search" size={20} color="#9CA3AF" />
+                        <TextInput
+                            style={[styles.searchInput, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
+                            placeholder="Search by supplier name..."
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            placeholderTextColor="#9CA3AF"
+                        />
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+                            </TouchableOpacity>
+                        )}
                     </View>
 
-                    {/* Date Filters Row */}
-                    <View style={styles.dateRow}>
-                        <View style={styles.dateInputWrapper}>
-                            <ThemedText style={styles.dateLabel}>From Date</ThemedText>
-                            <View style={styles.dateInput}>
-                                <Ionicons name="calendar-outline" size={16} color="#4B5563" />
-                                <ThemedText style={styles.dateValue}>01-11-2025</ThemedText>
+                    <View style={styles.filterGrid}>
+                        {/* Date Filters Group */}
+                        <View style={styles.dateRangeContainer}>
+                            <View style={styles.dateField}>
+                                <ThemedText style={styles.fieldLabel}>From</ThemedText>
+                                <TouchableOpacity style={styles.datePickerToggle}>
+                                    <Ionicons name="calendar-outline" size={16} color={theme.primary} />
+                                    <ThemedText style={styles.dateText}>01-11-2025</ThemedText>
+                                </TouchableOpacity>
+                            </View>
+                            <View style={styles.dateField}>
+                                <ThemedText style={styles.fieldLabel}>To</ThemedText>
+                                <TouchableOpacity style={styles.datePickerToggle}>
+                                    <Ionicons name="calendar-outline" size={16} color={theme.primary} />
+                                    <ThemedText style={styles.dateText}>30-11-2025</ThemedText>
+                                </TouchableOpacity>
                             </View>
                         </View>
-                        <View style={styles.dateInputWrapper}>
-                            <ThemedText style={styles.dateLabel}>To Date</ThemedText>
-                            <View style={styles.dateInput}>
-                                <Ionicons name="calendar-outline" size={16} color="#4B5563" />
-                                <ThemedText style={styles.dateValue}>30-11-2025</ThemedText>
-                            </View>
+
+                        {/* Quick Filters */}
+                        <View style={styles.quickFiltersContainer}>
+                            <ThemedText style={styles.fieldLabel}>Quick Filters</ThemedText>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+                                {filterChips.map(chip => (
+                                    <TouchableOpacity
+                                        key={chip}
+                                        onPress={() => setActiveChip(chip)}
+                                        style={[
+                                            styles.chip,
+                                            activeChip === chip && styles.chipActive
+                                        ]}
+                                    >
+                                        <ThemedText style={[
+                                            styles.chipText,
+                                            activeChip === chip && styles.chipTextActive
+                                        ]}>
+                                            {chip}
+                                        </ThemedText>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
                         </View>
                     </View>
                 </View>
-
-                {/* Chips */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
-                    <View style={styles.chipsContainer}>
-                        {filterChips.map(chip => (
-                            <TouchableOpacity
-                                key={chip}
-                                onPress={() => setActiveChip(chip)}
-                                style={[
-                                    styles.chip,
-                                    activeChip === chip && styles.chipActive
-                                ]}
-                            >
-                                <ThemedText style={[
-                                    styles.chipText,
-                                    activeChip === chip && styles.chipTextActive
-                                ]}>
-                                    {chip}
-                                </ThemedText>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </ScrollView>
 
                 {/* Summary Card */}
                 <View style={styles.summaryCard}>
@@ -552,35 +568,54 @@ const styles = StyleSheet.create({
     },
     filterSection: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 20,
-        padding: 16,
-        marginBottom: 16,
+        borderRadius: 24,
+        padding: 20,
+        marginBottom: 20,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 3,
-    },
-    searchRow: {
-        flexDirection: 'row',
-        gap: 12,
-        marginBottom: 16,
-    },
-    allSuppliersChip: {
-        backgroundColor: '#F3F4F6',
-        borderRadius: 12,
-        paddingHorizontal: 12,
-        justifyContent: 'center',
+        shadowRadius: 12,
+        elevation: 4,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
-    },
-    allSuppliersText: {
-        color: '#374151',
-        fontWeight: '600',
-        fontSize: 12,
+        borderColor: '#F3F4F6',
     },
     searchInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F9FAFB',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        paddingHorizontal: 16,
+        height: 52,
+        marginBottom: 20,
+    },
+    searchInput: {
         flex: 1,
+        marginLeft: 12,
+        fontSize: 15,
+        color: '#111827',
+        fontWeight: '500',
+    },
+    filterGrid: {
+        gap: 20,
+    },
+    dateRangeContainer: {
+        flexDirection: 'row',
+        gap: 16,
+    },
+    dateField: {
+        flex: 1,
+    },
+    fieldLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#6B7280',
+        marginBottom: 8,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    datePickerToggle: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F9FAFB',
@@ -589,73 +624,39 @@ const styles = StyleSheet.create({
         borderColor: '#E5E7EB',
         paddingHorizontal: 12,
         height: 44,
+        gap: 10,
     },
-    searchInput: {
-        flex: 1,
-        marginLeft: 8,
+    dateText: {
         fontSize: 14,
-        color: '#111827',
-    },
-    dateRow: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    dateInputWrapper: {
-        flex: 1,
-    },
-    dateLabel: {
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#6B7280',
-        marginBottom: 4,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    dateInput: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F9FAFB',
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        paddingHorizontal: 10,
-        height: 40,
-        gap: 8,
-    },
-    dateValue: {
-        fontSize: 13,
         color: '#374151',
-        fontWeight: '500',
+        fontWeight: '600',
     },
-    chipsScroll: {
-        marginBottom: 16,
-        flexGrow: 0,
+    quickFiltersContainer: {
+        marginTop: 4,
     },
-    chipsContainer: {
-        flexDirection: 'row',
-        gap: 8,
+    chipsRow: {
+        gap: 10,
         paddingBottom: 4,
     },
     chip: {
-        backgroundColor: '#FFFFFF',
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        borderRadius: 20,
-        paddingVertical: 6,
+        backgroundColor: '#F3F4F6',
+        borderRadius: 12,
+        paddingVertical: 8,
         paddingHorizontal: 16,
+        borderWidth: 1,
+        borderColor: 'transparent',
     },
     chipActive: {
-        backgroundColor: '#E0E7FF',
+        backgroundColor: '#EEF2FF',
         borderColor: '#4338CA',
     },
     chipText: {
         fontSize: 13,
         color: '#6B7280',
-        fontWeight: '500',
+        fontWeight: '600',
     },
     chipTextActive: {
         color: '#4338CA',
-        fontWeight: '700',
     },
     summaryCard: {
         backgroundColor: '#FFFFFF',

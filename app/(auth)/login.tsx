@@ -2,6 +2,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
+import { SuccessOverlay } from '@/components/ui/SuccessOverlay';
 import {
   ActivityIndicator,
   Animated,
@@ -14,6 +15,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -25,6 +27,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [isSuccessVisible, setIsSuccessVisible] = useState(false);
 
   const { login, isLoading } = useAuth();
 
@@ -36,11 +39,20 @@ export default function LoginScreen() {
     try {
       if (login) {
         await login(email, password);
-        router.replace('/(tabs)');
+        setIsSuccessVisible(true);
       }
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      if (Platform.OS === 'web') {
+        alert(error.message || 'Login failed');
+      } else {
+        Alert.alert('Error', error.message || 'Login failed');
+      }
     }
+  };
+
+  const handleSuccessComplete = () => {
+    setIsSuccessVisible(false);
+    router.replace('/(tabs)');
   };
 
   const handlePressIn = () => {
@@ -61,6 +73,11 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
+      <SuccessOverlay 
+        visible={isSuccessVisible} 
+        message="login suceess full" 
+        onAnimationComplete={handleSuccessComplete}
+      />
       {/* Split background */}
       <View style={styles.topBackground} />
       <View style={styles.bottomBackground} />
