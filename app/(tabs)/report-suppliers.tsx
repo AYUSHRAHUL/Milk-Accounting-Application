@@ -137,7 +137,9 @@ export default function ReportSuppliersScreen() {
           <ThemedText style={styles.headerTitle}>Supplier Report</ThemedText>
           <ThemedText style={styles.headerSub}>Directory &amp; Status Overview</ThemedText>
         </View>
-        <Ionicons name="people-outline" size={28} color="rgba(255,255,255,0.35)" />
+        <TouchableOpacity disabled style={[styles.backBtn, { backgroundColor: 'transparent' }]}>
+          <Ionicons name="people-outline" size={24} color="rgba(255,255,255,0.35)" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.body}>
@@ -374,9 +376,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center', alignItems: 'center',
   },
-  headerText: { flex: 1 },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
-  headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 1 },
+  headerText: { flex: 1, alignItems: 'center' },
+  headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff', textAlign: 'center' },
+  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 1, textAlign: 'center' },
   body: { padding: Spacing.lg, gap: Spacing.md, paddingBottom: 40 },
   // Stats
   statsRow: { flexDirection: 'row', gap: Spacing.sm },

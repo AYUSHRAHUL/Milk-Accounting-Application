@@ -161,7 +161,9 @@ export default function ReportMilkScreen() {
           <ThemedText style={styles.headerTitle}>Milk Collection</ThemedText>
           <ThemedText style={styles.headerSub}>Report &amp; Analysis</ThemedText>
         </View>
-        <Ionicons name="water-outline" size={28} color="rgba(255,255,255,0.35)" />
+        <TouchableOpacity disabled style={[styles.backBtn, { backgroundColor: 'transparent' }]}>
+          <Ionicons name="water-outline" size={24} color="rgba(255,255,255,0.35)" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.body}>
@@ -429,17 +431,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerText: { flex: 1 },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#fff',
-  },
-  headerSub: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.75)',
-    marginTop: 1,
-  },
+  headerText: { flex: 1, alignItems: 'center' },
+  headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff', textAlign: 'center' },
+  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 1, textAlign: 'center' },
   body: {
     padding: Spacing.lg,
     gap: Spacing.md,

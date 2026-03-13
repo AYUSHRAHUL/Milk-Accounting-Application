@@ -59,17 +59,29 @@ export default function ReportsScreen() {
 
     return (
         <ScrollView
-            contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}
+            style={{ backgroundColor: theme.background }}
+            contentContainerStyle={styles.container}
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
         >
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                <Ionicons name="arrow-back" size={24} color={theme.primary} />
-            </TouchableOpacity>
+            {/* ── Branded Header ── */}
+            <View style={[styles.header, { backgroundColor: theme.primary }]}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backBtnAbsolute}>
+                    <Ionicons name="arrow-back" size={22} color="#fff" />
+                </TouchableOpacity>
+                <View style={styles.headerTextCentered}>
+                    <ThemedText style={styles.headerTitleCentered}>Reports</ThemedText>
+                    <ThemedText style={styles.headerSubCentered}>Monthly Overview</ThemedText>
+                </View>
+                <TouchableOpacity disabled style={[styles.backBtnAbsolute, { left: undefined, right: Spacing.lg, backgroundColor: 'transparent' }]}>
+                    <Ionicons name="stats-chart" size={24} color="rgba(255,255,255,0.35)" />
+                </TouchableOpacity>
+            </View>
 
-            {isLoading ? (
-                <LoadingIndicator style={{ marginTop: Spacing.xl }} />
-            ) : (
-                <View style={styles.gridContainer}>
+            <View style={styles.body}>
+                {isLoading ? (
+                    <LoadingIndicator style={{ marginTop: Spacing.xl }} />
+                ) : (
+                    <View style={styles.gridContainer}>
                     {/* Milk Collected Report */}
                     <TouchableOpacity onPress={() => router.push('/(tabs)/report-milk')} activeOpacity={0.85}>
                         <Card variant="elevated" style={styles.moduleCard}>
@@ -169,6 +181,7 @@ export default function ReportsScreen() {
                     </TouchableOpacity>
                 </View>
             )}
+            </View>
         </ScrollView>
     );
 }
@@ -176,12 +189,48 @@ export default function ReportsScreen() {
 const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
-        padding: Spacing.xl,
     },
-    backBtn: {
-        paddingVertical: 8,
-        paddingRight: 12,
-        marginBottom: Spacing.lg,
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: Spacing.lg,
+        paddingTop: 50,
+        paddingBottom: Spacing.xl,
+        gap: Spacing.md,
+    },
+    headerTextCentered: { 
+        flex: 1, 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        width: '100%' 
+    },
+    headerTitleCentered: { 
+        fontSize: 20, 
+        fontWeight: '800', 
+        color: '#fff', 
+        textAlign: 'center' 
+    },
+    headerSubCentered: { 
+        fontSize: 12, 
+        color: 'rgba(255,255,255,0.75)', 
+        marginTop: 1, 
+        textAlign: 'center' 
+    },
+    backBtnAbsolute: {
+        position: 'absolute',
+        left: Spacing.lg,
+        bottom: Spacing.xl,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
+    },
+    body: {
+        padding: Spacing.lg,
+        gap: Spacing.md,
     },
     gridContainer: {
         flexDirection: 'row',

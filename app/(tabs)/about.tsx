@@ -7,8 +7,9 @@ import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ZyncleLogo from '@/assets/images/logo_font.png';
 
 // Dark Green Palette for Premium Look
 const DARK_GREEN = '#064E3B';
@@ -49,9 +50,12 @@ export default function AboutScreen() {
 
           {/* App Info Card - Overlapping */}
           <Card variant="elevated" style={styles.appCard}>
-            <View style={[styles.logoPlaceholder, { backgroundColor: theme.primaryMuted }]}>
-              <Ionicons name="water" size={40} color={DARK_GREEN} />
+            {/* Zyncle Logo */}
+            <View style={styles.companyLogoBox}>
+              <Image source={ZyncleLogo} style={styles.companyLogoImg} resizeMode="contain" />
             </View>
+            <ThemedText style={[styles.companyFullName, { color: DARK_GREEN }]}>Zyncle Innovation Private Limited</ThemedText>
+            <View style={styles.dividerLine} />
             <ThemedText style={[styles.appName, { color: theme.text }]}>Milk Accounting</ThemedText>
             <View style={[styles.versionBadge, { backgroundColor: 'rgba(5, 150, 105, 0.1)' }]}>
               <ThemedText style={{ color: EMERALD_GREEN, fontSize: 12, fontWeight: '700' }}>Version {version}</ThemedText>
@@ -84,7 +88,7 @@ export default function AboutScreen() {
               <AboutInfoItem
                 icon="shield-checkmark-outline"
                 label="Developer"
-                value="Milk Accounting Team"
+                value="Zyncle Innovation Pvt. Ltd."
                 theme={theme}
               />
               <View style={[styles.itemDivider, { backgroundColor: theme.border }]} />
@@ -100,7 +104,7 @@ export default function AboutScreen() {
           {/* Footer */}
           <View style={styles.footer}>
             <ThemedText style={[styles.footerText, { color: theme.textSecondary }]}>
-              © 2026 Milk Accounting Application. All rights reserved.
+              © 2026 Zyncle Innovation Private Limited. All rights reserved.
             </ThemedText>
           </View>
 
@@ -186,13 +190,27 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
   },
-  logoPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
+  companyLogoBox: {
+    marginBottom: 12,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
+  },
+  companyLogoImg: {
+    width: 160,
+    height: 48,
+  },
+  companyFullName: {
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 12,
+    letterSpacing: 0.2,
+  },
+  dividerLine: {
+    width: 48,
+    height: 1.5,
+    backgroundColor: '#D1FAE5',
+    marginBottom: 14,
+    borderRadius: 2,
   },
   appName: {
     fontSize: 24,

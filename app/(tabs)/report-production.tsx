@@ -169,7 +169,9 @@ export default function ReportProductionScreen() {
           <ThemedText style={styles.headerTitle}>Production Report</ThemedText>
           <ThemedText style={styles.headerSub}>Milk Usage & Yield Analysis</ThemedText>
         </View>
-        <Ionicons name="flask-outline" size={28} color="rgba(255,255,255,0.4)" />
+        <TouchableOpacity disabled style={[styles.backBtn, { backgroundColor: 'transparent' }]}>
+          <Ionicons name="flask-outline" size={24} color="rgba(255,255,255,0.4)" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.body}>
@@ -306,9 +308,9 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1 },
   header: { paddingHorizontal: 20, paddingTop: 50, paddingBottom: 24, flexDirection: 'row', alignItems: 'center', gap: 16 },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
-  headerText: { flex: 1 },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
-  headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
+  headerText: { flex: 1, alignItems: 'center' },
+  headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff', textAlign: 'center' },
+  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', textAlign: 'center' },
   body: { padding: 20, gap: 20 },
   tabContainer: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },

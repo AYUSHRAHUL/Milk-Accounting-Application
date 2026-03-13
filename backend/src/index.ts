@@ -327,15 +327,41 @@ app.get('/api/production/milk-summary', async (req, res) => {
     ]);
     const totalSeparated = usedMilk.length > 0 ? usedMilk[0].total : 0;
 
-    // Sum of all whole milk used in product production
     const usedWholeInProducts = await ProductProduction.aggregate([
       { $match: { userId: matchUserId } },
       { $group: { _id: null, total: { $sum: '$milkUsed.wholeMilk' } } }
     ]);
     const totalWholeUsed = usedWholeInProducts.length > 0 ? usedWholeInProducts[0].total : 0;
 
+    // Calculate before today for Opening Balance
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const collectedBeforeToday = await MilkEntry.aggregate([
+      { $match: { userId: matchUserId, date: { $lt: startOfToday } } },
+      { $group: { _id: null, total: { $sum: '$quantity' } } },
+    ]);
+    const totalCollectedBeforeToday = collectedBeforeToday.length > 0 ? collectedBeforeToday[0].total : 0;
+
+    const separatedBeforeToday = await MilkProduction.aggregate([
+      { $match: { userId: matchUserId, date: { $lt: startOfToday } } },
+      { $group: { _id: null, total: { $sum: '$separationMilk' } } },
+    ]);
+    const totalSeparatedBeforeToday = separatedBeforeToday.length > 0 ? separatedBeforeToday[0].total : 0;
+
+    const wholeUsedBeforeToday = await ProductProduction.aggregate([
+      { $match: { userId: matchUserId, date: { $lt: startOfToday } } },
+      { $group: { _id: null, total: { $sum: '$milkUsed.wholeMilk' } } }
+    ]);
+    const totalWholeUsedBeforeToday = wholeUsedBeforeToday.length > 0 ? wholeUsedBeforeToday[0].total : 0;
+
+    const openingBalance = Math.max(0, totalCollectedBeforeToday - totalSeparatedBeforeToday - totalWholeUsedBeforeToday);
+    const closingBalance = Math.max(0, totalCollected - totalSeparated - totalWholeUsed);
+
     return res.status(200).json({
       availableMilk: totalCollected - totalSeparated - totalWholeUsed,
+      openingBalance,
+      closingBalance,
       totalCollected,
       totalUsed: totalSeparated + totalWholeUsed
     });

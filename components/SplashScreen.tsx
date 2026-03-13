@@ -1,4 +1,5 @@
 import Logo from '@/assets/images/logo.jpeg';
+import ZyncleLogo from '@/assets/images/logo_font.png';
 import React, { useEffect } from 'react';
 import { Dimensions, Image, StyleSheet, View } from 'react-native';
 import Animated, {
@@ -69,6 +70,14 @@ export const CustomSplashScreen = ({ onAnimationComplete }: SplashScreenProps) =
         <Animated.View style={[styles.textContainer, textStyle]}>
           <ThemedText style={styles.brandName}>MILK ACCOUNTING</ThemedText>
           <ThemedText style={styles.tagline}>Quality You Can Trust</ThemedText>
+
+          {/* ── Zyncle Company Brand ── */}
+          <View style={styles.companyWrapper}>
+            <View style={styles.companyDivider} />
+            <ThemedText style={styles.poweredBy}>Powered by</ThemedText>
+            <Image source={ZyncleLogo} style={styles.companyLogo} resizeMode="contain" />
+            <ThemedText style={styles.companyName}>Zyncle Innovation Private Limited</ThemedText>
+          </View>
         </Animated.View>
       </Animated.View>
     </View>
@@ -123,5 +132,35 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     letterSpacing: 2,
     textTransform: 'uppercase',
+  },
+  companyWrapper: {
+    alignItems: 'center',
+    marginTop: 28,
+    gap: 4,
+  },
+  companyDivider: {
+    width: 40,
+    height: 1.5,
+    backgroundColor: '#D1FAE5',
+    marginBottom: 10,
+  },
+  poweredBy: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  companyLogo: {
+    width: 140,
+    height: 40,
+    marginBottom: 4,
+  },
+  companyName: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

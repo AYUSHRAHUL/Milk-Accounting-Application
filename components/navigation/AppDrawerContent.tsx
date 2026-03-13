@@ -1,5 +1,5 @@
 import { useAuth } from '@/context/AuthContext';
-import { PreferencesContext, type AppLanguage, type ThemeMode } from '@/context/PreferencesContext';
+import { PreferencesContext, type AppLanguage } from '@/context/PreferencesContext';
 import { Ionicons } from '@expo/vector-icons';
 import { type DrawerContentComponentProps } from '@react-navigation/drawer';
 import { router } from 'expo-router';
@@ -57,10 +57,7 @@ const languageOptions: { id: AppLanguage; label: string }[] = [
   { id: 'te', label: 'Telugu' },
 ];
 
-const themeOptions: { id: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { id: 'light', label: 'Light Mode', icon: 'sunny-outline' },
-  { id: 'dark', label: 'Dark Mode', icon: 'moon-outline' },
-];
+
 
 // ─── Animated Menu Item ──────────────────────────────────────────────────────
 
@@ -135,7 +132,7 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
   const { user, logout } = useAuth();
 
   const [languageOpen, setLanguageOpen] = useState(false);
-  const [modeOpen, setModeOpen] = useState(false);
+
 
   // Profile header animation
   const headerOpacity = useSharedValue(0);
@@ -162,7 +159,7 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
   const items: DrawerItem[] = [
     { key: 'profile', label: 'Profile', icon: 'person-outline', onPress: () => navigateTo('/(tabs)/profile') },
     { key: 'language', label: 'Language', icon: 'language-outline', onPress: () => setLanguageOpen(true) },
-    { key: 'mode', label: 'Mode', icon: 'contrast-outline', onPress: () => setModeOpen(true) },
+
     { key: 'help', label: 'Need Help', icon: 'help-circle-outline', onPress: () => navigateTo('/(tabs)/help') },
     { key: 'support', label: 'Support', icon: 'chatbox-ellipses-outline', onPress: () => navigateTo('/(tabs)/support') },
     { key: 'about', label: 'About Us', icon: 'information-circle-outline', onPress: () => navigateTo('/(tabs)/about') },
@@ -263,44 +260,7 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
         </Pressable>
       </Modal>
 
-      {/* ── Mode Modal ── */}
-      <Modal visible={modeOpen} transparent animationType="fade" onRequestClose={() => setModeOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setModeOpen(false)}>
-          <Pressable style={styles.modal} onPress={() => undefined}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Mode</Text>
-              <Pressable onPress={() => setModeOpen(false)} hitSlop={10}>
-                <Ionicons name="close" size={20} color={COLORS.secondaryText} />
-              </Pressable>
-            </View>
-            {themeOptions.map((opt) => {
-              const selected = !!prefs && prefs.themeMode === opt.id;
-              return (
-                <Pressable
-                  key={opt.id}
-                  onPress={async () => {
-                    if (prefs) await prefs.setThemeMode(opt.id);
-                    setModeOpen(false);
-                  }}
-                  style={[
-                    styles.choice,
-                    {
-                      borderColor: selected ? COLORS.primaryGreen : COLORS.divider,
-                      backgroundColor: selected ? COLORS.lightGreen : 'transparent',
-                    },
-                  ]}
-                >
-                  <View style={styles.choiceLeft}>
-                    <Ionicons name={opt.icon} size={18} color={COLORS.secondaryText} />
-                    <Text style={[styles.choiceText, selected && { fontWeight: '700' }]}>{opt.label}</Text>
-                  </View>
-                  {selected ? <Ionicons name="checkmark-circle" size={18} color={COLORS.primaryGreen} /> : null}
-                </Pressable>
-              );
-            })}
-          </Pressable>
-        </Pressable>
-      </Modal>
+
     </SafeAreaView>
   );
 }

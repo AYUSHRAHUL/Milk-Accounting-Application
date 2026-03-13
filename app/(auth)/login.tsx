@@ -20,6 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Logo from '@/assets/images/logo.jpeg';
+import ZyncleLogo from '@/assets/images/logo_font.png';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -93,7 +94,6 @@ export default function LoginScreen() {
             showsVerticalScrollIndicator={false}
           >
 
-            {/* Header Area (in Green section) */}
             <View style={styles.headerArea}>
               <View style={styles.logoContainer}>
                 <Image source={Logo} style={styles.logoImage} />
@@ -178,6 +178,13 @@ export default function LoginScreen() {
               </View>
 
             </View>
+
+            {/* ── Footer Company Branding ── */}
+            <View style={styles.footerBrand}>
+              <Text style={styles.footerBrandText}>Zyncle Innovations Private Limited</Text>
+              <Image source={ZyncleLogo} style={styles.footerLogo} resizeMode="contain" />
+            </View>
+
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -337,5 +344,37 @@ const styles = StyleSheet.create({
     color: '#22C55E',
     fontSize: 14,
     fontWeight: '600',
+  },
+  footerBrand: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 32,
+    gap: 8,
+  },
+  footerBrandText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  footerLogo: {
+    width: 140,
+    height: 48,
+  },
+  companyBadge: {
+    alignItems: 'center',
+    marginTop: 14,
+    gap: 3,
+  },
+  companyLogoImg: {
+    width: 110,
+    height: 30,
+  },
+  companyBadgeText: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.75)',
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    textAlign: 'center',
   },
 });

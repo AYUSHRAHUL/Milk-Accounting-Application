@@ -60,18 +60,19 @@ export default function ReportsScreen() {
       contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
     >
-      {/* ── Header ── */}
       <View style={[styles.header, { backgroundColor: theme.primary }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtnAbsolute}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
-        <View style={styles.headerTextBlock}>
-          <ThemedText style={styles.headerTitle}>Reports</ThemedText>
-          <ThemedText style={styles.headerSub}>Monthly Overview</ThemedText>
+        
+        <View style={styles.headerTextBlockCentered}>
+          <ThemedText style={styles.headerTitleCentered}>Reports</ThemedText>
+          <ThemedText style={styles.headerSubCentered}>Monthly Overview</ThemedText>
         </View>
+
         <TouchableOpacity
           onPress={() => router.push('/report-detailed')}
-          style={styles.detailedBtn}
+          style={styles.detailedBtnAbsolute}
           activeOpacity={0.85}
         >
           <ThemedText style={styles.detailedBtnText}>View Detailed</ThemedText>
@@ -214,18 +215,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTextBlock: {
+  headerTextBlockCentered: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
   },
-  headerTitle: {
+  headerTitleCentered: {
     fontSize: 22,
     fontWeight: '800',
     color: '#fff',
+    textAlign: 'center',
   },
-  headerSub: {
+  headerSubCentered: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.75)',
     marginTop: 1,
+    textAlign: 'center',
   },
   list: {
     padding: Spacing.lg,
@@ -274,7 +280,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
   },
-  detailedBtn: {
+  detailedBtnAbsolute: {
+    position: 'absolute',
+    right: Spacing.lg,
+    bottom: Spacing.xl + 4,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
@@ -286,5 +295,17 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 12,
+  },
+  backBtnAbsolute: {
+    position: 'absolute',
+    left: Spacing.lg,
+    bottom: Spacing.xl,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
 });

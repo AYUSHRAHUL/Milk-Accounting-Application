@@ -129,7 +129,8 @@ function DashboardBanner() {
 export default function DashboardScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
-  const [availableMilk, setAvailableMilk] = useState<number | null>(null);
+  const [openingBalance, setOpeningBalance] = useState<number | null>(null);
+  const [closingBalance, setClosingBalance] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -138,7 +139,8 @@ export default function DashboardScreen() {
         const res = await apiFetch(`/api/production/milk-summary?userId=${user.id}`);
         if (res.ok) {
           const data = await res.json();
-          setAvailableMilk(data.availableMilk);
+          setOpeningBalance(data.openingBalance);
+          setClosingBalance(data.closingBalance);
         }
       } catch (error) {
         console.error('Dashboard Summary Error:', error);
@@ -179,15 +181,31 @@ export default function DashboardScreen() {
 
         {/* KPI Section */}
         <View style={styles.kpiSection}>
-          <View style={styles.kpiCard}>
-            <View style={styles.kpiIconWrapper}>
-              <Ionicons name="cube" size={24} color="#059669" />
+          <View style={styles.kpiCardRow}>
+             {/* Opening Balance Card */}
+            <View style={styles.kpiCardSide}>
+              <View style={[styles.kpiIconWrapper, { backgroundColor: '#EFF6FF' }]}>
+                <Ionicons name="sunny-outline" size={18} color="#3B82F6" />
+              </View>
+              <View style={styles.kpiContent}>
+                <Text style={styles.kpiLabel}>Opening Balance</Text>
+                <Text style={styles.kpiValue}>
+                  {openingBalance !== null ? `${openingBalance.toFixed(1)}L` : '--'}
+                </Text>
+              </View>
             </View>
-            <View style={styles.kpiContent}>
-              <Text style={styles.kpiLabel}>Opening Balance</Text>
-              <Text style={styles.kpiValue}>
-                {availableMilk !== null ? `${availableMilk.toFixed(1)} L` : '--'}
-              </Text>
+
+            {/* Closing Balance Card */}
+            <View style={styles.kpiCardSide}>
+              <View style={[styles.kpiIconWrapper, { backgroundColor: '#ECFDF5' }]}>
+                <Ionicons name="moon-outline" size={18} color="#10B981" />
+              </View>
+              <View style={styles.kpiContent}>
+                <Text style={styles.kpiLabel}>Closing Balance</Text>
+                <Text style={styles.kpiValue}>
+                  {closingBalance !== null ? `${closingBalance.toFixed(1)}L` : '--'}
+                </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -354,10 +372,16 @@ const styles = StyleSheet.create({
   kpiSection: {
     marginBottom: 24,
   },
-  kpiCard: {
+  kpiCardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  kpiCardSide: {
+    flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 16,
+    padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
@@ -369,26 +393,26 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   kpiIconWrapper: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     backgroundColor: '#ECFDF5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 8,
   },
   kpiContent: {
     flex: 1,
   },
   kpiLabel: {
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: '700',
     color: '#6B7280',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   kpiValue: {
-    fontSize: 24,
+    fontSize: 16,
     fontWeight: '800',
     color: '#111827',
     marginTop: 2,

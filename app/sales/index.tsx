@@ -518,25 +518,27 @@ export default function SalesScreen() {
             {/* ── Custom Alert Modal ── */}
             <Modal visible={alertConfig.visible} transparent animationType="fade">
                 <View style={styles.modalBg}>
-                    <View style={[styles.modalContent, { maxWidth: 320, padding: 24 }]}>
-                        <View style={[
-                            styles.alertIconBadge, 
-                            { backgroundColor: alertConfig.type === 'error' ? '#FEE2E2' : alertConfig.type === 'warning' ? '#FEF3C7' : '#DBEAFE' }
-                        ]}>
-                            <Ionicons 
-                                name={alertConfig.type === 'error' ? 'alert-circle' : alertConfig.type === 'warning' ? 'warning' : 'information-circle'} 
-                                size={32} 
-                                color={alertConfig.type === 'error' ? '#EF4444' : alertConfig.type === 'warning' ? '#F59E0B' : '#3B82F6'} 
-                            />
-                        </View>
-                        
-                        <ThemedText style={[styles.modalTitle, { fontSize: 18, textAlign: 'center' }]}>
-                            {alertConfig.title}
-                        </ThemedText>
-                        
-                        <ThemedText style={[styles.modalSub, { marginBottom: 24 }]}>
-                            {alertConfig.message}
-                        </ThemedText>
+                    <View style={[styles.modalContent, { maxWidth: 320, padding: 24, maxHeight: '80%' }]}>
+                        <ScrollView contentContainerStyle={{ alignItems: 'center' }} showsVerticalScrollIndicator={false} style={{ width: '100%' }}>
+                            <View style={[
+                                styles.alertIconBadge, 
+                                { backgroundColor: alertConfig.type === 'error' ? '#FEE2E2' : alertConfig.type === 'warning' ? '#FEF3C7' : '#DBEAFE' }
+                            ]}>
+                                <Ionicons 
+                                    name={alertConfig.type === 'error' ? 'alert-circle' : alertConfig.type === 'warning' ? 'warning' : 'information-circle'} 
+                                    size={32} 
+                                    color={alertConfig.type === 'error' ? '#EF4444' : alertConfig.type === 'warning' ? '#F59E0B' : '#3B82F6'} 
+                                />
+                            </View>
+                            
+                            <ThemedText style={[styles.modalTitle, { fontSize: 18, textAlign: 'center' }]}>
+                                {alertConfig.title}
+                            </ThemedText>
+                            
+                            <ThemedText style={[styles.modalSub, { marginBottom: 24 }]}>
+                                {alertConfig.message}
+                            </ThemedText>
+                        </ScrollView>
 
                         <TouchableOpacity 
                             style={[
@@ -544,7 +546,8 @@ export default function SalesScreen() {
                                 { 
                                     width: '100%', 
                                     backgroundColor: alertConfig.type === 'error' ? '#EF4444' : alertConfig.type === 'warning' ? '#F59E0B' : '#10B981',
-                                    height: 48
+                                    height: 48,
+                                    marginTop: 10
                                 }
                             ]} 
                             onPress={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
@@ -638,7 +641,7 @@ const styles = StyleSheet.create({
     receiptLabel: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', marginBottom: 2 },
     receiptValue: { fontSize: 14, fontWeight: '800', color: '#111827' },
     modalBtns: { flexDirection: 'row', gap: 10, width: '100%' },
-    btnAction: { flex: 1, height: 46, backgroundColor: '#10B981', borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+    btnAction: { height: 46, backgroundColor: '#10B981', borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
     btnActionText: { color: '#fff', fontWeight: '700', fontSize: 13 },
     btnDismiss: { marginTop: 14, padding: 8 },
     btnDismissText: { color: '#6B7280', fontWeight: '600', fontSize: 13 },

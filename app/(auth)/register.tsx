@@ -20,6 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Logo from '@/assets/images/logo.jpeg';
+import ZyncleLogo from '@/assets/images/logo_font.png';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -200,6 +201,13 @@ export default function RegisterScreen() {
               </View>
 
             </View>
+
+            {/* ── Footer Company Branding ── */}
+            <View style={styles.footerBrand}>
+              <Text style={styles.footerBrandText}>Zyncle Innovations Private Limited</Text>
+              <Image source={ZyncleLogo} style={styles.footerLogo} resizeMode="contain" />
+            </View>
+
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -358,5 +366,21 @@ const styles = StyleSheet.create({
     color: '#22C55E',
     fontSize: 14,
     fontWeight: '600',
+  },
+  footerBrand: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 32,
+    gap: 8,
+  },
+  footerBrandText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  footerLogo: {
+    width: 140,
+    height: 48,
   },
 });

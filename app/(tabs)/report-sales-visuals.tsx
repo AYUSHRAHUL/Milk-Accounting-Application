@@ -107,7 +107,7 @@ export default function ReportSalesVisualsScreen() {
   const formatCurrency = (amount: number) =>
     '₹ ' + amount.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
-  const screenWidth = Dimensions.get('window').width - 32;
+  const screenWidth = Dimensions.get('window').width - 64; // Spacing.lg (16) * 2 for body + 16 * 2 for card padding
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
@@ -120,7 +120,9 @@ export default function ReportSalesVisualsScreen() {
           <ThemedText style={styles.headerTitle}>Sales Visuals</ThemedText>
           <ThemedText style={styles.headerSub}>Revenue Trends & Analysis</ThemedText>
         </View>
-        <Ionicons name="trending-up-outline" size={28} color="rgba(255,255,255,0.35)" />
+        <TouchableOpacity disabled style={[styles.backBtn, { backgroundColor: 'transparent' }]}>
+           <Ionicons name="trending-up-outline" size={24} color="rgba(255,255,255,0.35)" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.body}>
@@ -178,27 +180,30 @@ export default function ReportSalesVisualsScreen() {
                 <Ionicons name="stats-chart" size={18} color={theme.success} />
                 <ThemedText type="defaultSemiBold" style={styles.cardTitle}>Daily Revenue</ThemedText>
               </View>
-              <LineChart
-                data={{
-                  labels: chartData.labels,
-                  datasets: [{ data: chartData.revenue }],
-                }}
-                width={screenWidth}
-                height={200}
-                yAxisLabel="₹"
-                yAxisSuffix=""
-                chartConfig={{
-                  backgroundColor: theme.surface,
-                  backgroundGradientFrom: theme.surface,
-                  backgroundGradientTo: theme.surface,
-                  decimalPlaces: 0,
-                  color: (opacity = 1) => theme.success,
-                  labelColor: (opacity = 1) => theme.textSecondary,
-                  propsForDots: { r: '4', strokeWidth: '2', stroke: theme.success },
-                }}
-                bezier
-                style={styles.chart}
-              />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false}>
+                <LineChart
+                  data={{
+                    labels: chartData.labels,
+                    datasets: [{ data: chartData.revenue }],
+                  }}
+                  width={Math.max(screenWidth, chartData.labels.length * 60)}
+                  height={220}
+                  yAxisLabel="₹"
+                  yAxisSuffix=""
+                  chartConfig={{
+                    backgroundColor: theme.surface,
+                    backgroundGradientFrom: theme.surface,
+                    backgroundGradientTo: theme.surface,
+                    decimalPlaces: 0,
+                    color: (opacity = 1) => theme.success,
+                    labelColor: (opacity = 1) => theme.textSecondary,
+                    propsForDots: { r: '4', strokeWidth: '2', stroke: theme.success },
+                    propsForLabels: { fontSize: 10 },
+                  }}
+                  bezier
+                  style={styles.chart}
+                />
+              </ScrollView>
             </Card>
 
             <Card variant="elevated" style={styles.card}>
@@ -206,25 +211,28 @@ export default function ReportSalesVisualsScreen() {
                 <Ionicons name="cube" size={18} color={theme.primary} />
                 <ThemedText type="defaultSemiBold" style={styles.cardTitle}>Daily Quantity Sold</ThemedText>
               </View>
-              <BarChart
-                data={{
-                  labels: chartData.labels,
-                  datasets: [{ data: chartData.quantities }],
-                }}
-                width={screenWidth}
-                height={200}
-                yAxisLabel=""
-                yAxisSuffix=""
-                chartConfig={{
-                  backgroundColor: theme.surface,
-                  backgroundGradientFrom: theme.surface,
-                  backgroundGradientTo: theme.surface,
-                  decimalPlaces: 1,
-                  color: (opacity = 1) => theme.primary,
-                  labelColor: (opacity = 1) => theme.textSecondary,
-                }}
-                style={styles.chart}
-              />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false}>
+                <BarChart
+                  data={{
+                    labels: chartData.labels,
+                    datasets: [{ data: chartData.quantities }],
+                  }}
+                  width={Math.max(screenWidth, chartData.labels.length * 60)}
+                  height={220}
+                  yAxisLabel=""
+                  yAxisSuffix=""
+                  chartConfig={{
+                    backgroundColor: theme.surface,
+                    backgroundGradientFrom: theme.surface,
+                    backgroundGradientTo: theme.surface,
+                    decimalPlaces: 1,
+                    color: (opacity = 1) => theme.primary,
+                    labelColor: (opacity = 1) => theme.textSecondary,
+                    propsForLabels: { fontSize: 10 },
+                  }}
+                  style={styles.chart}
+                />
+              </ScrollView>
             </Card>
           </View>
         )}
@@ -251,9 +259,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerText: { flex: 1 },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
-  headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 1 },
+  headerText: { flex: 1, alignItems: 'center' },
+  headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff', textAlign: 'center' },
+  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 1, textAlign: 'center' },
   body: { padding: Spacing.lg, gap: Spacing.md },
   statsRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
   statCard: { flex: 1, borderRadius: 14, padding: Spacing.md, alignItems: 'center', justifyContent: 'center' },
