@@ -1,7 +1,7 @@
 import Logo from '@/assets/images/logo.jpeg';
 import ZyncleLogo from '@/assets/images/logo_font.png';
 import React, { useEffect } from 'react';
-import { Dimensions, Image, StyleSheet, View } from 'react-native';
+import { Dimensions, Image, StyleSheet, View, TouchableOpacity, Linking } from 'react-native';
 import Animated, {
   Easing,
   runOnJS,
@@ -72,12 +72,14 @@ export const CustomSplashScreen = ({ onAnimationComplete }: SplashScreenProps) =
           <ThemedText style={styles.tagline}>Quality You Can Trust</ThemedText>
 
           {/* ── Zyncle Company Brand ── */}
-          <View style={styles.companyWrapper}>
-            <View style={styles.companyDivider} />
-            <ThemedText style={styles.poweredBy}>Powered by</ThemedText>
-            <Image source={ZyncleLogo} style={styles.companyLogo} resizeMode="contain" />
-            <ThemedText style={styles.companyName}>Zyncle Innovation Private Limited</ThemedText>
-          </View>
+          <TouchableOpacity onPress={() => Linking.openURL('https://zyncle.com')} activeOpacity={0.7} style={styles.companyWrapper}>
+            <View style={styles.companyWrapper}>
+              <View style={styles.companyDivider} />
+              <ThemedText style={styles.poweredBy}>Powered by</ThemedText>
+              <Image source={ZyncleLogo} style={styles.companyLogo} resizeMode="contain" />
+              <ThemedText style={styles.companyName}>Zyncle Innovation Private Limited</ThemedText>
+            </View>
+          </TouchableOpacity>
         </Animated.View>
       </Animated.View>
     </View>

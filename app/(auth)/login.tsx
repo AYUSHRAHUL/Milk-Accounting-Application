@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -34,6 +35,10 @@ export default function LoginScreen() {
 
   // Animation for the button
   const buttonScale = useMemo(() => new Animated.Value(1), []);
+
+  const openZyncleWebsite = () => {
+    Linking.openURL('https://zyncle.com');
+  };
 
   const handleLogin = async () => {
     if (!email.trim() || !password) return;
@@ -179,11 +184,10 @@ export default function LoginScreen() {
 
             </View>
 
-            {/* ── Footer Company Branding ── */}
-            <View style={styles.footerBrand}>
+            <TouchableOpacity onPress={openZyncleWebsite} activeOpacity={0.7} style={styles.footerBrand}>
               <Text style={styles.footerBrandText}>Zyncle Innovations Private Limited</Text>
               <Image source={ZyncleLogo} style={styles.footerLogo} resizeMode="contain" />
-            </View>
+            </TouchableOpacity>
 
           </ScrollView>
         </KeyboardAvoidingView>

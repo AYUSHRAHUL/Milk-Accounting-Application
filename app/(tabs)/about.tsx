@@ -1,3 +1,4 @@
+import ZyncleLogo from '@/assets/images/logo_font.png';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/Card';
 import { Colors, Radii } from '@/constants/theme';
@@ -7,9 +8,8 @@ import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React from 'react';
-import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import ZyncleLogo from '@/assets/images/logo_font.png';
 
 // Dark Green Palette for Premium Look
 const DARK_GREEN = '#064E3B';
@@ -19,6 +19,10 @@ export default function AboutScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const version = Constants.expoConfig?.version ?? '1.0.0';
+  
+  const openZyncleWebsite = () => {
+    Linking.openURL('https://zyncle.com');
+  };
 
   return (
     <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
@@ -50,11 +54,12 @@ export default function AboutScreen() {
 
           {/* App Info Card - Overlapping */}
           <Card variant="elevated" style={styles.appCard}>
-            {/* Zyncle Logo */}
-            <View style={styles.companyLogoBox}>
-              <Image source={ZyncleLogo} style={styles.companyLogoImg} resizeMode="contain" />
-            </View>
-            <ThemedText style={[styles.companyFullName, { color: DARK_GREEN }]}>Zyncle Innovation Private Limited</ThemedText>
+            <TouchableOpacity onPress={openZyncleWebsite} activeOpacity={0.7} style={styles.companyLogoBox}>
+              <View style={styles.companyLogoBox}>
+                <Image source={ZyncleLogo} style={styles.companyLogoImg} resizeMode="contain" />
+              </View>
+              <ThemedText style={[styles.companyFullName, { color: DARK_GREEN }]}>Zyncle Innovations Private Limited</ThemedText>
+            </TouchableOpacity>
             <View style={styles.dividerLine} />
             <ThemedText style={[styles.appName, { color: theme.text }]}>Milk Accounting</ThemedText>
             <View style={[styles.versionBadge, { backgroundColor: 'rgba(5, 150, 105, 0.1)' }]}>
@@ -88,8 +93,9 @@ export default function AboutScreen() {
               <AboutInfoItem
                 icon="shield-checkmark-outline"
                 label="Developer"
-                value="Zyncle Innovation Pvt. Ltd."
+                value="Zyncle Innovations Pvt. Ltd. Team"
                 theme={theme}
+                onPress={openZyncleWebsite}
               />
               <View style={[styles.itemDivider, { backgroundColor: theme.border }]} />
               <AboutInfoItem
@@ -101,12 +107,11 @@ export default function AboutScreen() {
             </Card>
           </View>
 
-          {/* Footer */}
-          <View style={styles.footer}>
+          <TouchableOpacity onPress={openZyncleWebsite} activeOpacity={0.6} style={styles.footer}>
             <ThemedText style={[styles.footerText, { color: theme.textSecondary }]}>
-              © 2026 Zyncle Innovation Private Limited. All rights reserved.
+              © 2026 Zyncle Innovations Private Limited. All rights reserved.
             </ThemedText>
-          </View>
+          </TouchableOpacity>
 
         </View>
       </ScrollView>
@@ -114,8 +119,8 @@ export default function AboutScreen() {
   );
 }
 
-function AboutInfoItem({ icon, label, value, theme }: { icon: any; label: string; value: string; theme: any }) {
-  return (
+function AboutInfoItem({ icon, label, value, theme, onPress }: { icon: any; label: string; value: string; theme: any, onPress?: () => void }) {
+  const Content = (
     <View style={styles.infoItem}>
       <View style={[styles.infoIconBox, { backgroundColor: 'rgba(5, 150, 105, 0.1)' }]}>
         <Ionicons name={icon} size={20} color={EMERALD_GREEN} />
@@ -126,6 +131,16 @@ function AboutInfoItem({ icon, label, value, theme }: { icon: any; label: string
       </View>
     </View>
   );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+        {Content}
+      </TouchableOpacity>
+    );
+  }
+
+  return Content;
 }
 
 const styles = StyleSheet.create({

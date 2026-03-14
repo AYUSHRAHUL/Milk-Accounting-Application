@@ -19,6 +19,8 @@ import {
     TouchableOpacity,
     View,
     useWindowDimensions,
+    Keyboard,
+    TouchableWithoutFeedback
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -61,8 +63,6 @@ export default function MakeProductsScreen() {
     const [useSkim, setUseSkim] = useState('');
     const [useCream, setUseCream] = useState('');
 
-    // Focus State for Yield Inputs
-    const [focusedField, setFocusedField] = useState<string | null>(null);
 
     const fetchInventory = useCallback(async () => {
         if (!user?.id) return;
@@ -164,7 +164,11 @@ export default function MakeProductsScreen() {
                     <View style={{ width: 44 }} /> 
                 </View>
 
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                <ScrollView 
+                    showsVerticalScrollIndicator={false} 
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                >
                     
                     {/* ── STOCK DASHBOARD ── */}
                     <View style={styles.stockSection}>
@@ -222,74 +226,61 @@ export default function MakeProductsScreen() {
                         </ScrollView>
                     </View>
 
-                    {/* ── MAIN FORM ── */}
-                    <View style={[styles.mainCard, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
-                        
-                        <ThemedText style={styles.cardSectionTitle}>Consumption (Liters)</ThemedText>
-                        <View style={styles.usageRow}>
-                            <UsageInput label="Whole" value={useWhole} onChange={setUseWhole} color="#22C55E" isDark={isDark} />
-                            <UsageInput label="Skim" value={useSkim} onChange={setUseSkim} color="#3B82F6" isDark={isDark} />
-                            <UsageInput label="Cream" value={useCream} onChange={setUseCream} color="#F59E0B" isDark={isDark} />
-                        </View>
-
-                        <View style={styles.divider} />
-
-                        <ThemedText style={styles.cardSectionTitle}>Production Yield</ThemedText>
-                        <View style={styles.yieldRow}>
-                            <View style={styles.inputWrapper}>
-                                <ThemedText style={styles.inputLabel}>Total Quantity</ThemedText>
-                                <View style={[
-                                    styles.actionInput, 
-                                    { borderColor: focusedField === 'qty' ? currentProductColor : (isDark ? '#334155' : '#E2E8F0') },
-                                    focusedField === 'qty' && styles.inputFocused
-                                ]}>
-                                    <TextInput 
-                                        style={[styles.textInput, { color: isDark ? '#F8FAFC' : '#1E293B' }, Platform.OS === 'web' && { outlineStyle: 'none' } as any]}
-                                        placeholder="0.00"
-                                        placeholderTextColor="#64748B"
-                                        value={qtyProduced}
-                                        onChangeText={setQtyProduced}
-                                        keyboardType="numeric"
-                                        onFocus={() => setFocusedField('qty')}
-                                        onBlur={() => setFocusedField(null)}
-                                    />
-                                </View>
+                    <KeyboardAvoidingView 
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        style={{ flex: 1 }}
+                    >
+                        {/* ── MAIN FORM ── */}
+                        <View style={[styles.mainCard, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
+                            
+                            <ThemedText style={styles.cardSectionTitle}>Consumption (Liters)</ThemedText>
+                            <View style={styles.usageRow}>
+                                <UsageInput label="Whole" value={useWhole} onChange={setUseWhole} color="#22C55E" isDark={isDark} />
+                                <UsageInput label="Skim" value={useSkim} onChange={setUseSkim} color="#3B82F6" isDark={isDark} />
+                                <UsageInput label="Cream" value={useCream} onChange={setUseCream} color="#F59E0B" isDark={isDark} />
                             </View>
-                            <View style={[styles.inputWrapper, { flex: 0.6 }]}>
-                                <ThemedText style={styles.inputLabel}>Unit</ThemedText>
-                                <View style={[
-                                    styles.actionInput, 
-                                    { borderColor: focusedField === 'unit' ? currentProductColor : (isDark ? '#334155' : '#E2E8F0') },
-                                    focusedField === 'unit' && styles.inputFocused
-                                ]}>
-                                    <TextInput 
-                                        style={[styles.textInput, { color: isDark ? '#F8FAFC' : '#1E293B' }, Platform.OS === 'web' && { outlineStyle: 'none' } as any]}
-                                        value={unit}
-                                        onChangeText={setUnit}
-                                        placeholder="kg"
-                                        onFocus={() => setFocusedField('unit')}
-                                        onBlur={() => setFocusedField(null)}
-                                    />
-                                </View>
-                            </View>
-                        </View>
 
-                        <TouchableOpacity 
-                            onPress={handleProduce}
-                            disabled={isLoading}
-                            style={styles.buttonShadow}
-                        >
-                            <LinearGradient
-                                colors={[currentProductColor, currentProductColor + 'CC']}
-                                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                                style={styles.submitButton}
+                            <View style={styles.divider} />
+
+                            <ThemedText style={styles.cardSectionTitle}>Production Yield</ThemedText>
+                            <View style={styles.yieldRow}>
+                                <YieldInput 
+                                    label="Total Quantity"
+                                    value={qtyProduced}
+                                    onChange={setQtyProduced}
+                                    placeholder="0.00"
+                                    keyboardType="numeric"
+                                    color={currentProductColor}
+                                    isDark={isDark}
+                                />
+                                <YieldInput 
+                                    label="Unit"
+                                    value={unit}
+                                    onChange={setUnit}
+                                    placeholder="kg"
+                                    flex={0.6}
+                                    color={currentProductColor}
+                                    isDark={isDark}
+                                />
+                            </View>
+
+                            <TouchableOpacity 
+                                onPress={handleProduce}
+                                disabled={isLoading}
+                                style={styles.buttonShadow}
                             >
-                                {isLoading ? <ActivityIndicator color="#FFF" /> : (
-                                    <ThemedText style={styles.buttonText}>Complete {selectedProduct} Production</ThemedText>
-                                )}
-                            </LinearGradient>
-                        </TouchableOpacity>
-                    </View>
+                                <LinearGradient
+                                    colors={[currentProductColor, currentProductColor + 'CC']}
+                                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                                    style={styles.submitButton}
+                                >
+                                    {isLoading ? <ActivityIndicator color="#FFF" /> : (
+                                        <ThemedText style={styles.buttonText}>Complete {selectedProduct} Production</ThemedText>
+                                    )}
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </View>
+                    </KeyboardAvoidingView>
 
                 </ScrollView>
             </View>
@@ -319,7 +310,7 @@ export default function MakeProductsScreen() {
 
 // ── CUSTOM COMPONENTS ──
 
-const InventoryCard = ({ label, value, color, icon, isDark, loading }: any) => (
+const InventoryCard = React.memo(({ label, value, color, icon, isDark, loading }: any) => (
     <View style={[styles.invCard, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
         <View style={[styles.invIcon, { backgroundColor: color + '15' }]}>
             <Ionicons name={icon} size={16} color={color} />
@@ -327,9 +318,9 @@ const InventoryCard = ({ label, value, color, icon, isDark, loading }: any) => (
         <ThemedText style={styles.invLabel}>{label}</ThemedText>
         <ThemedText style={[styles.invValue, { color: color }]}>{loading ? '--' : value.toFixed(1)}<ThemedText style={styles.invUnit}>L</ThemedText></ThemedText>
     </View>
-);
+));
 
-const UsageInput = ({ label, value, onChange, color, isDark }: any) => {
+const UsageInput = React.memo(({ label, value, onChange, color, isDark }: any) => {
     const [isFocused, setIsFocused] = React.useState(false);
     return (
         <View style={styles.usageItem}>
@@ -352,7 +343,32 @@ const UsageInput = ({ label, value, onChange, color, isDark }: any) => {
             </View>
         </View>
     );
-};
+});
+
+const YieldInput = React.memo(({ label, value, onChange, placeholder, keyboardType = 'default', flex = 1, color, isDark }: any) => {
+    const [isFocused, setIsFocused] = React.useState(false);
+    return (
+        <View style={[styles.inputWrapper, { flex }]}>
+            <ThemedText style={styles.inputLabel}>{label}</ThemedText>
+            <View style={[
+                styles.actionInput, 
+                { borderColor: isFocused ? color : (isDark ? '#334155' : '#E2E8F0') },
+                isFocused && styles.inputFocused
+            ]}>
+                <TextInput 
+                    style={[styles.textInput, { color: isDark ? '#F8FAFC' : '#1E293B' }, Platform.OS === 'web' && { outlineStyle: 'none' } as any]}
+                    placeholder={placeholder}
+                    placeholderTextColor="#64748B"
+                    value={value}
+                    onChangeText={onChange}
+                    keyboardType={keyboardType as any}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                />
+            </View>
+        </View>
+    );
+});
 
 const styles = StyleSheet.create({
     safeArea: { flex: 1 },
