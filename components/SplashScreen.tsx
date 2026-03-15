@@ -68,7 +68,7 @@ export const CustomSplashScreen = ({ onAnimationComplete }: SplashScreenProps) =
           <Image source={Logo} style={styles.logo} />
         </Animated.View>
         <Animated.View style={[styles.textContainer, textStyle]}>
-          <ThemedText style={styles.brandName}>MILK ACCOUNTING</ThemedText>
+          <ThemedText style={styles.brandName}>MOM AMI DAIRYWARE</ThemedText>
           <ThemedText style={styles.tagline}>Quality You Can Trust</ThemedText>
 
           {/* ── Zyncle Company Brand ── */}

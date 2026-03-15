@@ -31,9 +31,10 @@ export default function MilkProductionScreen() {
     // Determine if we have enough space for side-by-side layout
     const isLargeScreen = width > 768;
 
-    const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
     const [separationMilk, setSeparationMilk] = useState('');
     const [skimMilk, setSkimMilk] = useState('');
+    const [creamMilk, setCreamMilk] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [activeFocused, setActiveFocused] = useState<string | null>(null);
 
@@ -76,23 +77,23 @@ export default function MilkProductionScreen() {
     const sepQty = parseFloat(separationMilk) || 0;
     const wholeMilk = Math.max(0, totalAvailable - sepQty);
     const skimQty = parseFloat(skimMilk) || 0;
-    const creamMilk = Math.max(0, sepQty - skimQty);
+    const creamQty = parseFloat(creamMilk) || 0;
 
     const sepPercent = totalAvailable > 0 ? Math.min((sepQty / totalAvailable) * 100, 100) : 0;
     const skimPercent = sepQty > 0 ? Math.min((skimQty / sepQty) * 100, 100) : 0;
-    const creamPercent = sepQty > 0 ? Math.min((creamMilk / sepQty) * 100, 100) : 0;
+    const creamPercent = sepQty > 0 ? Math.min((creamQty / sepQty) * 100, 100) : 0;
 
     const handleSave = async () => {
-        if (!date || separationMilk === '' || skimMilk === '') {
-            Alert.alert('Missing Fields', 'Please enter Separation Milk and Skim Milk quantities.');
+        if (!date || separationMilk === '' || skimMilk === '' || creamMilk === '') {
+            Alert.alert('Missing Fields', 'Please enter Separation Milk, Skim Milk, and Cream Milk quantities.');
             return;
         }
         if (sepQty > totalAvailable) {
             Alert.alert('Error', 'Separation Milk cannot exceed total available milk.');
             return;
         }
-        if (skimQty > sepQty) {
-            Alert.alert('Error', 'Skim Milk cannot exceed separated milk quantity.');
+        if (skimQty + creamQty > sepQty) {
+            Alert.alert('Error', 'Total of Skim Milk and Cream Milk cannot exceed separated milk quantity.');
             return;
         }
 
@@ -108,7 +109,7 @@ export default function MilkProductionScreen() {
                     separationMilk: sepQty,
                     wholeMilk,
                     skimMilk: skimQty,
-                    creamMilk,
+                    creamMilk: creamQty,
                 }),
             });
 
@@ -323,37 +324,50 @@ export default function MilkProductionScreen() {
                                     </View>
                                 </View>
 
-                                <View style={styles.inputGroupCompact}>
-                                    <View style={[styles.inputContainerCompact, {
-                                        borderColor: inputBorderColor('skim'),
-                                        borderWidth: activeFocused === 'skim' ? 2 : 1,
-                                        backgroundColor: isDark ? '#0F172A' : '#F8FAFC',
-                                    }]}>
-                                        <Ionicons name="water" size={16} color={activeFocused === 'skim' ? '#0EA5E9' : (isDark ? '#4B5563' : '#9CA3AF')} style={{ marginRight: 8 }} />
-                                        <TextInput
-                                            style={[styles.textInputCompact, { color: isDark ? '#F8FAFC' : '#111827', fontWeight: '700' }]}
-                                            value={skimMilk}
-                                            onChangeText={setSkimMilk}
-                                            keyboardType="numeric"
-                                            placeholder="Skim Milk (L)"
-                                            placeholderTextColor={isDark ? '#4B5563' : '#9CA3AF'}
-                                            onFocus={() => setActiveFocused('skim')}
-                                            onBlur={() => setActiveFocused(null)}
-                                        />
-                                        <ThemedText style={[styles.inputUnitCompact, { color: isDark ? '#64748B' : '#9CA3AF' }]}>L</ThemedText>
-                                    </View>
-                                </View>
-
-                                {/* Mini Result Cards inline */}
+                                {/* Direct Input Cards inline */}
                                 <View style={styles.resultGridCompact}>
-                                    <View style={[styles.resultCardCompact, { backgroundColor: isDark ? '#0C1A2E' : '#EFF6FF', borderColor: isDark ? '#1E3A5F' : '#BFDBFE' }]}>
+                                    <View style={[styles.resultCardCompact, { 
+                                        backgroundColor: isDark ? '#0C1A2E' : '#EFF6FF', 
+                                        borderColor: activeFocused === 'skim' ? '#3B82F6' : (isDark ? '#1E3A5F' : '#BFDBFE'),
+                                        borderWidth: activeFocused === 'skim' ? 2 : 1 
+                                    }]}>
                                         <ThemedText style={[styles.resultCardTagCompact, { color: isDark ? '#93C5FD' : '#1D4ED8' }]}>SKIM</ThemedText>
-                                        <ThemedText style={[styles.resultCardValueCompact, { color: isDark ? '#60A5FA' : '#1D4ED8' }]}>{skimQty.toFixed(2)} L</ThemedText>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <TextInput
+                                                style={[styles.textInputCompact, styles.resultCardValueCompact, { color: isDark ? '#60A5FA' : '#1D4ED8', padding: 0 }]}
+                                                value={skimMilk}
+                                                onChangeText={setSkimMilk}
+                                                keyboardType="numeric"
+                                                placeholder="0.00"
+                                                placeholderTextColor={isDark ? '#3B82F6' : '#93C5FD'}
+                                                onFocus={() => setActiveFocused('skim')}
+                                                onBlur={() => setActiveFocused(null)}
+                                            />
+                                            <ThemedText style={[styles.resultCardValueCompact, { color: isDark ? '#60A5FA' : '#1D4ED8', marginLeft: 4 }]}>L</ThemedText>
+                                        </View>
                                     </View>
+                                    
                                     <View style={{ width: 8 }} />
-                                    <View style={[styles.resultCardCompact, { backgroundColor: isDark ? '#2D1505' : '#FFFBEB', borderColor: isDark ? '#78350F' : '#FDE68A' }]}>
+                                    
+                                    <View style={[styles.resultCardCompact, { 
+                                        backgroundColor: isDark ? '#2D1505' : '#FFFBEB', 
+                                        borderColor: activeFocused === 'cream' ? '#D97706' : (isDark ? '#78350F' : '#FDE68A'),
+                                        borderWidth: activeFocused === 'cream' ? 2 : 1 
+                                    }]}>
                                         <ThemedText style={[styles.resultCardTagCompact, { color: isDark ? '#FCD34D' : '#92400E' }]}>CREAM</ThemedText>
-                                        <ThemedText style={[styles.resultCardValueCompact, { color: isDark ? '#FBBF24' : '#D97706' }]}>{creamMilk.toFixed(2)} L</ThemedText>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <TextInput
+                                                style={[styles.textInputCompact, styles.resultCardValueCompact, { color: isDark ? '#FBBF24' : '#D97706', padding: 0 }]}
+                                                value={creamMilk}
+                                                onChangeText={setCreamMilk}
+                                                keyboardType="numeric"
+                                                placeholder="0.00"
+                                                placeholderTextColor={isDark ? '#D97706' : '#FCD34D'}
+                                                onFocus={() => setActiveFocused('cream')}
+                                                onBlur={() => setActiveFocused(null)}
+                                            />
+                                            <ThemedText style={[styles.resultCardValueCompact, { color: isDark ? '#FBBF24' : '#D97706', marginLeft: 4 }]}>L</ThemedText>
+                                        </View>
                                     </View>
                                 </View>
                             </View>
@@ -373,7 +387,7 @@ export default function MilkProductionScreen() {
                                         { label: 'Sep', value: `${sepQty.toFixed(1)}L`, color: '#16A34A' },
                                         { label: 'Whole', value: `${wholeMilk.toFixed(1)}L`, color: '#4ADE80' },
                                         { label: 'Skim', value: `${skimQty.toFixed(1)}L`, color: '#60A5FA' },
-                                        { label: 'Cream', value: `${creamMilk.toFixed(1)}L`, color: '#F59E0B' },
+                                        { label: 'Cream', value: `${creamQty.toFixed(1)}L`, color: '#F59E0B' },
                                     ].map((item, idx) => (
                                         <View key={idx} style={styles.summaryStripItemCompact}>
                                             <ThemedText style={[styles.summaryStripValueCompact, { color: item.color }]}>{item.value}</ThemedText>

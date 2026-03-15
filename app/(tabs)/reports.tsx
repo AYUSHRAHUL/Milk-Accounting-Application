@@ -2,12 +2,12 @@ import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/Card';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Colors, Spacing } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function ReportsScreen() {
@@ -64,7 +64,7 @@ export default function ReportsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtnAbsolute}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
-        
+
         <View style={styles.headerTextBlockCentered}>
           <ThemedText style={styles.headerTitleCentered}>Reports</ThemedText>
           <ThemedText style={styles.headerSubCentered}>Monthly Overview</ThemedText>

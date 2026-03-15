@@ -76,7 +76,7 @@ export default function SalesScreen() {
         if (parts.length === 3 && parts[2].length === 4) {
             return `${parts[2]}-${parts[1]}-${parts[0]}`;
         }
-        return new Date().toISOString().split('T')[0];
+        return new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
     }, [displayDate]);
 
     const fetchStock = useCallback(async () => {
@@ -197,7 +197,7 @@ export default function SalesScreen() {
             .total{text-align:right;margin-top:20px;font-size:22px;font-weight:800;color:#059669;}
         </style></head>
         <body>
-            <div class="header"><div class="farm">DAIRY SALES RECEIPT</div></div>
+            <div class="header"><div class="farm">MOM AMI DAIRYWARE - SALES RECEIPT</div></div>
             <div class="info">
                 <div><b>Customer:</b> ${data.customerName}<br><b>Date:</b> ${data.date}</div>
                 <div style="text-align:right"><b>Mode:</b> ${data.paymentMode}</div>
@@ -447,7 +447,7 @@ export default function SalesScreen() {
 
                         <ScrollView style={{ width: '100%', padding: 20 }}>
                             <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                                <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#10B981' }}>DHARMRAJ DAIRY</ThemedText>
+                                <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#10B981' }}>MOM AMI DAIRYWARE</ThemedText>
                                 <ThemedText style={{ fontSize: 12, color: '#6B7280' }}>Quality Fresh Dairy Products</ThemedText>
                             </View>
 

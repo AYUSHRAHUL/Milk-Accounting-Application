@@ -105,7 +105,7 @@ export default function DetailedReportScreen() {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.setAttribute('href', url);
-            link.setAttribute('download', `MilkApp_Detailed_Report_${new Date().toISOString().split('T')[0]}.csv`);
+            link.setAttribute('download', `MilkApp_Detailed_Report_${new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}.csv`);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();

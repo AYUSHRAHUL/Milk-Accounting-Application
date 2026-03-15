@@ -47,8 +47,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "825713cc-4af4-413d-923e-d8f8ecb52653"
+        "projectId": "0b8950a6-341d-4404-8395-0cada168b470"
       }
-    }
+    },
+    "owner": "ayush_kumar_singh1"
   }
 }

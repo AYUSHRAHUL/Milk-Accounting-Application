@@ -6,13 +6,15 @@ type User = {
   id: string;
   name: string;
   email: string;
+  role?: 'admin' | 'user';
+  modules?: string[];
 } | null;
 
 interface AuthContextType {
   user: User;
   isLoading: boolean;
   login: (email: string, password?: string) => Promise<void>;
-  register: (name: string, email: string, password?: string) => Promise<void>;
+  register: (name: string, email: string, password?: string, role?: string) => Promise<void>;
   /**
    * Clear in-memory auth state immediately and trigger
    * background cleanup of persisted data.
@@ -72,13 +74,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (name: string, email: string, password?: string) => {
+  const register = async (name: string, email: string, password?: string, role?: string) => {
     setIsLoading(true);
     try {
       const response = await apiFetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, role }),
       });
 
       const data = await response.json();

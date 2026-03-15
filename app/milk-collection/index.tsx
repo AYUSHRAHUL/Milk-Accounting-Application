@@ -86,7 +86,7 @@ export default function MilkCollectionScreen() {
 
   const [supplier, setSupplier] = useState('');
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
   const [time, setTime] = useState(() => new Date().toTimeString().split(' ')[0].substring(0, 5));
   const [shift, setShift] = useState('Morning');
   const [source, setSource] = useState('Cow');

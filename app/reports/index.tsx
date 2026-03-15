@@ -2,8 +2,8 @@ import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/Card';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Colors, Spacing } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/context/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
@@ -63,125 +63,136 @@ export default function ReportsScreen() {
             contentContainerStyle={styles.container}
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
         >
-            {/* ── Branded Header ── */}
             <View style={[styles.header, { backgroundColor: theme.primary }]}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtnAbsolute}>
                     <Ionicons name="arrow-back" size={22} color="#fff" />
                 </TouchableOpacity>
-                <View style={styles.headerTextCentered}>
+
+                <View style={styles.headerTextBlockCentered}>
                     <ThemedText style={styles.headerTitleCentered}>Reports</ThemedText>
                     <ThemedText style={styles.headerSubCentered}>Monthly Overview</ThemedText>
                 </View>
-                <TouchableOpacity disabled style={[styles.backBtnAbsolute, { left: undefined, right: Spacing.lg, backgroundColor: 'transparent' }]}>
-                    <Ionicons name="stats-chart" size={24} color="rgba(255,255,255,0.35)" />
+
+                <TouchableOpacity
+                    onPress={() => router.push('/report-detailed')}
+                    style={styles.detailedBtnAbsolute}
+                    activeOpacity={0.85}
+                >
+                    <ThemedText style={styles.detailedBtnText}>View Detailed</ThemedText>
                 </TouchableOpacity>
             </View>
 
-            <View style={styles.body}>
-                {isLoading ? (
-                    <LoadingIndicator style={{ marginTop: Spacing.xl }} />
-                ) : (
-                    <View style={styles.gridContainer}>
-                    {/* Milk Collected Report */}
-                    <TouchableOpacity onPress={() => router.push('/(tabs)/report-milk')} activeOpacity={0.85}>
-                        <Card variant="elevated" style={styles.moduleCard}>
-                            <View style={styles.cardHeader}>
-                                <View style={[styles.iconBox, { backgroundColor: theme.primaryMuted }]}>
-                                    <Ionicons name="water" size={24} color={theme.primary} />
-                                </View>
-                                <ThemedText style={styles.cardTitle}>Milk Collected Report</ThemedText>
+            {isLoading ? (
+                <LoadingIndicator style={{ marginTop: Spacing.xl }} />
+            ) : (
+                <View style={styles.list}>
+
+                    {/* Milk Collected */}
+                    <TouchableOpacity onPress={() => router.push('/(tabs)/report-milk')} activeOpacity={0.82}>
+                        <Card variant="elevated" style={[styles.card, { borderLeftColor: theme.primary }]}>
+                            <View style={[styles.iconBox, { backgroundColor: theme.primaryMuted }]}>
+                                <Ionicons name="water" size={26} color={theme.primary} />
                             </View>
-                            <View style={[styles.cardBody, { borderTopColor: theme.borderMuted }]}>
-                                <View style={styles.statRow}>
-                                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Volume</ThemedText>
-                                    <ThemedText style={styles.statValue}>{metrics.milkCollection.liters.toFixed(1)} L</ThemedText>
-                                </View>
-                                <View style={[styles.statRow, { marginTop: Spacing.sm }]}>
-                                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Cost</ThemedText>
-                                    <ThemedText style={[styles.statValue, { color: theme.error }]}>
-                                        {formatCurrency(metrics.milkCollection.cost)}
-                                    </ThemedText>
+                            <View style={styles.cardContent}>
+                                <ThemedText style={styles.cardTitle}>Milk Collected</ThemedText>
+                                <View style={styles.statsRow}>
+                                    <View style={styles.stat}>
+                                        <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Volume</ThemedText>
+                                        <ThemedText style={styles.statValue}>{metrics.milkCollection.liters.toFixed(1)} L</ThemedText>
+                                    </View>
+                                    <View style={[styles.divider, { backgroundColor: theme.borderMuted }]} />
+                                    <View style={styles.stat}>
+                                        <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Cost</ThemedText>
+                                        <ThemedText style={[styles.statValue, { color: theme.error }]}>
+                                            {formatCurrency(metrics.milkCollection.cost)}
+                                        </ThemedText>
+                                    </View>
                                 </View>
                             </View>
+                            <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
                         </Card>
                     </TouchableOpacity>
 
-                    {/* Sales Report */}
-                    <TouchableOpacity onPress={() => router.push('/(tabs)/report-sales')} activeOpacity={0.85}>
-                        <Card variant="elevated" style={styles.moduleCard}>
-                            <View style={styles.cardHeader}>
-                                <View style={[styles.iconBox, { backgroundColor: theme.successMuted }]}>
-                                    <Ionicons name="cash" size={24} color={theme.success} />
-                                </View>
+                    {/* Sales */}
+                    <TouchableOpacity onPress={() => router.push('/(tabs)/report-sales')} activeOpacity={0.82}>
+                        <Card variant="elevated" style={[styles.card, { borderLeftColor: theme.success }]}>
+                            <View style={[styles.iconBox, { backgroundColor: theme.successMuted }]}>
+                                <Ionicons name="cash" size={26} color={theme.success} />
+                            </View>
+                            <View style={styles.cardContent}>
                                 <ThemedText style={styles.cardTitle}>Sales Report</ThemedText>
-                            </View>
-                            <View style={[styles.cardBody, { borderTopColor: theme.borderMuted }]}>
-                                <View style={styles.statRow}>
-                                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Transactions</ThemedText>
-                                    <ThemedText style={styles.statValue}>{metrics.sales.transactions}</ThemedText>
+                                <View style={styles.statsRow}>
+                                    <View style={styles.stat}>
+                                        <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Transactions</ThemedText>
+                                        <ThemedText style={styles.statValue}>{metrics.sales.transactions}</ThemedText>
+                                    </View>
+                                    <View style={[styles.divider, { backgroundColor: theme.borderMuted }]} />
+                                    <View style={styles.stat}>
+                                        <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Revenue</ThemedText>
+                                        <ThemedText style={[styles.statValue, { color: theme.success }]}>
+                                            {formatCurrency(metrics.sales.revenue)}
+                                        </ThemedText>
+                                    </View>
                                 </View>
-                                <View style={[styles.statRow, { marginTop: Spacing.sm }]}>
-                                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Revenue</ThemedText>
-                                    <ThemedText style={[styles.statValue, { color: theme.success }]}>
-                                        {formatCurrency(metrics.sales.revenue)}
-                                    </ThemedText>
-                                </View>
                             </View>
+                            <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
                         </Card>
                     </TouchableOpacity>
-
-
 
                     {/* Production Report */}
-                    <TouchableOpacity onPress={() => router.push('/(tabs)/report-production')} activeOpacity={0.85}>
-                        <Card variant="elevated" style={styles.moduleCard}>
-                            <View style={styles.cardHeader}>
-                                <View style={[styles.iconBox, { backgroundColor: 'rgba(245,158,11,0.1)' }]}>
-                                    <Ionicons name="flask" size={24} color="#F59E0B" />
-                                </View>
+                    <TouchableOpacity onPress={() => router.push('/(tabs)/report-production')} activeOpacity={0.82}>
+                        <Card variant="elevated" style={[styles.card, { borderLeftColor: '#F59E0B' }]}>
+                            <View style={[styles.iconBox, { backgroundColor: 'rgba(245,158,11,0.10)' }]}>
+                                <Ionicons name="flask" size={26} color="#F59E0B" />
+                            </View>
+                            <View style={styles.cardContent}>
                                 <ThemedText style={styles.cardTitle}>Production Report</ThemedText>
-                            </View>
-                            <View style={[styles.cardBody, { borderTopColor: theme.borderMuted }]}>
-                                <View style={styles.statRow}>
-                                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Output</ThemedText>
-                                    <ThemedText style={styles.statValue}>{metrics.products.produced.toFixed(1)}</ThemedText>
+                                <View style={styles.statsRow}>
+                                    <View style={styles.stat}>
+                                        <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Products</ThemedText>
+                                        <ThemedText style={styles.statValue}>{metrics.products.produced.toFixed(1)} qty</ThemedText>
+                                    </View>
+                                    <View style={[styles.divider, { backgroundColor: theme.borderMuted }]} />
+                                    <View style={styles.stat}>
+                                        <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Batches</ThemedText>
+                                        <ThemedText style={[styles.statValue, { color: '#F59E0B' }]}>
+                                            {metrics.products.batches}
+                                        </ThemedText>
+                                    </View>
                                 </View>
-                                <View style={[styles.statRow, { marginTop: Spacing.sm }]}>
-                                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Batches</ThemedText>
-                                    <ThemedText style={[styles.statValue, { color: '#F59E0B' }]}>
-                                        {metrics.products.batches}
-                                    </ThemedText>
-                                </View>
                             </View>
+                            <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
                         </Card>
                     </TouchableOpacity>
 
-                    {/* Supplier Report */}
-                    <TouchableOpacity onPress={() => router.push('/(tabs)/report-suppliers')} activeOpacity={0.85}>
-                        <Card variant="elevated" style={styles.moduleCard}>
-                            <View style={styles.cardHeader}>
-                                <View style={[styles.iconBox, { backgroundColor: theme.accentMuted }]}>
-                                    <Ionicons name="people" size={24} color={theme.secondary} />
-                                </View>
+                    {/* Suppliers */}
+                    <TouchableOpacity onPress={() => router.push('/(tabs)/report-suppliers')} activeOpacity={0.82}>
+                        <Card variant="elevated" style={[styles.card, { borderLeftColor: '#9333EA' }]}>
+                            <View style={[styles.iconBox, { backgroundColor: 'rgba(147,51,234,0.10)' }]}>
+                                <Ionicons name="people" size={26} color="#9333EA" />
+                            </View>
+                            <View style={styles.cardContent}>
                                 <ThemedText style={styles.cardTitle}>Supplier Report</ThemedText>
-                            </View>
-                            <View style={[styles.cardBody, { borderTopColor: theme.borderMuted }]}>
-                                <View style={styles.statRow}>
-                                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Active Suppliers</ThemedText>
-                                    <ThemedText style={styles.statValue}>{metrics.suppliers.active}</ThemedText>
+                                <View style={styles.statsRow}>
+                                    <View style={styles.stat}>
+                                        <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Active</ThemedText>
+                                        <ThemedText style={styles.statValue}>{metrics.suppliers.active}</ThemedText>
+                                    </View>
+                                    <View style={[styles.divider, { backgroundColor: theme.borderMuted }]} />
+                                    <View style={styles.stat}>
+                                        <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total</ThemedText>
+                                        <ThemedText style={[styles.statValue, { color: '#9333EA' }]}>
+                                            {metrics.suppliers.total}
+                                        </ThemedText>
+                                    </View>
                                 </View>
-                                <View style={[styles.statRow, { marginTop: Spacing.sm }]}>
-                                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Registered</ThemedText>
-                                    <ThemedText style={[styles.statValue, { color: theme.secondary }]}>
-                                        {metrics.suppliers.total}
-                                    </ThemedText>
-                                </View>
                             </View>
+                            <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
                         </Card>
                     </TouchableOpacity>
+
                 </View>
             )}
-            </View>
         </ScrollView>
     );
 }
@@ -194,27 +205,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: Spacing.lg,
-        paddingTop: 50,
+        paddingTop: Spacing.xl + 8,
         paddingBottom: Spacing.xl,
         gap: Spacing.md,
-    },
-    headerTextCentered: { 
-        flex: 1, 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        width: '100%' 
-    },
-    headerTitleCentered: { 
-        fontSize: 20, 
-        fontWeight: '800', 
-        color: '#fff', 
-        textAlign: 'center' 
-    },
-    headerSubCentered: { 
-        fontSize: 12, 
-        color: 'rgba(255,255,255,0.75)', 
-        marginTop: 1, 
-        textAlign: 'center' 
     },
     backBtnAbsolute: {
         position: 'absolute',
@@ -228,53 +221,89 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         zIndex: 10,
     },
-    body: {
+    headerTextBlockCentered: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+    },
+    headerTitleCentered: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#fff',
+        textAlign: 'center',
+    },
+    headerSubCentered: {
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.75)',
+        marginTop: 1,
+        textAlign: 'center',
+    },
+    detailedBtnAbsolute: {
+        position: 'absolute',
+        right: Spacing.lg,
+        bottom: Spacing.xl + 4,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.3)',
+    },
+    detailedBtnText: {
+        color: '#fff',
+        fontWeight: '700',
+        fontSize: 12,
+    },
+    list: {
         padding: Spacing.lg,
         gap: Spacing.md,
-    },
-    gridContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
         paddingBottom: 40,
     },
-    moduleCard: {
-        width: '47%',
-        padding: Spacing.lg,
-        marginBottom: Spacing.lg,
-    },
-    cardHeader: {
+    card: {
+        flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: Spacing.lg,
+        padding: Spacing.lg,
+        borderLeftWidth: 4,
+        gap: Spacing.md,
+        borderRadius: 16,
     },
     iconBox: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+        width: 50,
+        height: 50,
+        borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: Spacing.md,
+    },
+    cardContent: {
+        flex: 1,
+        marginLeft: 4,
     },
     cardTitle: {
-        fontSize: 15,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        lineHeight: 20,
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#111827',
+        marginBottom: 8,
     },
-    cardBody: {
-        borderTopWidth: 1,
-        paddingTop: Spacing.md,
+    statsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
-    statRow: {
-        flexDirection: 'column',
+    stat: {
+        flex: 1,
+    },
+    divider: {
+        width: 1,
+        height: 32,
+        marginHorizontal: 12,
     },
     statLabel: {
-        fontSize: 12,
-        marginBottom: 2,
+        fontSize: 11,
+        marginBottom: 4,
     },
     statValue: {
         fontSize: 14,
-        fontWeight: '900',
+        fontWeight: '800',
     },
 });
 

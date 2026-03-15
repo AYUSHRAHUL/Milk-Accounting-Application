@@ -24,7 +24,7 @@ app.get('/health', (_req, res) => {
 // --- Auth ---
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body ?? {};
+    const { name, email, password, role } = req.body ?? {};
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -43,11 +43,13 @@ app.post('/api/auth/register', async (req, res) => {
       name,
       email: String(email).toLowerCase(),
       passwordHash,
+      role: role || 'user',
+      modules: ['collection', 'history', 'production', 'suppliers', 'sales', 'reports'],
     });
 
     return res.status(201).json({
       message: 'User registered successfully',
-      user: { id: newUser._id, name: newUser.name, email: newUser.email },
+      user: { id: newUser.adminId || newUser._id, profileId: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, modules: newUser.modules },
     });
   } catch (error: any) {
     console.error('Registration Error:', error);
@@ -82,7 +84,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     return res.status(200).json({
       message: 'Login successful',
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user.adminId || user._id, profileId: user._id, name: user.name, email: user.email, role: user.role, modules: user.modules },
     });
   } catch (error: any) {
     console.error('Login Error:', error);
@@ -719,6 +721,93 @@ app.get('/api/reports', async (req, res) => {
   } catch (error: any) {
     console.error('Fetch Reports Error:', error);
     return res.status(500).json({ message: error?.message || 'Internal Server Error' });
+  }
+});
+
+// --- Admin Endpoints ---
+
+// Middeleware placeholder: Assuming admin checks are either here or on frontend.
+// For now, we will just securely return the data. We should probably require an `adminId` query or body param for safety.
+const requireAdmin = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const adminId = req.query.adminId || req.body.adminId;
+  if (!adminId) return res.status(401).json({ error: 'Unauthorized: adminId required' });
+  const adminUser = await User.findById(adminId);
+  if (!adminUser || adminUser.role !== 'admin') {
+    return res.status(403).json({ error: 'Forbidden: Admin access only' });
+  }
+  next();
+};
+
+app.get('/api/admin/users', requireAdmin, async (req, res) => {
+  try {
+    await connectToDatabase();
+    // In our logic, the caller is the admin, so find users where adminId is the caller's ID
+    const adminId = String(req.query.adminId || req.body.adminId);
+    if (!adminId || adminId === 'undefined') return res.status(400).json({ error: 'adminId required' });
+    const users = await User.find({ adminId }).select('-passwordHash -password').sort({ createdAt: -1 });
+    return res.status(200).json(users);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/admin/users', requireAdmin, async (req, res) => {
+  try {
+    await connectToDatabase();
+    const { name, email, password, role, modules } = req.body;
+    if (!name || !email || !password) return res.status(400).json({ error: 'Required fields missing' });
+
+    const existingUser = await User.findOne({ email: String(email).toLowerCase() });
+    if (existingUser) return res.status(409).json({ error: 'Email already exists' });
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(String(password), salt);
+
+    const newUser = await User.create({
+      name,
+      email: String(email).toLowerCase(),
+      passwordHash,
+      role: role || 'user',
+      modules: modules || ['collection', 'history', 'production', 'suppliers', 'sales', 'reports'],
+      adminId: String(req.query.adminId || req.body.adminId || ''),
+    });
+
+    return res.status(201).json({ message: 'User created successfully', user: { id: newUser.adminId || newUser._id, profileId: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, modules: newUser.modules } });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/admin/users/:id', requireAdmin, async (req, res) => {
+  try {
+    await connectToDatabase();
+    const id = req.params.id;
+    const { name, email, role, modules, password } = req.body;
+    
+    let updateData: any = { name, email: String(email).toLowerCase(), role, modules };
+    
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      updateData.passwordHash = await bcrypt.hash(String(password), salt);
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(id, { $set: updateData }, { new: true }).select('-passwordHash -password');
+    if (!updatedUser) return res.status(404).json({ error: 'User not found' });
+    
+    return res.status(200).json({ message: 'User updated successfully', user: updatedUser });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
+  try {
+    await connectToDatabase();
+    const id = req.params.id;
+    await User.findByIdAndDelete(id);
+    return res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
   }
 });
 

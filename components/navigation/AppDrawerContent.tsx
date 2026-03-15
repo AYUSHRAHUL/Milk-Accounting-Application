@@ -221,7 +221,7 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
       {/* ── Section 3: Footer ── */}
       <View style={styles.footer}>
         <View style={styles.footerDivider} />
-        <Text style={styles.footerText}>Milk Accounting</Text>
+        <Text style={styles.footerText}>Mom Ami Dairyware</Text>
       </View>
 
       {/* ── Language Modal ── */}

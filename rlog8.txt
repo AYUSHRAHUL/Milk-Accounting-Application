@@ -1,0 +1,218 @@
+﻿commit 235d2f7dc2c01dd4113d99869c32e9c7e7bd1b3d
+Author: #Ravi Kumar <162914972+RaviKumarpatel400@users.noreply.github.com>
+Date:   Fri Mar 13 21:12:10 2026 +0530
+
+    changes frontend and backend
+
+diff --git a/app/(tabs)/reports.tsx b/app/(tabs)/reports.tsx
+index 2e47f2b..c08db9b 100644
+--- a/app/(tabs)/reports.tsx
++++ b/app/(tabs)/reports.tsx
+@@ -60,18 +60,19 @@ export default function ReportsScreen() {
+       contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}
+       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
+     >
+-      {/* ΓöÇΓöÇ Header ΓöÇΓöÇ */}
+       <View style={[styles.header, { backgroundColor: theme.primary }]}>
+-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
++        <TouchableOpacity onPress={() => router.back()} style={styles.backBtnAbsolute}>
+           <Ionicons name="arrow-back" size={22} color="#fff" />
+         </TouchableOpacity>
+-        <View style={styles.headerTextBlock}>
+-          <ThemedText style={styles.headerTitle}>Reports</ThemedText>
+-          <ThemedText style={styles.headerSub}>Monthly Overview</ThemedText>
++        
++        <View style={styles.headerTextBlockCentered}>
++          <ThemedText style={styles.headerTitleCentered}>Reports</ThemedText>
++          <ThemedText style={styles.headerSubCentered}>Monthly Overview</ThemedText>
+         </View>
++
+         <TouchableOpacity
+           onPress={() => router.push('/report-detailed')}
+-          style={styles.detailedBtn}
++          style={styles.detailedBtnAbsolute}
+           activeOpacity={0.85}
+         >
+           <ThemedText style={styles.detailedBtnText}>View Detailed</ThemedText>
+@@ -214,18 +215,23 @@ const styles = StyleSheet.create({
+     justifyContent: 'center',
+     alignItems: 'center',
+   },
+-  headerTextBlock: {
++  headerTextBlockCentered: {
+     flex: 1,
++    alignItems: 'center',
++    justifyContent: 'center',
++    width: '100%',
+   },
+-  headerTitle: {
++  headerTitleCentered: {
+     fontSize: 22,
+     fontWeight: '800',
+     color: '#fff',
++    textAlign: 'center',
+   },
+-  headerSub: {
++  headerSubCentered: {
+     fontSize: 13,
+     color: 'rgba(255,255,255,0.75)',
+     marginTop: 1,
++    textAlign: 'center',
+   },
+   list: {
+     padding: Spacing.lg,
+@@ -274,7 +280,10 @@ const styles = StyleSheet.create({
+     fontSize: 14,
+     fontWeight: '800',
+   },
+-  detailedBtn: {
++  detailedBtnAbsolute: {
++    position: 'absolute',
++    right: Spacing.lg,
++    bottom: Spacing.xl + 4,
+     paddingHorizontal: 10,
+     paddingVertical: 6,
+     borderRadius: 8,
+@@ -287,4 +296,16 @@ const styles = StyleSheet.create({
+     fontWeight: '700',
+     fontSize: 12,
+   },
++  backBtnAbsolute: {
++    position: 'absolute',
++    left: Spacing.lg,
++    bottom: Spacing.xl,
++    width: 36,
++    height: 36,
++    borderRadius: 18,
++    backgroundColor: 'rgba(255,255,255,0.2)',
++    justifyContent: 'center',
++    alignItems: 'center',
++    zIndex: 10,
++  },
+ });
+
+commit 02f01fbab2a9b99be1f27c1d1d21db04b61c437e
+Author: #Ravi Kumar <162914972+RaviKumarpatel400@users.noreply.github.com>
+Date:   Thu Mar 12 20:31:14 2026 +0530
+
+    changing full backend
+
+diff --git a/app/(tabs)/reports.tsx b/app/(tabs)/reports.tsx
+index 65340cf..2e47f2b 100644
+--- a/app/(tabs)/reports.tsx
++++ b/app/(tabs)/reports.tsx
+@@ -7,9 +7,11 @@ import { apiFetch } from '@/lib/api';
+ import { Ionicons } from '@expo/vector-icons';
+ import { router, useFocusEffect } from 'expo-router';
+ import React, { useCallback, useState } from 'react';
++import { useAuth } from '@/context/AuthContext';
+ import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+ 
+ export default function ReportsScreen() {
++  const { user } = useAuth();
+   const colorScheme = useColorScheme() ?? 'light';
+   const theme = Colors[colorScheme];
+ 
+@@ -25,7 +27,7 @@ export default function ReportsScreen() {
+ 
+   const fetchReports = useCallback(async () => {
+     try {
+-      const response = await apiFetch(`/api/reports?filter=month`);
++      const response = await apiFetch(`/api/reports?filter=month&userId=${user?.id}`);
+       if (response.ok) {
+         const data = await response.json();
+         setMetrics(data);
+@@ -133,24 +135,25 @@ export default function ReportsScreen() {
+             </Card>
+           </TouchableOpacity>
+ 
+-          {/* Products */}
+-          <TouchableOpacity onPress={() => router.push('/(tabs)/report-products')} activeOpacity={0.82}>
+-            <Card variant="elevated" style={[styles.card, { borderLeftColor: theme.warning }]}>
+-              <View style={[styles.iconBox, { backgroundColor: theme.warningMuted }]}>
+-                <Ionicons name="cube" size={26} color={theme.warning} />
++
++          {/* Production Report */}
++          <TouchableOpacity onPress={() => router.push('/(tabs)/report-production')} activeOpacity={0.82}>
++            <Card variant="elevated" style={[styles.card, { borderLeftColor: '#F59E0B' }]}>
++              <View style={[styles.iconBox, { backgroundColor: 'rgba(245,158,11,0.10)' }]}>
++                <Ionicons name="flask" size={26} color="#F59E0B" />
+               </View>
+               <View style={styles.cardContent}>
+-                <ThemedText style={styles.cardTitle}>Products Report</ThemedText>
++                <ThemedText style={styles.cardTitle}>Production Report</ThemedText>
+                 <View style={styles.statsRow}>
+                   <View style={styles.stat}>
+-                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Batches</ThemedText>
+-                    <ThemedText style={styles.statValue}>{metrics.products.batches}</ThemedText>
++                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Products</ThemedText>
++                    <ThemedText style={styles.statValue}>{metrics.products.produced.toFixed(1)} qty</ThemedText>
+                   </View>
+                   <View style={[styles.divider, { backgroundColor: theme.borderMuted }]} />
+                   <View style={styles.stat}>
+-                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Yield</ThemedText>
+-                    <ThemedText style={[styles.statValue, { color: theme.warning }]}>
+-                      {metrics.products.produced.toFixed(1)} Units
++                    <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Batches</ThemedText>
++                    <ThemedText style={[styles.statValue, { color: '#F59E0B' }]}>
++                      {metrics.products.batches}
+                     </ThemedText>
+                   </View>
+                 </View>
+
+commit f1143ddc8943d2f88b38fbb6ab7a2d554d2bcab9
+Author: Ayush kumar singh <rahulkrsingh4321@gmail.com>
+Date:   Tue Mar 10 01:25:21 2026 +0530
+
+    new backend21
+
+diff --git a/app/(tabs)/reports.tsx b/app/(tabs)/reports.tsx
+index 6a2138c..65340cf 100644
+--- a/app/(tabs)/reports.tsx
++++ b/app/(tabs)/reports.tsx
+@@ -3,11 +3,11 @@ import { Card } from '@/components/ui/Card';
+ import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
+ import { Colors, Spacing } from '@/constants/theme';
+ import { useColorScheme } from '@/hooks/use-color-scheme';
++import { apiFetch } from '@/lib/api';
+ import { Ionicons } from '@expo/vector-icons';
+ import { router, useFocusEffect } from 'expo-router';
+ import React, { useCallback, useState } from 'react';
+ import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+-import { apiFetch } from '@/lib/api';
+ 
+ export default function ReportsScreen() {
+   const colorScheme = useColorScheme() ?? 'light';
+@@ -67,7 +67,13 @@ export default function ReportsScreen() {
+           <ThemedText style={styles.headerTitle}>Reports</ThemedText>
+           <ThemedText style={styles.headerSub}>Monthly Overview</ThemedText>
+         </View>
+-        <Ionicons name="bar-chart-outline" size={28} color="rgba(255,255,255,0.35)" />
++        <TouchableOpacity
++          onPress={() => router.push('/report-detailed')}
++          style={styles.detailedBtn}
++          activeOpacity={0.85}
++        >
++          <ThemedText style={styles.detailedBtnText}>View Detailed</ThemedText>
++        </TouchableOpacity>
+       </View>
+ 
+       {isLoading ? (
+@@ -265,4 +271,17 @@ const styles = StyleSheet.create({
+     fontSize: 14,
+     fontWeight: '800',
+   },
++  detailedBtn: {
++    paddingHorizontal: 10,
++    paddingVertical: 6,
++    borderRadius: 8,
++    backgroundColor: 'rgba(255,255,255,0.2)',
++    borderWidth: 1,
++    borderColor: 'rgba(255,255,255,0.3)',
++  },
++  detailedBtnText: {
++    color: '#fff',
++    fontWeight: '700',
++    fontSize: 12,
++  },
+ });

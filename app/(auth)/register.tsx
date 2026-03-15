@@ -28,6 +28,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [role, setRole] = useState<'user'|'admin'>('user');
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [isSuccessVisible, setIsSuccessVisible] = useState(false);
@@ -45,7 +46,7 @@ export default function RegisterScreen() {
     if (!name.trim() || !email.trim() || !password) return;
     try {
       if (register) {
-        await register(name, email, password);
+        await register(name, email, password, role);
         setIsSuccessVisible(true);
       }
     } catch (error: any) {
@@ -177,6 +178,24 @@ export default function RegisterScreen() {
                     <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9CA3AF" />
                   </TouchableOpacity>
                 </View>
+              </View>
+
+              {/* Role Selection */}
+              <View style={styles.roleContainer}>
+                <TouchableOpacity 
+                  style={[styles.roleBtn, role === 'user' && styles.roleBtnActive]}
+                  onPress={() => setRole('user')}
+                >
+                  <Ionicons name="person" size={16} color={role === 'user' ? '#2563EB' : '#9CA3AF'} style={{ marginRight: 6 }} />
+                  <Text style={[styles.roleText, role === 'user' && styles.roleTextActive]}>User</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.roleBtn, role === 'admin' && styles.roleBtnActiveAdmin]}
+                  onPress={() => setRole('admin')}
+                >
+                  <Ionicons name="shield-checkmark" size={16} color={role === 'admin' ? '#22C55E' : '#9CA3AF'} style={{ marginRight: 6 }} />
+                  <Text style={[styles.roleText, role === 'admin' && styles.roleTextActiveAdmin]}>Admin</Text>
+                </TouchableOpacity>
               </View>
 
               {/* Register Button */}
@@ -386,5 +405,40 @@ const styles = StyleSheet.create({
   footerLogo: {
     width: 140,
     height: 48,
+  },
+  roleContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  roleBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F9FAFB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roleBtnActive: {
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+  },
+  roleBtnActiveAdmin: {
+    borderColor: '#BBF7D0',
+    backgroundColor: '#F0FDF4',
+  },
+  roleText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  roleTextActive: {
+    color: '#2563EB',
+  },
+  roleTextActiveAdmin: {
+    color: '#16A34A',
   },
 });

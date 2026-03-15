@@ -34,24 +34,24 @@ const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 interface FeatureCard {
   title: string;
+  id: string;
   route: string;
   image?: any;
   icon: string;
   useTint?: boolean;
 }
 
-
 const FEATURES: FeatureCard[] = [
-  { title: 'Milk Collection', route: '/milk-collection', image: MilkCollectionImage, icon: 'water', useTint: true },
-  { title: 'View Collections', route: '/milk-collection/history', image: ViewCollectionsImage, icon: 'list', useTint: true },
-  { title: 'Suppliers', route: '/suppliers', image: SuppliersImage, icon: 'people', useTint: true },
-  { title: 'Production', route: '/production', image: null, icon: 'flask', useTint: true },
-  { title: 'Sales', route: '/sales', image: SalesImage, icon: 'cash', useTint: true },
-  { title: 'Reports', route: '/(tabs)/reports', image: ReportsImage, icon: 'bar-chart', useTint: true },
+  { title: 'Milk Collection', id: 'collection', route: '/milk-collection', image: MilkCollectionImage, icon: 'water', useTint: true },
+  { title: 'View Collections', id: 'history', route: '/milk-collection/history', image: ViewCollectionsImage, icon: 'list', useTint: true },
+  { title: 'Production', id: 'production', route: '/production', image: null, icon: 'flask', useTint: true },
+  { title: 'Suppliers', id: 'suppliers', route: '/suppliers', image: SuppliersImage, icon: 'people', useTint: true },
+  { title: 'Sales', id: 'sales', route: '/sales', image: SalesImage, icon: 'cash', useTint: true },
+  { title: 'Reports', id: 'reports', route: '/reports', image: ReportsImage, icon: 'bar-chart', useTint: true },
 ];
 
 // Dashboard Card
-function DashboardCard({ item, index }: { item: FeatureCard; index: number }) {
+function DashboardCard({ item, index, disabled }: { item: FeatureCard; index: number; disabled?: boolean }) {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(20);
   const scale = useSharedValue(1);
@@ -68,10 +68,12 @@ function DashboardCard({ item, index }: { item: FeatureCard; index: number }) {
   }));
 
   const handlePressIn = () => {
+    if (disabled) return;
     scale.value = withTiming(0.96, { duration: 120 });
   };
 
   const handlePressOut = () => {
+    if (disabled) return;
     scale.value = withSpring(1, { damping: 15, stiffness: 200 });
   };
 
@@ -80,26 +82,34 @@ function DashboardCard({ item, index }: { item: FeatureCard; index: number }) {
 
   return (
     <AnimatedTouchable
-      style={[styles.card, cardAnimatedStyle]}
-      onPress={() => router.push(item.route as any)}
+      style={[styles.card, cardAnimatedStyle, disabled && { opacity: 0.5, backgroundColor: '#f8fafc' }]}
+      onPress={() => {
+        if (!disabled) router.push(item.route as any);
+      }}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      activeOpacity={1}
+      activeOpacity={disabled ? 1 : 0.8}
     >
+      {disabled && (
+        <View style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 12, padding: 4 }}>
+          <Ionicons name="lock-closed" size={16} color="#94A3B8" />
+        </View>
+      )}
       {hasValidImage ? (
         <Image
           source={imageSource}
           style={[
             styles.cardImage,
-            item.useTint === false && { tintColor: undefined }
+            item.useTint === false && { tintColor: undefined },
+            disabled && { tintColor: '#94A3B8' }
           ]}
         />
       ) : (
-        <View style={styles.cardImagePlaceholder}>
-          <Ionicons name={item.icon as any} size={40} color="#22C55E" />
+        <View style={[styles.cardImagePlaceholder, disabled && { backgroundColor: '#E2E8F0' }]}>
+          <Ionicons name={item.icon as any} size={40} color={disabled ? "#94A3B8" : "#22C55E"} />
         </View>
       )}
-      <Text style={styles.cardTitle}>{item.title}</Text>
+      <Text style={[styles.cardTitle, disabled && { color: '#94A3B8' }]}>{item.title}</Text>
     </AnimatedTouchable>
   );
 }
@@ -131,6 +141,10 @@ export default function DashboardScreen() {
   const { user } = useAuth();
   const [openingBalance, setOpeningBalance] = useState<number | null>(null);
   const [closingBalance, setClosingBalance] = useState<number | null>(null);
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const today = new Date();
+  const dateStr = `${today.getDate().toString().padStart(2, '0')} ${months[today.getMonth()]} ${today.getFullYear()}`;
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -188,7 +202,7 @@ export default function DashboardScreen() {
                 <Ionicons name="sunny-outline" size={18} color="#3B82F6" />
               </View>
               <View style={styles.kpiContent}>
-                <Text style={styles.kpiLabel}>Opening Balance</Text>
+                <Text style={styles.kpiLabel}>Opening Bal. ({dateStr})</Text>
                 <Text style={styles.kpiValue}>
                   {openingBalance !== null ? `${openingBalance.toFixed(1)}L` : '--'}
                 </Text>
@@ -201,7 +215,7 @@ export default function DashboardScreen() {
                 <Ionicons name="moon-outline" size={18} color="#10B981" />
               </View>
               <View style={styles.kpiContent}>
-                <Text style={styles.kpiLabel}>Closing Balance</Text>
+                <Text style={styles.kpiLabel}>Closing Bal. ({dateStr})</Text>
                 <Text style={styles.kpiValue}>
                   {closingBalance !== null ? `${closingBalance.toFixed(1)}L` : '--'}
                 </Text>
@@ -212,9 +226,27 @@ export default function DashboardScreen() {
 
         {/* Feature Grid */}
         <View style={styles.grid}>
-          {FEATURES.map((item, index) => (
-            <DashboardCard key={item.title} item={item} index={index} />
-          ))}
+          {user?.role === 'admin' && (
+            <DashboardCard item={{ title: 'Admin Dashboard', id: 'admin', route: '/admin/dashboard', icon: 'shield-checkmark', useTint: true }} index={0} />
+          )}
+          {FEATURES.map((item, index) => {
+            let disabled = true;
+            if (!user?.modules) {
+              // Backward compatibility if user.modules is missing: assume all enabled
+              disabled = false;
+            } else {
+              // Now user.modules maps exactly to item.id
+              disabled = !user.modules.includes(item.id);
+            }
+            return (
+              <DashboardCard 
+                key={item.title} 
+                item={item} 
+                index={user?.role === 'admin' ? index + 1 : index} 
+                disabled={disabled}
+              />
+            );
+          })}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -405,7 +437,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   kpiLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: '#6B7280',
     textTransform: 'uppercase',

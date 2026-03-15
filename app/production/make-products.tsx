@@ -53,7 +53,7 @@ export default function MakeProductsScreen() {
     });
 
     // Form State
-    const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
     const [selectedProduct, setSelectedProduct] = useState('Ghee');
     const [qtyProduced, setQtyProduced] = useState('');
     const [unit, setUnit] = useState('kg');
@@ -164,11 +164,15 @@ export default function MakeProductsScreen() {
                     <View style={{ width: 44 }} /> 
                 </View>
 
-                <ScrollView 
-                    showsVerticalScrollIndicator={false} 
-                    contentContainerStyle={styles.scrollContent}
-                    keyboardShouldPersistTaps="handled"
+                <KeyboardAvoidingView 
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                    style={{ flex: 1 }}
                 >
+                    <ScrollView 
+                        showsVerticalScrollIndicator={false} 
+                        contentContainerStyle={styles.scrollContent}
+                        keyboardShouldPersistTaps="handled"
+                    >
                     
                     {/* ── STOCK DASHBOARD ── */}
                     <View style={styles.stockSection}>
@@ -226,10 +230,6 @@ export default function MakeProductsScreen() {
                         </ScrollView>
                     </View>
 
-                    <KeyboardAvoidingView 
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                        style={{ flex: 1 }}
-                    >
                         {/* ── MAIN FORM ── */}
                         <View style={[styles.mainCard, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
                             
@@ -249,7 +249,7 @@ export default function MakeProductsScreen() {
                                     value={qtyProduced}
                                     onChange={setQtyProduced}
                                     placeholder="0.00"
-                                    keyboardType="numeric"
+                                    keyboardType="decimal-pad"
                                     color={currentProductColor}
                                     isDark={isDark}
                                 />
@@ -280,9 +280,8 @@ export default function MakeProductsScreen() {
                                 </LinearGradient>
                             </TouchableOpacity>
                         </View>
-                    </KeyboardAvoidingView>
-
                 </ScrollView>
+                </KeyboardAvoidingView>
             </View>
 
             {/* Premium Success Modal */}
@@ -334,9 +333,10 @@ const UsageInput = React.memo(({ label, value, onChange, color, isDark }: any) =
                     style={[styles.uInput, { color: isDark ? '#F8FAFC' : '#1E293B', height: 44 }, Platform.OS === 'web' && { outlineStyle: 'none' } as any]}
                     placeholder="0"
                     placeholderTextColor="#475569"
-                    keyboardType="numeric"
+                    keyboardType="decimal-pad"
+                    inputMode="decimal"
                     value={value}
-                    onChangeText={onChange}
+                    onChangeText={(t) => onChange(t.replace(/,/g, '.'))}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                 />
@@ -360,8 +360,9 @@ const YieldInput = React.memo(({ label, value, onChange, placeholder, keyboardTy
                     placeholder={placeholder}
                     placeholderTextColor="#64748B"
                     value={value}
-                    onChangeText={onChange}
+                    onChangeText={(t) => onChange(t.replace(/,/g, '.'))}
                     keyboardType={keyboardType as any}
+                    inputMode={keyboardType === 'decimal-pad' ? 'decimal' : 'none'}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                 />
