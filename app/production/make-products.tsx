@@ -63,6 +63,19 @@ export default function MakeProductsScreen() {
     const [useSkim, setUseSkim] = useState('');
     const [useCream, setUseCream] = useState('');
 
+    // Auto-calculate production yield based on consumption
+    useEffect(() => {
+        const whole = parseFloat(useWhole) || 0;
+        const skim = parseFloat(useSkim) || 0;
+        const cream = parseFloat(useCream) || 0;
+        const total = whole + skim + cream;
+        if (total > 0) {
+            setQtyProduced(total.toString());
+        } else {
+            setQtyProduced('');
+        }
+    }, [useWhole, useSkim, useCream]);
+
 
     const fetchInventory = useCallback(async () => {
         if (!user?.id) return;
