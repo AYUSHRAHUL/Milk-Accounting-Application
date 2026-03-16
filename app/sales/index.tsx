@@ -23,12 +23,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 
-const PRODUCT_TYPES = ['Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Raw Milk', 'Skim Milk', 'Other'];
+const PRODUCT_TYPES = ['Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Flavoured Milk', 'Icecream', 'Yoghurt', 'Srikhand', 'Rasagolla', 'Gulabjamun', 'Rabbari', 'Other'];
 const PRODUCT_ICONS: Record<string, string> = {
-    Paneer: '🧀', Ghee: '🫙', Butter: '🧈', Curd: '🥛', Khoa: '🍮', 'Raw Milk': '🥛', 'Skim Milk': '🍶', Other: '📦',
+    Paneer: '🧀', Ghee: '🫙', Butter: '🧈', Curd: '🥛', Khoa: '🍮', 'Flavoured Milk': '🍼', Icecream: '🍦', Yoghurt: '🥣', Srikhand: '🍧', Rasagolla: '⚪', Gulabjamun: '🟤', Rabbari: '🍮', Other: '📦',
 };
 const PRODUCT_COLORS: Record<string, string> = {
-    Paneer: '#10B981', Ghee: '#F59E0B', Butter: '#FCD34D', Curd: '#3B82F6', Khoa: '#8B5CF6', 'Raw Milk': '#6B7280', 'Skim Milk': '#60A5FA', Other: '#64748B',
+    Paneer: '#10B981', Ghee: '#F59E0B', Butter: '#FCD34D', Curd: '#3B82F6', Khoa: '#8B5CF6', 'Flavoured Milk': '#EC4899', Icecream: '#06B6D4', Yoghurt: '#D946EF', Srikhand: '#F97316', Rasagolla: '#94A3B8', Gulabjamun: '#78350F', Rabbari: '#BE123C', Other: '#64748B',
 };
 const PAYMENT_MODES = ['Cash', 'UPI', 'Credit'];
 
@@ -70,6 +70,7 @@ export default function SalesScreen() {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showReceiptModal, setShowReceiptModal] = useState(false);
     const [lastSaleData, setLastSaleData] = useState<any>(null);
+    const [showAllProducts, setShowAllProducts] = useState(false);
 
     const apiDate = useMemo(() => {
         const parts = displayDate.split('/');
@@ -293,7 +294,7 @@ export default function SalesScreen() {
                             <ActivityIndicator color="#10B981" style={{ marginVertical: 20 }} />
                         ) : (
                             <View style={styles.productGrid}>
-                                {PRODUCT_TYPES.map(p => {
+                                {(showAllProducts ? PRODUCT_TYPES : PRODUCT_TYPES.slice(0, 7)).map(p => {
                                     const isSelected = productType === p;
                                     const stock = productStock[p] ?? 0;
                                     const color = PRODUCT_COLORS[p] || '#6B7280';
@@ -317,6 +318,19 @@ export default function SalesScreen() {
                                         </TouchableOpacity>
                                     );
                                 })}
+                                {!showAllProducts && (
+                                    <TouchableOpacity
+                                        onPress={() => setShowAllProducts(true)}
+                                        activeOpacity={0.8}
+                                        style={[styles.productCard, { backgroundColor: '#F3F4F6' }]}
+                                    >
+                                        <ThemedText style={styles.productIcon}>➕</ThemedText>
+                                        <ThemedText style={[styles.productName, { fontWeight: '800' }]}>More</ThemedText>
+                                        <View style={[styles.stockBadge, { backgroundColor: '#E5E7EB' }]}>
+                                            <ThemedText style={[styles.stockText, { color: '#4B5563' }]}>Show more</ThemedText>
+                                        </View>
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         )}
                     </View>

@@ -30,6 +30,13 @@ const PRODUCT_LIST = [
     { name: 'Curd', color: '#3B82F6' },
     { name: 'Butter', color: '#FCD34D' },
     { name: 'Khoa', color: '#8B5CF6' },
+    { name: 'Flavoured Milk', color: '#EC4899' },
+    { name: 'Icecream', color: '#06B6D4' },
+    { name: 'Yoghurt', color: '#D946EF' },
+    { name: 'Srikhand', color: '#F97316' },
+    { name: 'Rasagolla', color: '#FFFFFF' },
+    { name: 'Gulabjamun', color: '#78350F' },
+    { name: 'Rabbari', color: '#BE123C' },
     { name: 'Other', color: '#64748B' },
 ];
 
@@ -62,20 +69,6 @@ export default function MakeProductsScreen() {
     const [useWhole, setUseWhole] = useState('');
     const [useSkim, setUseSkim] = useState('');
     const [useCream, setUseCream] = useState('');
-
-    // Auto-calculate production yield based on consumption
-    useEffect(() => {
-        const whole = parseFloat(useWhole) || 0;
-        const skim = parseFloat(useSkim) || 0;
-        const cream = parseFloat(useCream) || 0;
-        const total = whole + skim + cream;
-        if (total > 0) {
-            setQtyProduced(total.toString());
-        } else {
-            setQtyProduced('');
-        }
-    }, [useWhole, useSkim, useCream]);
-
 
     const fetchInventory = useCallback(async () => {
         if (!user?.id) return;
@@ -180,6 +173,7 @@ export default function MakeProductsScreen() {
                 <KeyboardAvoidingView 
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                     style={{ flex: 1 }}
+                    enabled={Platform.OS !== 'web'}
                 >
                     <ScrollView 
                         showsVerticalScrollIndicator={false} 
