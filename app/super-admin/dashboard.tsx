@@ -85,20 +85,7 @@ export default function SuperAdminDashboardScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Stats Summary */}
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>System Status</Text>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Creation Privileges</Text>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>Active</Text>
-            </View>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Admin Hierarchy</Text>
-            <Text style={styles.summaryValue}>Enabled</Text>
-          </View>
-        </View>
+
       </ScrollView>
     </SafeAreaView>
   );

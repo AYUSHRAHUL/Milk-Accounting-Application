@@ -237,12 +237,10 @@ export default function MakeProductsScreen() {
                             
                             <ThemedText style={[styles.formSectionTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>Consumption</ThemedText>
                             
-                            <View style={styles.verticalList}>
-                                <UsageInputRow label="Whole Milk" value={useWhole} onChange={setUseWhole} color="#22C55E" isDark={isDark} />
-                                <View style={[styles.listDivider, { backgroundColor: isDark ? '#334155' : '#F1F5F9' }]} />
-                                <UsageInputRow label="Skim Milk" value={useSkim} onChange={setUseSkim} color="#3B82F6" isDark={isDark} />
-                                <View style={[styles.listDivider, { backgroundColor: isDark ? '#334155' : '#F1F5F9' }]} />
-                                <UsageInputRow label="Cream" value={useCream} onChange={setUseCream} color="#F59E0B" isDark={isDark} />
+                            <View style={styles.usageGrid}>
+                                <UsageInputCol label="Whole" value={useWhole} onChange={setUseWhole} color="#22C55E" isDark={isDark} />
+                                <UsageInputCol label="Skim" value={useSkim} onChange={setUseSkim} color="#3B82F6" isDark={isDark} />
+                                <UsageInputCol label="Cream" value={useCream} onChange={setUseCream} color="#F59E0B" isDark={isDark} />
                             </View>
 
                             {/* ── PRODUCTION YIELD SECTION ── */}
@@ -317,20 +315,20 @@ const InventoryCard = React.memo(({ label, value, color, isDark, loading }: any)
     </View>
 ));
 
-const UsageInputRow = React.memo(({ label, value, onChange, color, isDark }: any) => {
+const UsageInputCol = React.memo(({ label, value, onChange, color, isDark }: any) => {
     const [isFocused, setIsFocused] = React.useState(false);
     return (
-        <View style={styles.usageRow}>
-            <View style={styles.usageLabelGroup}>
-                <View style={[styles.colorIndicator, { backgroundColor: color }]} />
-                <ThemedText style={[styles.usageLabelText, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>{label}</ThemedText>
+        <View style={styles.usageCol}>
+            <View style={styles.usageColHeader}>
+                <View style={[styles.invDot, { backgroundColor: color }]} />
+                <ThemedText style={styles.usageColLabel}>{label}</ThemedText>
             </View>
             <View style={[
-                styles.inputBox,
+                styles.inputBoxCol,
                 { backgroundColor: isDark ? '#0F172A' : '#FAFCFF', borderColor: isFocused ? color : (isDark ? '#334155' : '#F1F5F9') }
             ]}>
                 <TextInput
-                    style={[styles.baseInput, { color: isDark ? '#F8FAFC' : '#64748B' }, Platform.OS === 'web' && { outlineStyle: 'none' } as any]}
+                    style={[styles.baseInput, { color: isDark ? '#F8FAFC' : '#1E293B' }, Platform.OS === 'web' && { outlineStyle: 'none' } as any]}
                     placeholder="0"
                     placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
                     keyboardType="numeric"
@@ -468,7 +466,20 @@ const styles = StyleSheet.create({
     baseInput: { flex: 1, fontSize: 14, fontWeight: '600', height: '100%' },
     listDivider: { height: 1.5, marginVertical: 0 },
 
-    sectionDivider: { height: 1.5, marginVertical: 16 },
+    /* Usage Grid Column Styles */
+    usageGrid: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+    usageCol: { flex: 1 },
+    usageColHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+    usageColLabel: { fontSize: 11, fontWeight: '600', color: '#64748B' },
+    inputBoxCol: { 
+        height: 40, 
+        borderWidth: 1, 
+        borderRadius: 8, 
+        paddingHorizontal: 12,
+        justifyContent: 'center'
+    },
+
+    sectionDivider: { height: 1.5, marginVertical: 10 },
     
     yieldContainer: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 4 },
     yieldCol: { flexDirection: 'column' },

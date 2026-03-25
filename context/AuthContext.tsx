@@ -29,7 +29,7 @@ const USER_STORAGE_KEY = 'milkAccounting:authUser:v1';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -37,11 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const raw = await AsyncStorage.getItem(USER_STORAGE_KEY);
         if (!mounted) return;
-        if (!raw) return;
-        const parsed = JSON.parse(raw) as User;
-        if (parsed && typeof parsed === 'object' && 'email' in parsed) setUser(parsed);
-      } catch {
-        // ignore hydration errors
+        if (raw) {
+          const parsed = JSON.parse(raw) as User;
+          if (parsed && typeof parsed === 'object' && 'email' in parsed) setUser(parsed);
+        }
+      } catch (e) {
+        console.error('Core Hydration Error:', e);
+      } finally {
+        if (mounted) setIsLoading(false);
       }
     })();
     return () => {

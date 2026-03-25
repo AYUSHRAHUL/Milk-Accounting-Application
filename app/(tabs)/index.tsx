@@ -10,7 +10,8 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
+  ActivityIndicator
 } from 'react-native';
 import Animated, {
   Easing,
@@ -52,15 +53,11 @@ const FEATURES: FeatureCard[] = [
 
 // Dashboard Card
 function DashboardCard({ item, index, disabled }: { item: FeatureCard; index: number; disabled?: boolean }) {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(20);
+  const opacity = useSharedValue(1);
+  const translateY = useSharedValue(0);
   const scale = useSharedValue(1);
 
-  useEffect(() => {
-    const delay = index * 80;
-    opacity.value = withDelay(delay, withTiming(1, { duration: 400, easing: Easing.out(Easing.ease) }));
-    translateY.value = withDelay(delay, withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) }));
-  }, [index, opacity, translateY]);
+  // Removed entrance animations to prevent intermittent visibility issues on slow renders
 
   const cardAnimatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -138,13 +135,9 @@ function DashboardBanner() {
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [openingBalance, setOpeningBalance] = useState<number | null>(null);
   const [closingBalance, setClosingBalance] = useState<number | null>(null);
-
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const today = new Date();
-  const dateStr = `${today.getDate().toString().padStart(2, '0')} ${months[today.getMonth()]} ${today.getFullYear()}`;
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -162,6 +155,18 @@ export default function DashboardScreen() {
     };
     fetchSummary();
   }, [user?.id]);
+
+  if (isAuthLoading) {
+    return <SafeAreaView style={styles.safeArea}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color="#22C55E" size="large" />
+      </View>
+    </SafeAreaView>;
+  }
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const today = new Date();
+  const dateStr = `${today.getDate().toString().padStart(2, '0')} ${months[today.getMonth()]} ${today.getFullYear()}`;
 
   return (
     <SafeAreaView style={styles.safeArea}>

@@ -178,7 +178,7 @@ export default function MilkCollectionScreen() {
   }, [quantity, costPerLiter]);
 
   const handleSave = async () => {
-    if (!supplier || !quantity || !costPerLiter || (source === 'Other' && !customSource) || !fatType || !date || !time) {
+    if (!supplier || !quantity || !costPerLiter || (source === 'Other' && !customSource) || !date || !time) {
       Alert.alert('Missing Fields', 'Please fill in all mandatory fields.');
       return;
     }
@@ -436,7 +436,7 @@ export default function MilkCollectionScreen() {
 
               <View style={styles.row}>
                 <View style={styles.halfField}>
-                  <Text style={styles.label}>Fat (%) *</Text>
+                  <Text style={styles.label}>Fat (%)</Text>
                   <TextInput
                     style={inputStyle('fat')}
                     placeholder="e.g. 4.5"
@@ -461,9 +461,6 @@ export default function MilkCollectionScreen() {
                     onBlur={() => setFocusedField(null)}
                   />
                 </View>
-              </View>
-
-              <View style={styles.row}>
                 <View style={styles.halfField}>
                   <Text style={styles.label}>CLR</Text>
                   <TextInput
@@ -477,19 +474,20 @@ export default function MilkCollectionScreen() {
                     onBlur={() => setFocusedField(null)}
                   />
                 </View>
-                <View style={styles.halfField}>
-                  <Text style={styles.label}>Quantity (L)</Text>
-                  <TextInput
-                    style={inputStyle('quantity')}
-                    placeholder="0.0"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="numeric"
-                    value={quantity}
-                    onChangeText={setQuantity}
-                    onFocus={() => setFocusedField('quantity')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </View>
+              </View>
+
+              <View style={{ marginTop: 4 }}>
+                <Text style={styles.label}>Quantity (L)</Text>
+                <TextInput
+                  style={inputStyle('quantity')}
+                  placeholder="0.0"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="numeric"
+                  value={quantity}
+                  onChangeText={setQuantity}
+                  onFocus={() => setFocusedField('quantity')}
+                  onBlur={() => setFocusedField(null)}
+                />
               </View>
             </View>
 

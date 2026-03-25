@@ -180,7 +180,7 @@ export default function RegisterScreen() {
                 </View>
               </View>
 
-              {/* Role Selection */}
+              {/* 
               <View style={styles.roleContainer}>
                 <TouchableOpacity 
                   style={[styles.roleBtn, role === 'user' && styles.roleBtnActive]}
@@ -204,6 +204,7 @@ export default function RegisterScreen() {
                   <Text style={[styles.roleText, role === 'super-admin' && styles.roleTextActiveSuperAdmin]}>Super</Text>
                 </TouchableOpacity>
               </View>
+              */}
 
               {/* Register Button */}
               <Animated.View style={{ transform: [{ scale: buttonScale }], marginTop: 8 }}>

@@ -25,7 +25,7 @@ const MilkEntrySchema: Schema = new Schema(
     shift: { type: String, required: true, enum: ['Morning', 'Evening'] },
     source: { type: String, required: true, enum: ['Cow', 'Buffalo', 'Goat', 'Other'] },
     customSource: { type: String },
-    fatType: { type: String, required: true },
+    fatType: { type: String, required: false },
     snf: { type: Number },
     clr: { type: Number },
     quantity: { type: Number, required: true },

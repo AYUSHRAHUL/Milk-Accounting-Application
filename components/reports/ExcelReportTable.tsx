@@ -49,10 +49,10 @@ interface Props {
 export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
-  const [filterMode, setFilterMode] = useState<'Day' | 'Month'>('Day');
+  const [filterMode, setFilterMode] = useState<'Date' | 'Month'>('Date');
 
   const processedEntries = useMemo(() => {
-    if (filterMode === 'Day') return entries;
+    if (filterMode === 'Date') return entries;
 
     // Month Aggregation Logic
     const monthly: Record<string, any> = {};
@@ -167,7 +167,7 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
         <ThemedText style={styles.title}>Excel Detailed View</ThemedText>
         <View style={styles.controls}>
            <View style={[styles.toggleGroup, { backgroundColor: theme.borderMuted }]}>
-            {['Day', 'Month'].map((m) => (
+            {['Date', 'Month'].map((m) => (
               <TouchableOpacity
                 key={m}
                 onPress={() => setFilterMode(m as any)}

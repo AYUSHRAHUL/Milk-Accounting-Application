@@ -239,7 +239,7 @@ app.post('/api/milk/collection', async (req, res) => {
     const { userId, supplier, date, shift, source, customSource, fatType, snf, clr, quantity, costPerLiter, totalCost } =
       body;
 
-    if (!userId || !supplier || !date || !shift || !source || !fatType || !quantity || !costPerLiter || !totalCost) {
+    if (!userId || !supplier || !date || !shift || !source || !quantity || !costPerLiter || !totalCost) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 

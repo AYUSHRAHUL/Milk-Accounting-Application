@@ -201,7 +201,10 @@ export default function SalesScreen() {
             .total{text-align:right;margin-top:20px;font-size:22px;font-weight:800;color:#059669;}
         </style></head>
         <body>
-            <div class="header"><div class="farm">DAIRY SALES RECEIPT</div></div>
+            <div class="header">
+                <div class="farm">Mom ami Dairyware</div>
+                <div style="font-size:14px;color:#6B7280;margin-top:4px;">Sales Receipt</div>
+            </div>
             <div class="info">
                 <div><b>Customer:</b> ${data.customerName}<br><b>Date:</b> ${data.date}</div>
                 <div style="text-align:right"><b>Mode:</b> ${data.paymentMode}</div>
@@ -471,7 +474,7 @@ export default function SalesScreen() {
 
                         <ScrollView style={{ width: '100%', padding: 20 }}>
                             <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                                <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#10B981' }}>DHARMRAJ DAIRY</ThemedText>
+                                <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#10B981' }}>Mom ami Dairyware</ThemedText>
                                 <ThemedText style={{ fontSize: 12, color: '#6B7280' }}>Quality Fresh Dairy Products</ThemedText>
                             </View>
 

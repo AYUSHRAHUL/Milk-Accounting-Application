@@ -175,12 +175,14 @@ export default function LoginScreen() {
               </Animated.View>
 
               {/* Bottom Text */}
+              {/* 
               <View style={styles.bottomTextContainer}>
                 <Text style={styles.bottomText}>Don&apos;t have an account? </Text>
                 <TouchableOpacity onPress={() => router.replace('/(auth)/register')}>
                   <Text style={styles.registerText}>Register</Text>
                 </TouchableOpacity>
-              </View>
+              </View> 
+              */}
 
             </View>
 
