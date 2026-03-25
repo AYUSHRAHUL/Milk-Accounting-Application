@@ -6,12 +6,12 @@ export default function AdminLayout() {
   const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    if (!isLoading && user?.role !== 'admin') {
+    if (!isLoading && user?.role !== 'admin' && user?.role !== 'super-admin') {
       router.replace('/(tabs)');
     }
   }, [user, isLoading]);
 
-  if (isLoading || user?.role !== 'admin') {
+  if (isLoading || (user?.role !== 'admin' && user?.role !== 'super-admin')) {
     return null;
   }
 

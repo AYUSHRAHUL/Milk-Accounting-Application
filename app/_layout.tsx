@@ -43,8 +43,14 @@ function RootLayoutNav() {
       // Redirect to register if not authenticated and trying to access protected routes
       router.replace('/(auth)/register');
     } else if (user && (inAuthGroup || isLandingPage)) {
-      // Redirect to the dashboard if authenticated and on login or landing pages
-      router.replace('/(tabs)');
+      // Redirect based on role
+      if (user.role === 'super-admin') {
+        router.replace('/super-admin/dashboard');
+      } else if (user.role === 'admin') {
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/(tabs)');
+      }
     }
   }, [user, isLoading, segments, isNavigationReady]);
 
@@ -55,6 +61,7 @@ function RootLayoutNav() {
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="admin" options={{ headerShown: false }} />
+        <Stack.Screen name="super-admin" options={{ headerShown: false }} />
         <Stack.Screen
           name="milk-collection/index"
           options={{ headerShown: false }}

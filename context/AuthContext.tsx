@@ -6,7 +6,7 @@ type User = {
   id: string;
   name: string;
   email: string;
-  role?: 'admin' | 'user';
+  role?: 'admin' | 'user' | 'super-admin';
   modules?: string[];
 } | null;
 

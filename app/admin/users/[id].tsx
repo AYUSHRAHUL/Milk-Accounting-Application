@@ -153,23 +153,7 @@ export default function EditUserScreen() {
           />
         </View>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Role</Text>
-          <View style={styles.roleContainer}>
-            <TouchableOpacity 
-              style={[styles.roleBtn, formData.role === 'user' && styles.roleBtnActive]}
-              onPress={() => setFormData({...formData, role: 'user'})}
-            >
-              <Text style={[styles.roleText, formData.role === 'user' && styles.roleTextActive]}>User</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.roleBtn, formData.role === 'admin' && styles.roleBtnActive]}
-              onPress={() => setFormData({...formData, role: 'admin'})}
-            >
-              <Text style={[styles.roleText, formData.role === 'admin' && styles.roleTextActive]}>Admin</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+
 
         <View style={styles.formGroup}>
           <Text style={styles.label}>Module Access Permissions</Text>
@@ -211,11 +195,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, fontWeight: '800', color: '#64748B', marginBottom: 8, textTransform: 'uppercase' },
   input: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, padding: 16, fontSize: 16, color: '#1E293B', fontWeight: '600' },
   
-  roleContainer: { flexDirection: 'row', gap: 12 },
-  roleBtn: { flex: 1, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#FFF', alignItems: 'center' },
-  roleBtnActive: { borderColor: '#2563EB', backgroundColor: '#EFF6FF' },
-  roleText: { fontSize: 15, fontWeight: '700', color: '#64748B' },
-  roleTextActive: { color: '#2563EB' },
+
 
   modulesContainer: { backgroundColor: '#FFF', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden' },
   moduleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderColor: '#F1F5F9' },

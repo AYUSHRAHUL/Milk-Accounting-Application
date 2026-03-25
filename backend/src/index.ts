@@ -49,7 +49,14 @@ app.post('/api/auth/register', async (req, res) => {
 
     return res.status(201).json({
       message: 'User registered successfully',
-      user: { id: newUser.adminId || newUser._id, profileId: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, modules: newUser.modules },
+      user: {
+        id: (newUser.role === 'admin' || newUser.role === 'super-admin') ? newUser._id : (newUser.adminId || newUser._id),
+        profileId: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        modules: newUser.modules
+      },
     });
   } catch (error: any) {
     console.error('Registration Error:', error);
@@ -84,7 +91,14 @@ app.post('/api/auth/login', async (req, res) => {
 
     return res.status(200).json({
       message: 'Login successful',
-      user: { id: user.adminId || user._id, profileId: user._id, name: user.name, email: user.email, role: user.role, modules: user.modules },
+      user: {
+        id: (user.role === 'admin' || user.role === 'super-admin') ? user._id : (user.adminId || user._id),
+        profileId: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        modules: user.modules
+      },
     });
   } catch (error: any) {
     console.error('Login Error:', error);
@@ -892,11 +906,24 @@ app.get('/api/reports', async (req, res) => {
 
 // Middeleware placeholder: Assuming admin checks are either here or on frontend.
 // For now, we will just securely return the data. We should probably require an `adminId` query or body param for safety.
+// Middleware for super-admin
+const requireSuperAdmin = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const superAdminId = req.query.superAdminId || req.body.superAdminId;
+  if (!superAdminId) return res.status(401).json({ error: 'Unauthorized: superAdminId required' });
+  await connectToDatabase();
+  const superUser = await User.findById(superAdminId);
+  if (!superUser || superUser.role !== 'super-admin') {
+    return res.status(403).json({ error: 'Forbidden: Super Admin access only' });
+  }
+  next();
+};
+
 const requireAdmin = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const adminId = req.query.adminId || req.body.adminId;
   if (!adminId) return res.status(401).json({ error: 'Unauthorized: adminId required' });
+  await connectToDatabase();
   const adminUser = await User.findById(adminId);
-  if (!adminUser || adminUser.role !== 'admin') {
+  if (!adminUser || (adminUser.role !== 'admin' && adminUser.role !== 'super-admin')) {
     return res.status(403).json({ error: 'Forbidden: Admin access only' });
   }
   next();
@@ -936,7 +963,17 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
       adminId: String(req.query.adminId || req.body.adminId || ''),
     });
 
-    return res.status(201).json({ message: 'User created successfully', user: { id: newUser.adminId || newUser._id, profileId: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, modules: newUser.modules } });
+    return res.status(201).json({
+      message: 'User created successfully',
+      user: {
+        id: (newUser.role === 'admin' || newUser.role === 'super-admin') ? newUser._id : (newUser.adminId || newUser._id),
+        profileId: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        modules: newUser.modules
+      }
+    });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
@@ -975,8 +1012,100 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
   }
 });
 
+// --- Super Admin Endpoints ---
+app.get('/api/super-admin/admins', requireSuperAdmin, async (req, res) => {
+  try {
+    await connectToDatabase();
+    const superAdminId = String(req.query.superAdminId || req.body.superAdminId);
+    const admins = await User.find({ adminId: superAdminId, role: 'admin' }).select('-passwordHash -password').sort({ createdAt: -1 }).lean();
+    
+    const adminsWithCounts = await Promise.all(admins.map(async (admin: any) => {
+      const count = await User.countDocuments({ adminId: String(admin._id) });
+      return { ...admin, userCount: count };
+    }));
+
+    return res.status(200).json(adminsWithCounts);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/super-admin/admins', requireSuperAdmin, async (req, res) => {
+  try {
+    await connectToDatabase();
+    const { name, email, password, modules } = req.body;
+    if (!name || !email || !password) return res.status(400).json({ error: 'Required fields missing' });
+
+    const existingUser = await User.findOne({ email: String(email).toLowerCase() });
+    if (existingUser) return res.status(409).json({ error: 'Email already exists' });
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(String(password), salt);
+
+    const superAdminId = String(req.query.superAdminId || req.body.superAdminId);
+
+    const newAdmin = await User.create({
+      name,
+      email: String(email).toLowerCase(),
+      passwordHash,
+      role: 'admin',
+      modules: modules || ['collection', 'history', 'production', 'suppliers', 'sales', 'reports'],
+      adminId: superAdminId,
+    });
+
+    return res.status(201).json({ message: 'Admin created successfully', user: newAdmin });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/super-admin/admins/:adminId/users', requireSuperAdmin, async (req, res) => {
+  try {
+    await connectToDatabase();
+    const adminId = req.params.adminId;
+    const users = await User.find({ adminId }).select('-passwordHash -password').sort({ createdAt: -1 });
+    return res.status(200).json(users);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/super-admin/admins/:adminId/users', requireSuperAdmin, async (req, res) => {
+  try {
+    await connectToDatabase();
+    const adminId = req.params.adminId;
+    const { name, email, password, modules } = req.body;
+    
+    if (!name || !email || !password) return res.status(400).json({ error: 'Required fields missing' });
+
+    const existingUser = await User.findOne({ email: String(email).toLowerCase() });
+    if (existingUser) return res.status(409).json({ error: 'Email already exists' });
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(String(password), salt);
+
+    const newUser = await User.create({
+      name,
+      email: String(email).toLowerCase(),
+      passwordHash,
+      role: 'user',
+      modules: modules || ['collection', 'history', 'production', 'suppliers', 'sales', 'reports'],
+      adminId: adminId,
+    });
+
+    return res.status(201).json({ message: 'User created successfully', user: newUser });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 const port = Number(process.env.PORT || 3000);
-app.listen(port, () => {
-  console.log(`Backend listening on port ${port}`);
+connectToDatabase().then(() => {
+  app.listen(port, () => {
+    console.log(`Backend listening on port ${port}`);
+  });
+}).catch(err => {
+  console.error('Failed to connect to database:', err);
+  process.exit(1);
 });
 

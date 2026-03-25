@@ -28,7 +28,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<'user'|'admin'>('user');
+  const [role, setRole] = useState<'user' | 'admin' | 'super-admin'>('user');
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [isSuccessVisible, setIsSuccessVisible] = useState(false);
@@ -193,8 +193,15 @@ export default function RegisterScreen() {
                   style={[styles.roleBtn, role === 'admin' && styles.roleBtnActiveAdmin]}
                   onPress={() => setRole('admin')}
                 >
-                  <Ionicons name="shield-checkmark" size={16} color={role === 'admin' ? '#22C55E' : '#9CA3AF'} style={{ marginRight: 6 }} />
+                  <Ionicons name="shield-checkmark" size={16} color={role === 'admin' ? '#16A34A' : '#9CA3AF'} style={{ marginRight: 6 }} />
                   <Text style={[styles.roleText, role === 'admin' && styles.roleTextActiveAdmin]}>Admin</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.roleBtn, role === 'super-admin' && styles.roleBtnActiveSuperAdmin]}
+                  onPress={() => setRole('super-admin')}
+                >
+                  <Ionicons name="diamond" size={16} color={role === 'super-admin' ? '#9333EA' : '#9CA3AF'} style={{ marginRight: 6 }} />
+                  <Text style={[styles.roleText, role === 'super-admin' && styles.roleTextActiveSuperAdmin]}>Super</Text>
                 </TouchableOpacity>
               </View>
 
@@ -440,5 +447,12 @@ const styles = StyleSheet.create({
   },
   roleTextActiveAdmin: {
     color: '#16A34A',
+  },
+  roleBtnActiveSuperAdmin: {
+    borderColor: '#E9D5FF',
+    backgroundColor: '#FAF5FF',
+  },
+  roleTextActiveSuperAdmin: {
+    color: '#9333EA',
   },
 });

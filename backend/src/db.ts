@@ -8,11 +8,10 @@ export async function connectToDatabase() {
     throw new Error('MONGODB_URI is not set in the backend environment');
   }
 
-  if (mongoose.connection.readyState >= 1) return mongoose;
+  if (mongoose.connection.readyState === 1) return mongoose;
 
   if (!cached) {
     cached = mongoose.connect(uri, {
-      bufferCommands: false,
       serverSelectionTimeoutMS: 15000,
     });
   }
