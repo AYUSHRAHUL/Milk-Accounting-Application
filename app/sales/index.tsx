@@ -5,12 +5,11 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
-import { router, Stack } from 'expo-router';
+import { router, Stack, useFocusEffect } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Modal,
     Platform,
@@ -18,17 +17,20 @@ import {
     StyleSheet,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
 
-const PRODUCT_TYPES = ['Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Flavoured Milk', 'Icecream', 'Yoghurt', 'Srikhand', 'Rasagolla', 'Gulabjamun', 'Rabbari', 'Other'];
+const ALL_PRODUCT_TYPES = ['Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Flavoured Milk', 'Icecream', 'Yoghurt', 'Srikhand', 'Rasgolla', 'Gulabjamun', 'Rabbari', 'Other'];
 const PRODUCT_ICONS: Record<string, string> = {
-    Paneer: '🧀', Ghee: '🫙', Butter: '🧈', Curd: '🥛', Khoa: '🍮', 'Flavoured Milk': '🍼', Icecream: '🍦', Yoghurt: '🥣', Srikhand: '🍧', Rasagolla: '⚪', Gulabjamun: '🟤', Rabbari: '🍮', Other: '📦',
+    Paneer: '🧀', Ghee: '🫙', Butter: '🧈', Curd: '🥛', Khoa: '🍮', 
+    'Flavoured Milk': '🧃', Icecream: '🍨', Yoghurt: '🍧', Srikhand: '🥣', 
+    Rasgolla: '⚪', Gulabjamun: '🧆', Rabbari: '🥘', Other: '📦', More: '➡️', Less: '⬆️',
 };
 const PRODUCT_COLORS: Record<string, string> = {
-    Paneer: '#10B981', Ghee: '#F59E0B', Butter: '#FCD34D', Curd: '#3B82F6', Khoa: '#8B5CF6', 'Flavoured Milk': '#EC4899', Icecream: '#06B6D4', Yoghurt: '#D946EF', Srikhand: '#F97316', Rasagolla: '#94A3B8', Gulabjamun: '#78350F', Rabbari: '#BE123C', Other: '#64748B',
+    Paneer: '#10B981', Ghee: '#F59E0B', Butter: '#FCD34D', Curd: '#3B82F6', Khoa: '#8B5CF6', 
+    'Flavoured Milk': '#EC4899', Icecream: '#F472B6', Yoghurt: '#A78BFA', Srikhand: '#FDE047', 
+    Rasgolla: '#9CA3AF', Gulabjamun: '#78350F', Rabbari: '#FBBF24', Other: '#64748B', More: '#64748B', Less: '#64748B',
 };
 const PAYMENT_MODES = ['Cash', 'UPI', 'Credit'];
 
@@ -36,7 +38,7 @@ export default function SalesScreen() {
     const { user } = useAuth();
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
-    
+
     // Custom Alert State
     const [alertConfig, setAlertConfig] = useState({
         visible: false,
@@ -77,7 +79,8 @@ export default function SalesScreen() {
         if (parts.length === 3 && parts[2].length === 4) {
             return `${parts[2]}-${parts[1]}-${parts[0]}`;
         }
-        return new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     }, [displayDate]);
 
     const fetchStock = useCallback(async () => {
@@ -153,25 +156,25 @@ export default function SalesScreen() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(saleData),
             });
-            
+
             const data = await response.json();
             if (response.ok) {
                 // Set the receipt data BEFORE resetting inputs
-                setLastSaleData({ 
-                    date: displayDate, 
-                    customerName, 
-                    productType, 
-                    quantity, 
-                    pricePerUnit, 
-                    totalAmount, 
-                    paymentMode 
+                setLastSaleData({
+                    date: displayDate,
+                    customerName,
+                    productType,
+                    quantity,
+                    pricePerUnit,
+                    totalAmount,
+                    paymentMode
                 });
-                
+
                 // Clear inputs
                 setCustomerName('');
                 setQuantity('');
                 setPricePerUnit('');
-                
+
                 // Show success modal
                 setShowSuccessModal(true);
                 fetchStock(); // refresh stock
@@ -198,7 +201,7 @@ export default function SalesScreen() {
             .total{text-align:right;margin-top:20px;font-size:22px;font-weight:800;color:#059669;}
         </style></head>
         <body>
-            <div class="header"><div class="farm">MOM AMI DAIRYWARE - SALES RECEIPT</div></div>
+            <div class="header"><div class="farm">DAIRY SALES RECEIPT</div></div>
             <div class="info">
                 <div><b>Customer:</b> ${data.customerName}<br><b>Date:</b> ${data.date}</div>
                 <div style="text-align:right"><b>Mode:</b> ${data.paymentMode}</div>
@@ -294,43 +297,50 @@ export default function SalesScreen() {
                             <ActivityIndicator color="#10B981" style={{ marginVertical: 20 }} />
                         ) : (
                             <View style={styles.productGrid}>
-                                {(showAllProducts ? PRODUCT_TYPES : PRODUCT_TYPES.slice(0, 7)).map(p => {
-                                    const isSelected = productType === p;
-                                    const stock = productStock[p] ?? 0;
-                                    const color = PRODUCT_COLORS[p] || '#6B7280';
-                                    return (
-                                        <TouchableOpacity
-                                            key={p}
-                                            onPress={() => { setProductType(p); setQuantity(''); }}
-                                            activeOpacity={0.8}
-                                            style={[
-                                                styles.productCard,
-                                                isSelected && { borderColor: color, borderWidth: 2.5, backgroundColor: `${color}12` }
-                                            ]}
-                                        >
-                                            <ThemedText style={styles.productIcon}>{PRODUCT_ICONS[p]}</ThemedText>
-                                            <ThemedText style={[styles.productName, isSelected && { color, fontWeight: '800' }]}>{p}</ThemedText>
-                                            <View style={[styles.stockBadge, { backgroundColor: stock > 0 ? '#DCFCE7' : '#FEE2E2' }]}>
-                                                <ThemedText style={[styles.stockText, { color: stock > 0 ? '#166534' : '#991B1B' }]}>
-                                                    {stock > 0 ? `${stock.toFixed(1)} avail` : 'Out of stock'}
-                                                </ThemedText>
-                                            </View>
-                                        </TouchableOpacity>
-                                    );
-                                })}
-                                {!showAllProducts && (
-                                    <TouchableOpacity
-                                        onPress={() => setShowAllProducts(true)}
-                                        activeOpacity={0.8}
-                                        style={[styles.productCard, { backgroundColor: '#F3F4F6' }]}
-                                    >
-                                        <ThemedText style={styles.productIcon}>➕</ThemedText>
-                                        <ThemedText style={[styles.productName, { fontWeight: '800' }]}>More</ThemedText>
-                                        <View style={[styles.stockBadge, { backgroundColor: '#E5E7EB' }]}>
-                                            <ThemedText style={[styles.stockText, { color: '#4B5563' }]}>Show more</ThemedText>
-                                        </View>
-                                    </TouchableOpacity>
-                                )}
+                                {(() => {
+                                    const displayList = showAllProducts 
+                                        ? [...ALL_PRODUCT_TYPES, 'Less'] 
+                                        : [...ALL_PRODUCT_TYPES.slice(0, 7), 'More'];
+                                        
+                                    return displayList.map(p => {
+                                        if (p === 'More' || p === 'Less') {
+                                            return (
+                                                <TouchableOpacity
+                                                    key={p}
+                                                    onPress={() => setShowAllProducts(p === 'More')}
+                                                    activeOpacity={0.8}
+                                                    style={[styles.productCard, { justifyContent: 'center' }]}
+                                                >
+                                                    <ThemedText style={styles.productIcon}>{PRODUCT_ICONS[p]}</ThemedText>
+                                                    <ThemedText style={styles.productName}>{p === 'More' ? 'More...' : 'Show Less'}</ThemedText>
+                                                </TouchableOpacity>
+                                            );
+                                        }
+
+                                        const isSelected = productType === p;
+                                        const stock = productStock[p] ?? 0;
+                                        const color = PRODUCT_COLORS[p] || '#6B7280';
+                                        return (
+                                            <TouchableOpacity
+                                                key={p}
+                                                onPress={() => { setProductType(p); setQuantity(''); }}
+                                                activeOpacity={0.8}
+                                                style={[
+                                                    styles.productCard,
+                                                    isSelected && { borderColor: color, borderWidth: 2.5, backgroundColor: `${color}12` }
+                                                ]}
+                                            >
+                                                <ThemedText style={styles.productIcon}>{PRODUCT_ICONS[p]}</ThemedText>
+                                                <ThemedText style={[styles.productName, isSelected && { color, fontWeight: '800' }]}>{p}</ThemedText>
+                                                <View style={[styles.stockBadge, { backgroundColor: stock > 0 ? '#DCFCE7' : '#FEE2E2' }]}>
+                                                    <ThemedText style={[styles.stockText, { color: stock > 0 ? '#166534' : '#991B1B' }]}>
+                                                        {stock > 0 ? `${stock.toFixed(1)} avail` : 'Out of stock'}
+                                                    </ThemedText>
+                                                </View>
+                                            </TouchableOpacity>
+                                        );
+                                    });
+                                })()}
                             </View>
                         )}
                     </View>
@@ -405,7 +415,7 @@ export default function SalesScreen() {
                             : <>
                                 <Ionicons name={isOverLimit ? 'warning-outline' : 'checkmark-circle'} size={20} color="#fff" />
                                 <ThemedText style={styles.saveBtnText}>Sale</ThemedText>
-                              </>
+                            </>
                         }
                     </TouchableOpacity>
                 </ScrollView>
@@ -423,8 +433,8 @@ export default function SalesScreen() {
                             {lastSaleData?.quantity} units of {lastSaleData?.productType} sold to {lastSaleData?.customerName}
                         </ThemedText>
 
-                        <TouchableOpacity 
-                            style={[styles.saveBtn, { width: '100%', marginTop: 20 }]} 
+                        <TouchableOpacity
+                            style={[styles.saveBtn, { width: '100%', marginTop: 20 }]}
                             onPress={() => {
                                 setShowSuccessModal(false);
                                 setShowReceiptModal(true);
@@ -451,7 +461,7 @@ export default function SalesScreen() {
                         {/* Header */}
                         <View style={{ backgroundColor: '#10B981', width: '100%', padding: 20, alignItems: 'center' }}>
                             <ThemedText style={{ color: '#fff', fontSize: 18, fontWeight: '800' }}>Sales Receipt</ThemedText>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 onPress={() => setShowReceiptModal(false)}
                                 style={{ position: 'absolute', right: 15, top: 18 }}
                             >
@@ -461,7 +471,7 @@ export default function SalesScreen() {
 
                         <ScrollView style={{ width: '100%', padding: 20 }}>
                             <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                                <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#10B981' }}>MOM AMI DAIRYWARE</ThemedText>
+                                <ThemedText style={{ fontSize: 24, fontWeight: '900', color: '#10B981' }}>DHARMRAJ DAIRY</ThemedText>
                                 <ThemedText style={{ fontSize: 12, color: '#6B7280' }}>Quality Fresh Dairy Products</ThemedText>
                             </View>
 
@@ -511,15 +521,15 @@ export default function SalesScreen() {
                         </ScrollView>
 
                         <View style={{ width: '100%', padding: 20, borderTopWidth: 1, borderTopColor: '#F3F4F6', flexDirection: 'row', gap: 10 }}>
-                            <TouchableOpacity 
-                                style={[styles.btnAction, { flex: 1, backgroundColor: '#1F2937' }]} 
+                            <TouchableOpacity
+                                style={[styles.btnAction, { flex: 1, backgroundColor: '#1F2937' }]}
                                 onPress={handlePrintReceipt}
                             >
                                 <Ionicons name="cloud-download-outline" size={18} color="#fff" />
                                 <ThemedText style={styles.btnActionText}>Download</ThemedText>
                             </TouchableOpacity>
-                            <TouchableOpacity 
-                                style={[styles.btnAction, { flex: 1, backgroundColor: '#3B82F6' }]} 
+                            <TouchableOpacity
+                                style={[styles.btnAction, { flex: 1, backgroundColor: '#3B82F6' }]}
                                 onPress={handleDownloadReceipt}
                             >
                                 <Ionicons name="share-social-outline" size={18} color="#fff" />
@@ -535,35 +545,35 @@ export default function SalesScreen() {
                     <View style={[styles.modalContent, { maxWidth: 320, padding: 24, maxHeight: '80%' }]}>
                         <ScrollView contentContainerStyle={{ alignItems: 'center' }} showsVerticalScrollIndicator={false} style={{ width: '100%' }}>
                             <View style={[
-                                styles.alertIconBadge, 
+                                styles.alertIconBadge,
                                 { backgroundColor: alertConfig.type === 'error' ? '#FEE2E2' : alertConfig.type === 'warning' ? '#FEF3C7' : '#DBEAFE' }
                             ]}>
-                                <Ionicons 
-                                    name={alertConfig.type === 'error' ? 'alert-circle' : alertConfig.type === 'warning' ? 'warning' : 'information-circle'} 
-                                    size={32} 
-                                    color={alertConfig.type === 'error' ? '#EF4444' : alertConfig.type === 'warning' ? '#F59E0B' : '#3B82F6'} 
+                                <Ionicons
+                                    name={alertConfig.type === 'error' ? 'alert-circle' : alertConfig.type === 'warning' ? 'warning' : 'information-circle'}
+                                    size={32}
+                                    color={alertConfig.type === 'error' ? '#EF4444' : alertConfig.type === 'warning' ? '#F59E0B' : '#3B82F6'}
                                 />
                             </View>
-                            
+
                             <ThemedText style={[styles.modalTitle, { fontSize: 18, textAlign: 'center' }]}>
                                 {alertConfig.title}
                             </ThemedText>
-                            
+
                             <ThemedText style={[styles.modalSub, { marginBottom: 24 }]}>
                                 {alertConfig.message}
                             </ThemedText>
                         </ScrollView>
 
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={[
-                                styles.btnAction, 
-                                { 
-                                    width: '100%', 
+                                styles.btnAction,
+                                {
+                                    width: '100%',
                                     backgroundColor: alertConfig.type === 'error' ? '#EF4444' : alertConfig.type === 'warning' ? '#F59E0B' : '#10B981',
                                     height: 48,
                                     marginTop: 10
                                 }
-                            ]} 
+                            ]}
                             onPress={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
                         >
                             <ThemedText style={styles.btnActionText}>Understood</ThemedText>

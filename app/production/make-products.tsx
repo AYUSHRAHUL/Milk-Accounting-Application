@@ -1,12 +1,10 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
-import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
-import { router, Stack } from 'expo-router';
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { router, Stack, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -18,57 +16,58 @@ import {
     TextInput,
     TouchableOpacity,
     View,
-    useWindowDimensions,
-    Keyboard,
-    TouchableWithoutFeedback
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+/* ── CONFIG ── */
 const PRODUCT_LIST = [
-    { name: 'Ghee', color: '#F59E0B' },
-    { name: 'Paneer', color: '#10B981' },
-    { name: 'Curd', color: '#3B82F6' },
-    { name: 'Butter', color: '#FCD34D' },
-    { name: 'Khoa', color: '#8B5CF6' },
-    { name: 'Flavoured Milk', color: '#EC4899' },
-    { name: 'Icecream', color: '#06B6D4' },
-    { name: 'Yoghurt', color: '#D946EF' },
-    { name: 'Srikhand', color: '#F97316' },
-    { name: 'Rasagolla', color: '#FFFFFF' },
-    { name: 'Gulabjamun', color: '#78350F' },
-    { name: 'Rabbari', color: '#BE123C' },
-    { name: 'Other', color: '#64748B' },
+    { name: 'Paneer', color: '#10B981', icon: '🧀' },
+    { name: 'Ghee', color: '#F59E0B', icon: '🫙' },
+    { name: 'Butter', color: '#FCD34D', icon: '🧈' },
+    { name: 'Curd', color: '#3B82F6', icon: '🥛' },
+    { name: 'Khoa', color: '#8B5CF6', icon: '🍮' },
+    { name: 'Flavoured Milk', color: '#EC4899', icon: '🧃' },
+    { name: 'Icecream', color: '#F472B6', icon: '🍨' },
+    { name: 'Yoghurt', color: '#A78BFA', icon: '🍧' },
+    { name: 'Srikhand', color: '#FDE047', icon: '🥣' },
+    { name: 'Rasgolla', color: '#9CA3AF', icon: '⚪' },
+    { name: 'Gulabjamun', color: '#78350F', icon: '🧆' },
+    { name: 'Rabbari', color: '#FBBF24', icon: '🥘' },
+    { name: 'Other', color: '#64748B', icon: '📦' },
 ];
+
+const PAGE_PADDING = 24;
 
 export default function MakeProductsScreen() {
     const { user } = useAuth();
     const colorScheme = useColorScheme() ?? 'light';
-    const theme = Colors[colorScheme];
     const isDark = colorScheme === 'dark';
-    const { width } = useWindowDimensions();
-    const isLargeScreen = width > 768;
 
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingInventory, setIsFetchingInventory] = useState(true);
     const [showSuccess, setShowSuccess] = useState(false);
-    
-    // Inventory State
-    const [inventory, setInventory] = useState({
-        wholeMilk: 0,
-        skimMilk: 0,
-        creamMilk: 0
-    });
 
     // Form State
-    const [date, setDate] = useState(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
+    const [inventory, setInventory] = useState({ wholeMilk: 0, skimMilk: 0, creamMilk: 0 });
+    const [date, setDate] = useState(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    });
+
+    useFocusEffect(
+        useCallback(() => {
+            const now = new Date();
+            const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            setDate(today);
+        }, [])
+    );
     const [selectedProduct, setSelectedProduct] = useState('Ghee');
     const [qtyProduced, setQtyProduced] = useState('');
     const [unit, setUnit] = useState('kg');
-    
-    // Milk Usage State
     const [useWhole, setUseWhole] = useState('');
     const [useSkim, setUseSkim] = useState('');
     const [useCream, setUseCream] = useState('');
+    const [showAllProducts, setShowAllProducts] = useState(false);
 
     const fetchInventory = useCallback(async () => {
         if (!user?.id) return;
@@ -101,7 +100,6 @@ export default function MakeProductsScreen() {
         const skimUsed = parseFloat(useSkim) || 0;
         const creamUsed = parseFloat(useCream) || 0;
 
-        // Validation logic...
         if (wholeUsed > inventory.wholeMilk + 0.01) {
             Alert.alert('Low Balance', `Whole Milk balance is ${inventory.wholeMilk.toFixed(1)}L`); return;
         }
@@ -123,11 +121,7 @@ export default function MakeProductsScreen() {
                     productName: selectedProduct,
                     quantityProduced: parseFloat(qtyProduced),
                     unit,
-                    milkUsed: {
-                        wholeMilk: wholeUsed,
-                        skimMilk: skimUsed,
-                        creamMilk: creamUsed
-                    }
+                    milkUsed: { wholeMilk: wholeUsed, skimMilk: skimUsed, creamMilk: creamUsed }
                 })
             });
 
@@ -149,164 +143,159 @@ export default function MakeProductsScreen() {
     }, [selectedProduct]);
 
     return (
-        <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#0F172A' : '#F8FAFC' }]}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF' }]}>
             <Stack.Screen options={{ headerShown: false }} />
-            
+
             <View style={styles.container}>
                 {/* ── HEADER ── */}
-                <View style={[styles.header, { borderBottomColor: isDark ? '#1E293B' : '#E2E8F0', height: 72 }]}>
-                    <TouchableOpacity 
-                        onPress={() => router.back()} 
-                        style={[styles.backButton, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 }]}
+                <View style={[styles.header, { borderBottomColor: isDark ? '#1E293B' : '#F1F5F9' }]}>
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        style={[styles.backButton, { borderColor: isDark ? '#334155' : '#E2E8F0' }]}
                     >
-                        <Ionicons name="arrow-back" size={22} color={isDark ? '#F8FAFC' : '#1E293B'} />
+                        <Ionicons name="arrow-back" size={20} color={isDark ? '#F8FAFC' : '#0F172A'} />
                     </TouchableOpacity>
-                    
                     <View style={styles.headerCenter}>
                         <ThemedText style={styles.headerTitle}>Make Products</ThemedText>
-                        <ThemedText style={styles.headerSubtitle}>Production Workshop</ThemedText>
+                        <ThemedText style={styles.headerSubtitle}>Production Data Entry</ThemedText>
                     </View>
-
-                    <View style={{ width: 44 }} /> 
+                    <View style={{ width: 44 }} />
                 </View>
 
-                <KeyboardAvoidingView 
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    style={{ flex: 1 }}
-                    enabled={Platform.OS !== 'web'}
+                <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
                 >
-                    <ScrollView 
-                        showsVerticalScrollIndicator={false} 
-                        contentContainerStyle={styles.scrollContent}
-                        keyboardShouldPersistTaps="handled"
-                    >
+                    {/* ── INVENTORY OVERVIEW ── */}
+                    <View style={styles.sectionHeader}>
+                        <ThemedText style={styles.sectionTitle}>Raw Materials Available</ThemedText>
+                    </View>
+                    <View style={styles.inventoryGrid}>
+                        <InventoryCard label="Whole Milk" value={inventory.wholeMilk} color="#22C55E" isDark={isDark} loading={isFetchingInventory} />
+                        <InventoryCard label="Skim Milk" value={inventory.skimMilk} color="#3B82F6" isDark={isDark} loading={isFetchingInventory} />
+                        <InventoryCard label="Cream" value={inventory.creamMilk} color="#F59E0B" isDark={isDark} loading={isFetchingInventory} />
+                    </View>
+
+                    {/* ── PRODUCT SELECTION TALL PILLS ── */}
+                    <View style={[styles.sectionHeader, { marginTop: 16 }]}>
+                        <ThemedText style={styles.sectionTitle}>Product to Produce</ThemedText>
+                    </View>
                     
-                    {/* ── STOCK DASHBOARD ── */}
-                    <View style={styles.stockSection}>
-                        <ThemedText style={styles.sectionLabel}>Available Raw Materials</ThemedText>
-                        <View style={styles.stockGrid}>
-                            <InventoryCard 
-                                label="Whole" 
-                                value={inventory.wholeMilk} 
-                                color="#22C55E" 
-                                icon="water" 
-                                isDark={isDark} 
-                                loading={isFetchingInventory}
-                            />
-                            <InventoryCard 
-                                label="Skim" 
-                                value={inventory.skimMilk} 
-                                color="#3B82F6" 
-                                icon="color-filter" 
-                                isDark={isDark} 
-                                loading={isFetchingInventory}
-                            />
-                            <InventoryCard 
-                                label="Cream" 
-                                value={inventory.creamMilk} 
-                                color="#F59E0B" 
-                                icon="layers" 
-                                isDark={isDark} 
-                                loading={isFetchingInventory}
-                            />
-                        </View>
+                    {/* Box-type grid view for products */}
+                    <View style={styles.productGridContainer}>
+                        {(() => {
+                            const displayList = showAllProducts 
+                                ? [...PRODUCT_LIST, { name: 'Less', color: '#64748B', icon: '⬆️' }] 
+                                : [...PRODUCT_LIST.slice(0, 7), { name: 'More', color: '#64748B', icon: '➡️' }];
+                                
+                            return displayList.map((item) => {
+                                if (item.name === 'More' || item.name === 'Less') {
+                                    return (
+                                        <TouchableOpacity
+                                            key={item.name}
+                                            onPress={() => setShowAllProducts(item.name === 'More')}
+                                            style={[
+                                                styles.boxProductChip,
+                                                { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? '#334155' : '#E2E8F0', justifyContent: 'center' }
+                                            ]}
+                                        >
+                                            <ThemedText style={{ fontSize: 14, marginBottom: 2 }}>{item.icon}</ThemedText>
+                                            <ThemedText style={[styles.boxProductName, { color: isDark ? '#F8FAFC' : '#334155' }]}>{item.name === 'More' ? 'More...' : 'Show Less'}</ThemedText>
+                                        </TouchableOpacity>
+                                    );
+                                }
+
+                                const isSelected = selectedProduct === item.name;
+                                return (
+                                    <TouchableOpacity
+                                        key={item.name}
+                                        onPress={() => setSelectedProduct(item.name)}
+                                        style={[
+                                            styles.boxProductChip,
+                                            { backgroundColor: isSelected ? item.color : (isDark ? '#1E293B' : '#FFFFFF') },
+                                            { borderColor: isSelected ? item.color : (isDark ? '#334155' : '#E2E8F0') }
+                                        ]}
+                                    >
+                                        <ThemedText style={{ fontSize: 14, marginBottom: 2 }}>{item.icon}</ThemedText>
+                                        <ThemedText style={[
+                                            styles.boxProductName,
+                                            { color: isSelected ? '#FFFFFF' : (isDark ? '#F8FAFC' : '#334155') }
+                                        ]}>
+                                            {item.name}
+                                        </ThemedText>
+                                    </TouchableOpacity>
+                                );
+                            });
+                        })()}
                     </View>
 
-                    {/* ── PRODUCT SELECTION ── */}
-                    <View style={styles.section}>
-                        <ThemedText style={styles.sectionLabel}>Select Product to Produce</ThemedText>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.productScroll}>
-                            {PRODUCT_LIST.map((item) => (
-                                <TouchableOpacity 
-                                    key={item.name}
-                                    onPress={() => setSelectedProduct(item.name)}
-                                    style={[
-                                        styles.productCard,
-                                        { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' },
-                                        selectedProduct === item.name && { borderColor: item.color, borderWidth: 1.5, transform: [{ scale: 1.02 }] }
-                                    ]}
-                                >
-                                    <ThemedText style={[styles.productName, selectedProduct === item.name && { color: item.color, fontWeight: '900' }]}>{item.name}</ThemedText>
-                                    {selectedProduct === item.name && (
-                                        <View style={[styles.checkMark, { backgroundColor: item.color }]}>
-                                            <Ionicons name="checkmark" size={10} color="#FFF" />
-                                        </View>
-                                    )}
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
-
-                        {/* ── MAIN FORM ── */}
-                        <View style={[styles.mainCard, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
+                    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, marginTop: 8 }}>
+                        
+                        {/* ── CONSUMPTION SECTION ── */}
+                        <View style={[styles.formCard, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? '#334155' : '#E2E8F0' }]}>
                             
-                            <ThemedText style={styles.cardSectionTitle}>Consumption (Liters)</ThemedText>
-                            <View style={styles.usageRow}>
-                                <UsageInput label="Whole" value={useWhole} onChange={setUseWhole} color="#22C55E" isDark={isDark} />
-                                <UsageInput label="Skim" value={useSkim} onChange={setUseSkim} color="#3B82F6" isDark={isDark} />
-                                <UsageInput label="Cream" value={useCream} onChange={setUseCream} color="#F59E0B" isDark={isDark} />
+                            <ThemedText style={[styles.formSectionTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>Consumption</ThemedText>
+                            
+                            <View style={styles.verticalList}>
+                                <UsageInputRow label="Whole Milk" value={useWhole} onChange={setUseWhole} color="#22C55E" isDark={isDark} />
+                                <View style={[styles.listDivider, { backgroundColor: isDark ? '#334155' : '#F1F5F9' }]} />
+                                <UsageInputRow label="Skim Milk" value={useSkim} onChange={setUseSkim} color="#3B82F6" isDark={isDark} />
+                                <View style={[styles.listDivider, { backgroundColor: isDark ? '#334155' : '#F1F5F9' }]} />
+                                <UsageInputRow label="Cream" value={useCream} onChange={setUseCream} color="#F59E0B" isDark={isDark} />
                             </View>
 
-                            <View style={styles.divider} />
-
-                            <ThemedText style={styles.cardSectionTitle}>Production Yield</ThemedText>
-                            <View style={styles.yieldRow}>
-                                <YieldInput 
-                                    label="Total Quantity"
-                                    value={qtyProduced}
-                                    onChange={setQtyProduced}
+                            {/* ── PRODUCTION YIELD SECTION ── */}
+                            <View style={[styles.sectionDivider, { backgroundColor: isDark ? '#334155' : '#F1F5F9' }]} />
+                            <ThemedText style={[styles.formSectionTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>Production Yield</ThemedText>
+                            
+                            <View style={styles.yieldContainer}>
+                                <YieldInputRow 
+                                    label="Quantity Produced" 
+                                    value={qtyProduced} 
+                                    onChange={setQtyProduced} 
+                                    color={currentProductColor} 
+                                    isDark={isDark} 
                                     placeholder="0.00"
-                                    keyboardType="decimal-pad"
-                                    color={currentProductColor}
-                                    isDark={isDark}
+                                    flex={2.5}
                                 />
-                                <YieldInput 
-                                    label="Unit"
-                                    value={unit}
-                                    onChange={setUnit}
+                                <View style={{ width: 12 }} />
+                                <YieldInputRow 
+                                    label="Unit" 
+                                    value={unit} 
+                                    onChange={setUnit} 
+                                    color={currentProductColor} 
+                                    isDark={isDark} 
                                     placeholder="kg"
-                                    flex={0.6}
-                                    color={currentProductColor}
-                                    isDark={isDark}
+                                    flex={1}
+                                    isText
                                 />
                             </View>
 
-                            <TouchableOpacity 
-                                onPress={handleProduce}
-                                disabled={isLoading}
-                                style={styles.buttonShadow}
-                            >
-                                <LinearGradient
-                                    colors={[currentProductColor, currentProductColor + 'CC']}
-                                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                                    style={styles.submitButton}
-                                >
-                                    {isLoading ? <ActivityIndicator color="#FFF" /> : (
-                                        <ThemedText style={styles.buttonText}>Complete {selectedProduct} Production</ThemedText>
-                                    )}
-                                </LinearGradient>
-                            </TouchableOpacity>
                         </View>
+
+                        {/* ── SUBMIT BUTTON ── */}
+                        <TouchableOpacity onPress={handleProduce} disabled={isLoading} style={styles.submitWrapper}>
+                            <View style={[styles.submitButton, { backgroundColor: currentProductColor }]}>
+                                {isLoading ? <ActivityIndicator color="#FFF" /> : (
+                                    <ThemedText style={styles.buttonText}>Complete Production</ThemedText>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+
+                    </KeyboardAvoidingView>
                 </ScrollView>
-                </KeyboardAvoidingView>
             </View>
 
-            {/* Premium Success Modal */}
+            {/* Success Modal */}
             <Modal transparent visible={showSuccess} animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.successModal, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
-                        <LinearGradient
-                            colors={['#10B981', '#059669']}
-                            style={styles.successIconCircle}
-                        >
-                            <Ionicons name="checkmark-done" size={32} color="#FFF" />
-                        </LinearGradient>
-                        <ThemedText style={[styles.successTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>Production Completed!</ThemedText>
-                        <ThemedText style={styles.successMessage}>Your products have been recorded successfully which you can access anytime.</ThemedText>
-                        
-                        <TouchableOpacity onPress={() => setShowSuccess(false)} style={styles.closeModalBtn}>
-                            <ThemedText style={[styles.closeModalText, { color: '#10B981' }]}>Continue</ThemedText>
-                        </TouchableOpacity>
+                    <View style={[styles.successModal, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? '#334155' : '#E2E8F0' }]}>
+                        <View style={styles.successIconCircle}>
+                            <Ionicons name="checkmark" size={32} color="#10B981" />
+                        </View>
+                        <ThemedText style={[styles.successTitle, { color: isDark ? '#F8FAFC' : '#0F172A' }]}>Saved Successfully</ThemedText>
+                        <ThemedText style={styles.successMessage}>Production entry has been recorded.</ThemedText>
                     </View>
                 </View>
             </Modal>
@@ -316,34 +305,37 @@ export default function MakeProductsScreen() {
 
 // ── CUSTOM COMPONENTS ──
 
-const InventoryCard = React.memo(({ label, value, color, icon, isDark, loading }: any) => (
-    <View style={[styles.invCard, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]}>
-        <View style={[styles.invIcon, { backgroundColor: color + '15' }]}>
-            <Ionicons name={icon} size={16} color={color} />
+const InventoryCard = React.memo(({ label, value, color, isDark, loading }: any) => (
+    <View style={[styles.invCard, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? '#334155' : '#E2E8F0' }]}>
+        <View style={styles.invHeader}>
+            <View style={[styles.invDot, { backgroundColor: color }]} />
+            <ThemedText style={styles.invLabel} numberOfLines={1}>{label}</ThemedText>
         </View>
-        <ThemedText style={styles.invLabel}>{label}</ThemedText>
-        <ThemedText style={[styles.invValue, { color: color }]}>{loading ? '--' : value.toFixed(1)}<ThemedText style={styles.invUnit}>L</ThemedText></ThemedText>
+        <ThemedText style={[styles.invValue, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>
+            {loading ? '--' : value.toFixed(1)}<ThemedText style={styles.invUnit}> L</ThemedText>
+        </ThemedText>
     </View>
 ));
 
-const UsageInput = React.memo(({ label, value, onChange, color, isDark }: any) => {
+const UsageInputRow = React.memo(({ label, value, onChange, color, isDark }: any) => {
     const [isFocused, setIsFocused] = React.useState(false);
     return (
-        <View style={styles.usageItem}>
-            <ThemedText style={styles.usageLabel}>{label}</ThemedText>
+        <View style={styles.usageRow}>
+            <View style={styles.usageLabelGroup}>
+                <View style={[styles.colorIndicator, { backgroundColor: color }]} />
+                <ThemedText style={[styles.usageLabelText, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>{label}</ThemedText>
+            </View>
             <View style={[
-                styles.usageInput, 
-                { borderColor: isFocused ? color : (isDark ? '#334155' : '#E2E8F0') },
-                isFocused && { shadowColor: color, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }
+                styles.inputBox,
+                { backgroundColor: isDark ? '#0F172A' : '#FAFCFF', borderColor: isFocused ? color : (isDark ? '#334155' : '#F1F5F9') }
             ]}>
-                <TextInput 
-                    style={[styles.uInput, { color: isDark ? '#F8FAFC' : '#1E293B', height: 44 }, Platform.OS === 'web' && { outlineStyle: 'none' } as any]}
+                <TextInput
+                    style={[styles.baseInput, { color: isDark ? '#F8FAFC' : '#64748B' }, Platform.OS === 'web' && { outlineStyle: 'none' } as any]}
                     placeholder="0"
-                    placeholderTextColor="#475569"
-                    keyboardType="decimal-pad"
-                    inputMode="decimal"
+                    placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
+                    keyboardType="numeric"
                     value={value}
-                    onChangeText={(t) => onChange(t.replace(/,/g, '.'))}
+                    onChangeText={onChange}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                 />
@@ -352,24 +344,22 @@ const UsageInput = React.memo(({ label, value, onChange, color, isDark }: any) =
     );
 });
 
-const YieldInput = React.memo(({ label, value, onChange, placeholder, keyboardType = 'default', flex = 1, color, isDark }: any) => {
+const YieldInputRow = React.memo(({ label, value, onChange, color, isDark, placeholder, flex = 1, isText = false }: any) => {
     const [isFocused, setIsFocused] = React.useState(false);
     return (
-        <View style={[styles.inputWrapper, { flex }]}>
-            <ThemedText style={styles.inputLabel}>{label}</ThemedText>
+        <View style={[styles.yieldCol, { flex }]}>
+            <ThemedText style={styles.yieldLabelText}>{label}</ThemedText>
             <View style={[
-                styles.actionInput, 
-                { borderColor: isFocused ? color : (isDark ? '#334155' : '#E2E8F0') },
-                isFocused && styles.inputFocused
+                styles.inputBoxYield,
+                { backgroundColor: isDark ? '#0F172A' : '#FAFCFF', borderColor: isFocused ? color : (isDark ? '#334155' : '#F1F5F9') }
             ]}>
-                <TextInput 
-                    style={[styles.textInput, { color: isDark ? '#F8FAFC' : '#1E293B' }, Platform.OS === 'web' && { outlineStyle: 'none' } as any]}
+                <TextInput
+                    style={[styles.baseInputYield, { color: isDark ? '#F8FAFC' : '#1E293B' }, isText && { fontWeight: '700' }, Platform.OS === 'web' && { outlineStyle: 'none' } as any]}
                     placeholder={placeholder}
-                    placeholderTextColor="#64748B"
+                    placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
+                    keyboardType={isText ? 'default' : 'numeric'}
                     value={value}
-                    onChangeText={(t) => onChange(t.replace(/,/g, '.'))}
-                    keyboardType={keyboardType as any}
-                    inputMode={keyboardType === 'decimal-pad' ? 'decimal' : 'none'}
+                    onChangeText={onChange}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                 />
@@ -378,116 +368,127 @@ const YieldInput = React.memo(({ label, value, onChange, placeholder, keyboardTy
     );
 });
 
+/* ── STYLES ── */
 const styles = StyleSheet.create({
     safeArea: { flex: 1 },
     container: { flex: 1 },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        backgroundColor: 'transparent',
+        paddingHorizontal: PAGE_PADDING,
+        height: 52,
+        borderBottomWidth: 1,
     },
     backButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        borderWidth: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: '#E2E8F020',
     },
-    headerTitle: { fontSize: 22, fontWeight: '900', letterSpacing: -0.8 },
-    headerSubtitle: { fontSize: 13, color: '#64748B', fontWeight: '700', textAlign: 'center', marginTop: -2 },
     headerCenter: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    dateChip: {
-        marginLeft: 'auto',
-        backgroundColor: '#E2E8F030',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-    },
-    dateText: { fontSize: 12, fontWeight: '800', color: '#64748B' },
+    headerTitle: { fontSize: 17, fontWeight: '700' },
+    headerSubtitle: { fontSize: 12, color: '#64748B', marginTop: 2 },
     
-    scrollContent: { padding: 16 },
+    scrollContent: { paddingVertical: 16, paddingBottom: 40 },
 
-    stockSection: { marginBottom: 16 },
-    sectionLabel: { fontSize: 13, fontWeight: '800', color: '#64748B', textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 },
-    stockGrid: { flexDirection: 'row', gap: 10 },
+    sectionHeader: { marginBottom: 12, paddingHorizontal: PAGE_PADDING },
+    sectionTitle: { fontSize: 12, fontWeight: '700', color: '#647A90', textTransform: 'uppercase', letterSpacing: 0.5 },
+
+    /* Inventory Grid */
+    inventoryGrid: { flexDirection: 'row', gap: 8, paddingHorizontal: PAGE_PADDING },
     invCard: {
         flex: 1,
-        borderRadius: 16,
+        borderRadius: 14,
         padding: 12,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-        elevation: 2,
+        borderWidth: 1,
+        alignItems: 'flex-start',
     },
-    invIcon: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
-    invLabel: { fontSize: 10, fontWeight: '700', color: '#94A3B8', marginBottom: 2 },
-    invValue: { fontSize: 16, fontWeight: '900' },
-    invUnit: { fontSize: 11, fontWeight: '700', opacity: 0.7 },
+    invHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+    invDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
+    invLabel: { fontSize: 12, fontWeight: '500', color: '#64748B', flexShrink: 1 },
+    invValue: { fontSize: 18, fontWeight: '800', letterSpacing: -0.5 },
+    invUnit: { fontSize: 12, fontWeight: '600', color: '#94A3B8' },
 
-    section: { marginBottom: 16 },
-    productScroll: { paddingVertical: 2 },
-    productCard: {
-        width: 85,
-        height: 45,
-        borderRadius: 12,
-        marginRight: 8,
+    /* Product Selection (Box Container) */
+    productGridContainer: { 
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        paddingHorizontal: PAGE_PADDING, 
+        gap: 6, 
+        paddingTop: 4,
+        paddingBottom: 4
+    },
+    boxProductChip: {
+        width: '23.5%',
+        paddingVertical: 6,
+        paddingHorizontal: 4,
+        borderRadius: 8,
+        borderWidth: 1.5,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 3,
-        elevation: 1,
-        borderWidth: 1.5,
-        borderColor: 'transparent',
+        flexGrow: 1,
     },
-    productName: { fontSize: 13, fontWeight: '800', color: '#64748B' },
-    checkMark: { position: 'absolute', top: -4, right: -4, width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: '#FFF', alignItems: 'center', justifyContent: 'center' },
+    boxProductName: { 
+        fontSize: 10, 
+        fontWeight: '600',
+        letterSpacing: 0.1,
+        textAlign: 'center',
+    },
 
-    mainCard: {
-        borderRadius: 20,
-        padding: 18,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 10,
-        elevation: 4,
+    /* formCard is inside the standard Page Padding */
+    formCard: {
+        marginHorizontal: PAGE_PADDING,
+        borderRadius: 16,
+        borderWidth: 1,
+        paddingVertical: 16,
+        paddingHorizontal: 16,
     },
-    cardSectionTitle: { fontSize: 14, fontWeight: '800', color: '#64748B', marginBottom: 12 },
-    usageRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
-    usageItem: { flex: 1 },
-    usageLabel: { fontSize: 11, fontWeight: '700', color: '#94A3B8', marginBottom: 4, textAlign: 'center' },
-    usageInput: { height: 44, borderWidth: 1.5, borderRadius: 12, overflow: 'hidden' },
-    uInput: { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '800' },
+    formSectionTitle: { fontSize: 13, fontWeight: '700', marginBottom: 12 },
     
-    divider: { height: 1.5, backgroundColor: '#E2E8F030', marginBottom: 16 },
+    verticalList: { gap: 0 },
+    usageRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
+    usageLabelGroup: { flexDirection: 'row', alignItems: 'center' },
+    colorIndicator: { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
+    usageLabelText: { fontSize: 13, fontWeight: '500' },
+    inputBox: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        width: 100, 
+        height: 42, 
+        borderWidth: 1, 
+        borderRadius: 10, 
+        paddingHorizontal: 14 
+    },
+    baseInput: { flex: 1, fontSize: 14, fontWeight: '600', height: '100%' },
+    listDivider: { height: 1.5, marginVertical: 0 },
 
-    yieldRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
-    inputWrapper: { flex: 1 },
-    inputLabel: { fontSize: 11, fontWeight: '700', color: '#94A3B8', marginBottom: 4 },
-    actionInput: { height: 48, borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, justifyContent: 'center' },
-    textInput: { flex: 1, fontSize: 16, fontWeight: '800', height: 44 },
-    inputFocused: { shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 },
+    sectionDivider: { height: 1.5, marginVertical: 16 },
+    
+    yieldContainer: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 4 },
+    yieldCol: { flexDirection: 'column' },
+    yieldLabelText: { fontSize: 13, fontWeight: '500', color: '#64748B', marginBottom: 8 },
+    inputBoxYield: { 
+        height: 48, 
+        borderWidth: 1, 
+        borderRadius: 10, 
+        paddingHorizontal: 14,
+        justifyContent: 'center'
+    },
+    baseInputYield: { flex: 1, fontSize: 15, fontWeight: '600', height: '100%' },
 
-    buttonShadow: { borderRadius: 14, shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6 },
-    submitButton: { height: 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-    buttonText: { color: '#FFF', fontSize: 15, fontWeight: '900', letterSpacing: 0.3 },
+    submitWrapper: { marginTop: 16, paddingHorizontal: PAGE_PADDING },
+    submitButton: { height: 50, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+    buttonText: { color: '#FFF', fontSize: 15, fontWeight: '700', letterSpacing: 0.5 },
 
-    // Success Modal Styles
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-    successModal: { width: '100%', maxWidth: 320, borderRadius: 28, padding: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
-    successIconCircle: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', marginBottom: 20, shadowColor: '#10B981', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 15, elevation: 8 },
-    successTitle: { fontSize: 22, fontWeight: '900', marginBottom: 12, textAlign: 'center' },
-    successMessage: { fontSize: 14, color: '#64748B', textAlign: 'center', lineHeight: 20, marginBottom: 24, fontWeight: '500' },
-    closeModalBtn: { paddingVertical: 12, paddingHorizontal: 32, borderRadius: 14, backgroundColor: '#10B98115' },
-    closeModalText: { fontSize: 16, fontWeight: '800' },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+    successModal: { width: '100%', maxWidth: 320, borderRadius: 20, padding: 32, alignItems: 'center', borderWidth: 1 },
+    successIconCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#10B98115', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+    successTitle: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
+    successMessage: { fontSize: 15, color: '#64748B', textAlign: 'center', marginBottom: 8 },
 });

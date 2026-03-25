@@ -1,16 +1,16 @@
-import 'dotenv/config';
-import mongoose from 'mongoose';
-import cors from 'cors';
-import express from 'express';
 import bcrypt from 'bcryptjs';
+import cors from 'cors';
+import 'dotenv/config';
+import express from 'express';
+import mongoose from 'mongoose';
 
 import { connectToDatabase } from './db';
-import { User } from './models/User';
-import { Supplier } from './models/Supplier';
 import { MilkEntry } from './models/MilkEntry';
-import { SaleEntry } from './models/SaleEntry';
 import { MilkProduction } from './models/MilkProduction';
 import { ProductProduction } from './models/ProductProduction';
+import { SaleEntry } from './models/SaleEntry';
+import { Supplier } from './models/Supplier';
+import { User } from './models/User';
 
 const app = express();
 
@@ -671,6 +671,170 @@ app.get('/api/reports/detailed', async (req, res) => {
     return res.status(200).json(reportEntries);
   } catch (error: any) {
     console.error('Fetch Detailed Reports Error:', error);
+    return res.status(500).json({ message: error?.message || 'Internal Server Error' });
+  }
+});
+
+
+
+////////////////////////////////////
+
+
+app.get('/api/reports/complete', async (req, res) => {
+  try {
+    await connectToDatabase();
+    const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+
+    const milkEntries = await MilkEntry.find({ userId });
+    const milkProductions = await MilkProduction.find({ userId });
+    const productProductions = await ProductProduction.find({ userId });
+    const saleEntries = await SaleEntry.find({ userId });
+
+    const dailyData: Record<string, any> = {};
+
+    const getDayStr = (d: any) => {
+      const dt = new Date(d);
+      dt.setHours(0, 0, 0, 0);
+      return dt.toISOString().split('T')[0];
+    };
+
+    const allDates = new Set<string>();
+    allDates.add(new Date().toLocaleDateString('en-CA')); // Always include today
+    [...milkEntries, ...milkProductions, ...productProductions, ...saleEntries].forEach((r: any) => {
+      if (r.date) allDates.add(getDayStr(r.date));
+    });
+
+    const categories = [
+      'Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Flavoured Milk', 'Butter Milk', 
+      'Sweet Khoa', 'Unsweet Khoa', 'Shrikhand', 'Icecream', 'Gulabjamun', 
+      'Rasogolla', 'Yoghurt', 'Skim Milk Curd'
+    ];
+
+    allDates.forEach(day => {
+      dailyData[day] = {
+        date: day,
+        milk: { ob: 0, collections: {}, totalIn: 0, totalAvailable: 0, cardSales: 0, cashSales: 0, prod: {}, cb: 0 },
+        sm: { ob: 0, prod: 0, total: 0, sale: 0, cb: 0 },
+        cream: { ob: 0, prod: 0, total: 0, sale: 0, cb: 0 },
+        products: {} 
+      };
+      categories.forEach(cat => {
+        dailyData[day].products[cat.toLowerCase()] = { ob: 0, prod: 0, total: 0, sale: 0, cb: 0 };
+      });
+    });
+
+    // Populate Collections
+    milkEntries.forEach((r: any) => {
+      const day = getDayStr(r.date);
+      const supplierName = r.supplier || 'Other';
+      
+      if (!dailyData[day].milk.collections[supplierName]) {
+        dailyData[day].milk.collections[supplierName] = 0;
+      }
+      dailyData[day].milk.collections[supplierName] += r.quantity;
+      dailyData[day].milk.totalIn += r.quantity;
+    });
+
+    // Populate Milk Productions (Separation)
+    milkProductions.forEach((r: any) => {
+      const day = getDayStr(r.date);
+      dailyData[day].milk.prod.separation = (dailyData[day].milk.prod.separation || 0) + r.separationMilk;
+      dailyData[day].sm.prod += r.skimMilk;
+      dailyData[day].cream.prod += r.creamMilk;
+    });
+
+    // Populate Product Productions
+    productProductions.forEach((r: any) => {
+      const day = getDayStr(r.date);
+      const category = r.productName.toLowerCase();
+      if (!dailyData[day].products[category]) {
+        dailyData[day].products[category] = { ob: 0, prod: 0, total: 0, sale: 0, cb: 0 };
+      }
+      dailyData[day].products[category].prod += r.quantityProduced;
+      
+      if (r.milkUsed?.wholeMilk) dailyData[day].milk.prod[category] = (dailyData[day].milk.prod[category] || 0) + r.milkUsed.wholeMilk;
+      if (r.milkUsed?.skimMilk) dailyData[day].sm.prod += r.milkUsed.skimMilk;
+      if (r.milkUsed?.creamMilk) dailyData[day].cream.prod += r.milkUsed.creamMilk;
+    });
+
+    // Populate Sales
+    saleEntries.forEach((r: any) => {
+      const day = getDayStr(r.date);
+      const product = r.productType;
+      const isCard = r.paymentMode === 'UPI' || r.paymentMode === 'Credit';
+
+      if (product === 'Cow Milk' || product === 'Raw Milk' || product === 'Buffalo Milk') {
+        if (isCard) dailyData[day].milk.cardSales += r.quantity;
+        else dailyData[day].milk.cashSales += r.quantity;
+      } else if (product === 'Skim Milk') {
+        dailyData[day].sm.sale += r.quantity;
+      } else if (product === 'Cream') {
+        dailyData[day].cream.sale += r.quantity;
+      } else {
+        const prodKey = product.toLowerCase();
+        if (!dailyData[day].products[prodKey]) {
+          dailyData[day].products[prodKey] = { ob: 0, prod: 0, total: 0, sale: 0, cb: 0 };
+        }
+        dailyData[day].products[prodKey].sale += r.quantity;
+      }
+    });
+
+    const sortedDates = Array.from(allDates).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+    // Calculate Running Balances
+    let milkRunning = 0;
+    let smRunning = 0;
+    let creamRunning = 0;
+    const prodRunning: Record<string, number> = {};
+
+    const result = sortedDates.map(date => {
+      const d = (dailyData as any)[date];
+      
+      // Consolidated Milk
+      d.milk.ob = milkRunning;
+      d.milk.totalAvailable = d.milk.ob + d.milk.totalIn;
+      const milkProdTotal = (Object.values(d.milk.prod || {}) as any[]).reduce((a, b) => a + b, 0);
+      d.milk.cb = d.milk.totalAvailable - d.milk.cardSales - d.milk.cashSales - milkProdTotal;
+      milkRunning = d.milk.cb;
+
+      // Skim Milk
+      d.sm.ob = smRunning;
+      d.sm.total = d.sm.ob + d.sm.prod;
+      d.sm.cb = d.sm.total - d.sm.sale;
+      smRunning = d.sm.cb;
+
+      // Cream
+      d.cream.ob = creamRunning;
+      d.cream.total = d.cream.ob + d.cream.prod;
+      d.cream.cb = d.cream.total - d.cream.sale;
+      creamRunning = d.cream.cb;
+
+      // Products
+      Object.keys(d.products).forEach(p => {
+        if (prodRunning[p] === undefined) prodRunning[p] = 0;
+        d.products[p].ob = prodRunning[p];
+        d.products[p].total = d.products[p].ob + d.products[p].prod;
+        d.products[p].cb = d.products[p].total - d.products[p].sale;
+        prodRunning[p] = d.products[p].cb;
+      });
+
+      // Maintain overall keys for compatibility
+      return {
+        ...d,
+        openingBalance: d.milk.ob,
+        milkCollection: d.milk.totalIn,
+        availableMilk: d.milk.totalAvailable,
+        productionUse: (Object.values(d.milk.prod || {}) as any[]).reduce((a, b) => a + b, 0),
+        sales: d.milk.cardSales + d.milk.cashSales,
+        closingBalance: d.milk.cb
+      };
+    });
+
+    result.reverse();
+    return res.status(200).json(result);
+  } catch (error: any) {
+    console.error('Fetch Complete Analysis Error:', error);
     return res.status(500).json({ message: error?.message || 'Internal Server Error' });
   }
 });
