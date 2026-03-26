@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/lib/api';
 import { router, Stack } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { DatePicker } from '@/components/ui/DatePicker';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     Alert,
     KeyboardAvoidingView,
@@ -86,7 +87,13 @@ export default function MilkCollectionScreen() {
 
   const [supplier, setSupplier] = useState('');
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
-  const [date, setDate] = useState(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => {
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  });
   const [time, setTime] = useState(() => new Date().toTimeString().split(' ')[0].substring(0, 5));
   const [shift, setShift] = useState('Morning');
   const [source, setSource] = useState('Cow');
@@ -99,6 +106,7 @@ export default function MilkCollectionScreen() {
   const [totalCost, setTotalCost] = useState('0.00');
   const [isLoading, setIsLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   // Supplier Search State
   const [allSuppliers, setAllSuppliers] = useState<any[]>([]);
@@ -108,19 +116,21 @@ export default function MilkCollectionScreen() {
 
   // Fetch Suppliers on Mount
   useEffect(() => {
+    if (!user?.id) return;
     const fetchSuppliers = async () => {
       try {
-        const res = await apiFetch(`/api/suppliers?userId=${user?.id}`);
+        const res = await apiFetch(`/api/suppliers?userId=${user.id}`);
         if (res.ok) {
           const data = await res.json();
           setAllSuppliers(data);
+          setFilteredSuppliers(data); // Initialize filtered with all
         }
       } catch (err) {
         console.error("Failed to fetch suppliers", err);
       }
     };
     fetchSuppliers();
-  }, []);
+  }, [user?.id]);
 
   // Filter logic
   useEffect(() => {
@@ -132,10 +142,8 @@ export default function MilkCollectionScreen() {
         return nameMatch || idMatch;
       });
       setFilteredSuppliers(filtered);
-      setShowDropdown(filtered.length > 0);
     } else {
-      setFilteredSuppliers([]);
-      setShowDropdown(false);
+      setFilteredSuppliers(allSuppliers);
     }
   }, [searchQuery, allSuppliers]);
 
@@ -185,13 +193,17 @@ export default function MilkCollectionScreen() {
 
     setIsLoading(true);
     try {
+      const [dd, mm, yyyy] = date.split('-').map(Number);
+      const [hr, min] = time.split(':').map(Number);
+      const collectionDate = new Date(yyyy, mm - 1, dd, hr, min);
+
       const response = await apiFetch('/api/milk/collection', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user?.id,
           supplier,
-          date: new Date(`${date}T${time}:00`).toISOString(),
+          date: collectionDate.toISOString(),
           shift,
           source,
           customSource: source === 'Other' ? customSource : undefined,
@@ -255,8 +267,13 @@ export default function MilkCollectionScreen() {
           <View style={{ width: 36 }} />
       </View>
       
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -300,6 +317,7 @@ export default function MilkCollectionScreen() {
                       onFocus={() => {
                         setFocusedField('supplier');
                         if (filteredSuppliers.length > 0) setShowDropdown(true);
+                        scrollRef.current?.scrollTo({ y: 0, animated: true });
                       }}
                       onBlur={() => {
                         setTimeout(() => {
@@ -324,25 +342,31 @@ export default function MilkCollectionScreen() {
               {showDropdown && (
                 <View style={styles.dropdown}>
                   <ScrollView style={{ maxHeight: 200 }} keyboardShouldPersistTaps="handled">
-                    {filteredSuppliers.map((s) => (
-                      <TouchableOpacity
-                        key={s._id}
-                        style={styles.dropdownItem}
-                        onPress={() => selectSupplier(s)}
-                      >
-                        <View style={styles.dropdownItemLeft}>
-                          <View style={styles.avatarMini}>
-                            <Text style={styles.avatarText}>{s.name?.charAt(0).toUpperCase() || '?'}</Text>
+                    {filteredSuppliers.length > 0 ? (
+                      filteredSuppliers.map((s) => (
+                        <TouchableOpacity
+                          key={s._id}
+                          style={styles.dropdownItem}
+                          onPress={() => selectSupplier(s)}
+                        >
+                          <View style={styles.dropdownItemLeft}>
+                            <View style={styles.avatarMini}>
+                              <Text style={styles.avatarText}>{s.name?.charAt(0).toUpperCase() || '?'}</Text>
+                            </View>
+                            <View style={styles.dropdownInfoRow}>
+                              <Text style={styles.dropdownItemName}>{s.name}</Text>
+                              <Text style={styles.dropdownItemSeparator}>•</Text>
+                              <Text style={styles.dropdownItemId}>ID: {s.supplierId}</Text>
+                            </View>
                           </View>
-                          <View style={styles.dropdownInfoRow}>
-                            <Text style={styles.dropdownItemName}>{s.name}</Text>
-                            <Text style={styles.dropdownItemSeparator}>•</Text>
-                            <Text style={styles.dropdownItemId}>ID: {s.supplierId}</Text>
-                          </View>
-                        </View>
-                        <Ionicons name="chevron-forward" size={16} color="#E5E7EB" />
-                      </TouchableOpacity>
-                    ))}
+                          <Ionicons name="chevron-forward" size={16} color="#E5E7EB" />
+                        </TouchableOpacity>
+                      ))
+                    ) : (
+                      <View style={{ padding: 20, alignItems: 'center' }}>
+                        <Text style={{ color: '#9CA3AF' }}>No suppliers found.</Text>
+                      </View>
+                    )}
                   </ScrollView>
                 </View>
               )}
@@ -362,29 +386,31 @@ export default function MilkCollectionScreen() {
               <View style={{ gap: 12 }}>
                 <View style={styles.row}>
                   <View style={styles.halfField}>
-                    <Text style={styles.label}>Date</Text>
-                    <TextInput
-                      style={[inputStyle('date'), { height: 44, paddingHorizontal: 12 }]}
+                    <DatePicker
+                      label="Date"
                       value={date}
-                      onChangeText={setDate}
-                      placeholder="YYYY-MM-DD"
-                      placeholderTextColor="#9CA3AF"
-                      onFocus={() => setFocusedField('date')}
-                      onBlur={() => setFocusedField(null)}
+                      onChange={setDate}
+                      format="DD-MM-YYYY"
                     />
                   </View>
 
                   <View style={styles.halfField}>
                     <Text style={styles.label}>Time</Text>
-                    <TextInput
-                      style={[inputStyle('time'), { height: 44, paddingHorizontal: 12 }]}
-                      value={time}
-                      onChangeText={setTime}
-                      placeholder="HH:MM"
-                      placeholderTextColor="#9CA3AF"
-                      onFocus={() => setFocusedField('time')}
-                      onBlur={() => setFocusedField(null)}
-                    />
+                    <View style={[styles.textInput, focusedField === 'time' && styles.textInputFocused, { flexDirection: 'row', alignItems: 'center' }]}>
+                      <Ionicons name="time-outline" size={18} color="#22C55E" style={{ marginRight: 10 }} />
+                      <TextInput
+                        style={[styles.textInputMain]}
+                        value={time}
+                        onChangeText={setTime}
+                        placeholder="HH:MM"
+                        placeholderTextColor="#9CA3AF"
+                         onFocus={() => {
+                          setFocusedField('time');
+                          scrollRef.current?.scrollTo({ y: 100, animated: true });
+                        }}
+                        onBlur={() => setFocusedField(null)}
+                      />
+                    </View>
                   </View>
                 </View>
 
@@ -423,7 +449,10 @@ export default function MilkCollectionScreen() {
                     placeholderTextColor="#9CA3AF"
                     value={customSource}
                     onChangeText={setCustomSource}
-                    onFocus={() => setFocusedField('customSource')}
+                     onFocus={() => {
+                      setFocusedField('customSource');
+                      scrollRef.current?.scrollTo({ y: 250, animated: true });
+                    }}
                     onBlur={() => setFocusedField(null)}
                   />
                 </View>
@@ -444,7 +473,10 @@ export default function MilkCollectionScreen() {
                     keyboardType="numeric"
                     value={fatType}
                     onChangeText={setFatType}
-                    onFocus={() => setFocusedField('fat')}
+                     onFocus={() => {
+                      setFocusedField('fat');
+                      scrollRef.current?.scrollTo({ y: 350, animated: true });
+                    }}
                     onBlur={() => setFocusedField(null)}
                   />
                 </View>
@@ -457,7 +489,10 @@ export default function MilkCollectionScreen() {
                     keyboardType="numeric"
                     value={snf}
                     onChangeText={setSnf}
-                    onFocus={() => setFocusedField('snf')}
+                     onFocus={() => {
+                      setFocusedField('snf');
+                      scrollRef.current?.scrollTo({ y: 350, animated: true });
+                    }}
                     onBlur={() => setFocusedField(null)}
                   />
                 </View>
@@ -470,7 +505,10 @@ export default function MilkCollectionScreen() {
                     keyboardType="numeric"
                     value={clr}
                     onChangeText={setClr}
-                    onFocus={() => setFocusedField('clr')}
+                     onFocus={() => {
+                      setFocusedField('clr');
+                      scrollRef.current?.scrollTo({ y: 350, animated: true });
+                    }}
                     onBlur={() => setFocusedField(null)}
                   />
                 </View>
@@ -485,7 +523,10 @@ export default function MilkCollectionScreen() {
                   keyboardType="numeric"
                   value={quantity}
                   onChangeText={setQuantity}
-                  onFocus={() => setFocusedField('quantity')}
+                   onFocus={() => {
+                    setFocusedField('quantity');
+                    scrollRef.current?.scrollTo({ y: 450, animated: true });
+                  }}
                   onBlur={() => setFocusedField(null)}
                 />
               </View>
@@ -503,7 +544,10 @@ export default function MilkCollectionScreen() {
                 keyboardType="numeric"
                 value={costPerLiter}
                 onChangeText={setCostPerLiter}
-                onFocus={() => setFocusedField('cost')}
+                 onFocus={() => {
+                  setFocusedField('cost');
+                  scrollRef.current?.scrollToEnd({ animated: true });
+                }}
                 onBlur={() => setFocusedField(null)}
               />
 

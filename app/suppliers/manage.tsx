@@ -7,8 +7,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
 
 const ANIMAL_TYPES = ['Cow', 'Buffalo', 'Goat', 'Other'];
 
@@ -28,6 +28,7 @@ export default function ManageSupplierScreen() {
     const [animalType, setAnimalType] = useState<string[]>(['Cow']);
     const [bankDetails, setBankDetails] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const scrollRef = useRef<ScrollView>(null);
     const [isFetching, setIsFetching] = useState(isEditing);
 
     // Pre-fill form if editing
@@ -143,7 +144,10 @@ export default function ManageSupplierScreen() {
     return (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <Stack.Screen options={{ headerShown: false }} />
-            <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
+            <ScrollView 
+                ref={scrollRef}
+                contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}
+            >
                 <View style={[styles.topDecoration, { backgroundColor: theme.primary }]} />
 
                 <View style={styles.header}>
@@ -170,6 +174,7 @@ export default function ManageSupplierScreen() {
                         value={name}
                         onChangeText={setName}
                         placeholder="John Doe"
+                        onFocus={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
                     />
 
                     <Input
@@ -178,6 +183,7 @@ export default function ManageSupplierScreen() {
                         onChangeText={setSupplierId}
                         placeholder="e.g. F-101"
                         autoCapitalize="characters"
+                        onFocus={() => scrollRef.current?.scrollTo({ y: 80, animated: true })}
                     />
 
                     <Input
@@ -192,6 +198,7 @@ export default function ManageSupplierScreen() {
                         keyboardType="phone-pad"
                         placeholder="1234567890"
                         maxLength={10}
+                        onFocus={() => scrollRef.current?.scrollTo({ y: 160, animated: true })}
                     />
 
                     <Input
@@ -202,6 +209,7 @@ export default function ManageSupplierScreen() {
                         multiline
                         numberOfLines={2}
                         style={{ height: 60 }}
+                        onFocus={() => scrollRef.current?.scrollTo({ y: 240, animated: true })}
                     />
 
                     <View style={[styles.divider, { backgroundColor: theme.border }]} />
@@ -219,6 +227,7 @@ export default function ManageSupplierScreen() {
                         multiline
                         numberOfLines={2}
                         style={{ height: 60 }}
+                        onFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
                     />
 
                     <Button

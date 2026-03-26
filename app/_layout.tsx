@@ -40,8 +40,8 @@ function RootLayoutNav() {
     const isLandingPage = (segments as string[]).length === 0;
 
     if (!user && !inAuthGroup && !isLandingPage) {
-      // Redirect to register if not authenticated and trying to access protected routes
-      router.replace('/(auth)/register');
+      // Redirect to login if not authenticated and trying to access protected routes
+      router.replace('/(auth)/login');
     } else if (user && (inAuthGroup || isLandingPage)) {
       // Redirect based on role
       if (user.role === 'super-admin') {

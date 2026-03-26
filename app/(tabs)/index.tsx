@@ -1,25 +1,23 @@
+import { useAuth } from '@/context/AuthContext';
+import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
-import { apiFetch } from '@/lib/api';
-import { useAuth } from '@/context/AuthContext';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
-  ActivityIndicator
+  View
 } from 'react-native';
 import Animated, {
-  Easing,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withSpring,
-  withTiming,
+  withTiming
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -126,7 +124,7 @@ function DashboardBanner() {
           <Ionicons name="sparkles" size={12} color="#FDE047" />
           <Text style={styles.bannerBadgeText}>Premium Version</Text>
         </View>
-        <Text style={styles.bannerTitle}>Precision Dairy Accounting</Text>
+        <Text style={styles.bannerTitle}>MOM AMI DAIRYWARE</Text>
         <Text style={styles.bannerSubtitle}>Monitor your growth in real-time</Text>
       </View>
     </View>
@@ -201,7 +199,7 @@ export default function DashboardScreen() {
         {/* KPI Section */}
         <View style={styles.kpiSection}>
           <View style={styles.kpiCardRow}>
-             {/* Opening Balance Card */}
+            {/* Opening Balance Card */}
             <View style={styles.kpiCardSide}>
               <View style={[styles.kpiIconWrapper, { backgroundColor: '#EFF6FF' }]}>
                 <Ionicons name="sunny-outline" size={18} color="#3B82F6" />
@@ -244,10 +242,10 @@ export default function DashboardScreen() {
               disabled = !user.modules.includes(item.id);
             }
             return (
-              <DashboardCard 
-                key={item.title} 
-                item={item} 
-                index={user?.role === 'admin' ? index + 1 : index} 
+              <DashboardCard
+                key={item.title}
+                item={item}
+                index={user?.role === 'admin' ? index + 1 : index}
                 disabled={disabled}
               />
             );

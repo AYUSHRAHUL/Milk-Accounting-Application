@@ -7,6 +7,8 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
@@ -30,7 +32,7 @@ interface SaleEntryRow {
   paymentMode: string;
 }
 
-type ProductFilter = 'All' | 'Paneer' | 'Ghee' | 'Butter' | 'Curd' | 'Other';
+type ProductFilter = string;
 type PaymentFilter = 'All' | 'Cash' | 'UPI' | 'Credit';
 
 // Payment mode → color mapping
@@ -89,6 +91,18 @@ export default function ReportSalesScreen() {
     });
   }, [entries, productFilter, paymentFilter]);
 
+  const availableProducts = useMemo(() => {
+    const defaultProducts = [
+      'Paneer', 'Ghee', 'Butter', 'Curd', 
+      'Khoa', 'Fl. milk', 'Icecream', 'Yoghurt', 
+      'Srikhand', 'Rasgolla', 'Gulabjamun', 'Rabbari'
+    ];
+    const dataProducts = entries.map(e => e.productType).filter(p => !!p);
+    const combined = new Set([...defaultProducts, ...dataProducts]);
+    const list = Array.from(combined).sort();
+    return ['All', ...list];
+  }, [entries]);
+
   // ── Summary stats ──────────────────────────────────────────
   const totalRevenue = filtered.reduce((s, e) => s + e.totalAmount, 0);
   const totalQty = filtered.reduce((s, e) => s + e.quantity, 0);
@@ -102,37 +116,67 @@ export default function ReportSalesScreen() {
   const formatCurrency = (amount: number) =>
     '₹ ' + (amount ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!filtered.length) {
       Alert.alert('No data to export');
       return;
     }
     const header = ['Date', 'Customer', 'Product', 'Qty', 'Price / Unit', 'Total Amount', 'Payment'];
-    const rows = filtered.map((e) => [
-      formatDate(e.date),
-      e.customerName || '-',
-      e.productType,
-      e.quantity.toString(),
-      e.pricePerUnit.toString(),
-      e.totalAmount.toString(),
-      e.paymentMode,
-    ]);
-    const csv = [header, ...rows]
-      .map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
+    
+    // Helper to escape CSV fields
+    const esc = (v: any) => {
+      const str = (v === null || v === undefined) ? '' : String(v);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
 
-    if (Platform.OS === 'web') {
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'sales-report.csv');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } else {
-      Alert.alert('Export', 'Export is currently supported on web only.');
+    const rows = filtered.map((e) => [
+      esc(formatDate(e.date)),
+      esc(e.customerName || '-'),
+      esc(e.productType),
+      esc(e.quantity),
+      esc(e.pricePerUnit),
+      esc(e.totalAmount),
+      esc(e.paymentMode),
+    ]);
+    const csv = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
+
+    try {
+      if (Platform.OS === 'web') {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.body.appendChild(document.createElement('a'));
+        link.href = url;
+        link.setAttribute('download', 'sales-report.csv');
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (!isSharingAvailable) {
+          Alert.alert('Error', 'Sharing is not available on this device');
+          return;
+        }
+
+        const fileName = `sales_report_${Date.now()}.csv`;
+        const dir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
+        const fileUri = `${dir}${fileName}`;
+        
+        await (FileSystem as any).writeAsStringAsync(fileUri, csv, { 
+          encoding: (FileSystem as any).EncodingType.UTF8 
+        });
+
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'text/csv',
+          dialogTitle: 'Export Sales Report',
+          UTI: 'public.comma-separated-values',
+        });
+      }
+    } catch (error: any) {
+      console.error('Export Error:', error);
+      Alert.alert('Export Failed', 'Details: ' + (error?.message || 'An error occurred during export.'));
     }
     setExportModalVisible(false);
   };
@@ -211,8 +255,8 @@ export default function ReportSalesScreen() {
           {/* Product */}
           <View style={styles.filterGroup}>
             <ThemedText style={[styles.filterLabel, { color: theme.textSecondary }]}>Product</ThemedText>
-            <View style={styles.pillsRow}>
-              {(['All', 'Paneer', 'Ghee', 'Butter', 'Curd', 'Other'] as ProductFilter[]).map((val) => {
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillsScrollContainer}>
+              {availableProducts.map((val) => {
                 const active = productFilter === val;
                 return (
                   <TouchableOpacity
@@ -232,7 +276,7 @@ export default function ReportSalesScreen() {
                   </TouchableOpacity>
                 );
               })}
-            </View>
+            </ScrollView>
           </View>
 
           {/* Payment Mode */}
@@ -437,6 +481,7 @@ const styles = StyleSheet.create({
   },
   filterGroup: { marginBottom: Spacing.md },
   filterLabel: { fontSize: 12, fontWeight: '600', marginBottom: Spacing.xs },
+  pillsScrollContainer: { gap: Spacing.xs, paddingRight: 10 },
   pillsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
   pill: {
     paddingHorizontal: 12,

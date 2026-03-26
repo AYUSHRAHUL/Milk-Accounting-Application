@@ -7,7 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { DatePicker } from '@/components/ui/DatePicker';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
@@ -21,15 +22,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const ALL_PRODUCT_TYPES = ['Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Flavoured Milk', 'Icecream', 'Yoghurt', 'Srikhand', 'Rasgolla', 'Gulabjamun', 'Rabbari', 'Other'];
+const ALL_PRODUCT_TYPES = ['Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Fl. milk', 'Icecream', 'Yoghurt', 'Srikhand', 'Rasgolla', 'Gulabjamun', 'Rabbari', 'Other'];
 const PRODUCT_ICONS: Record<string, string> = {
     Paneer: '🧀', Ghee: '🫙', Butter: '🧈', Curd: '🥛', Khoa: '🍮', 
-    'Flavoured Milk': '🧃', Icecream: '🍨', Yoghurt: '🍧', Srikhand: '🥣', 
+    'Fl. milk': '🧃', Icecream: '🍨', Yoghurt: '🍧', Srikhand: '🥣', 
     Rasgolla: '⚪', Gulabjamun: '🧆', Rabbari: '🥘', Other: '📦', More: '➡️', Less: '⬆️',
 };
 const PRODUCT_COLORS: Record<string, string> = {
     Paneer: '#10B981', Ghee: '#F59E0B', Butter: '#FCD34D', Curd: '#3B82F6', Khoa: '#8B5CF6', 
-    'Flavoured Milk': '#EC4899', Icecream: '#F472B6', Yoghurt: '#A78BFA', Srikhand: '#FDE047', 
+    'Fl. milk': '#EC4899', Icecream: '#F472B6', Yoghurt: '#A78BFA', Srikhand: '#FDE047', 
     Rasgolla: '#9CA3AF', Gulabjamun: '#78350F', Rabbari: '#FBBF24', Other: '#64748B', More: '#64748B', Less: '#64748B',
 };
 const PAYMENT_MODES = ['Cash', 'UPI', 'Credit'];
@@ -56,7 +57,7 @@ export default function SalesScreen() {
         const dd = String(now.getDate()).padStart(2, '0');
         const mm = String(now.getMonth() + 1).padStart(2, '0');
         const yyyy = now.getFullYear();
-        return `${dd}/${mm}/${yyyy}`;
+        return `${dd}-${mm}-${yyyy}`;
     });
 
     const [customerName, setCustomerName] = useState('');
@@ -73,11 +74,13 @@ export default function SalesScreen() {
     const [showReceiptModal, setShowReceiptModal] = useState(false);
     const [lastSaleData, setLastSaleData] = useState<any>(null);
     const [showAllProducts, setShowAllProducts] = useState(false);
+    const scrollRef = useRef<ScrollView>(null);
 
     const apiDate = useMemo(() => {
-        const parts = displayDate.split('/');
-        if (parts.length === 3 && parts[2].length === 4) {
-            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        const parts = displayDate.split(/[-/]/);
+        if (parts.length === 3) {
+            if (parts[0].length === 4) return `${parts[0]}-${parts[1]}-${parts[2]}`; // YYYY-MM-DD
+            return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MM-YYYY -> YYYY-MM-DD
         }
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -239,6 +242,7 @@ export default function SalesScreen() {
         placeholder: string,
         keyboard: any = 'default',
         fieldId: string,
+        yOffset?: number
     ) => (
         <View style={styles.inputGroup}>
             <ThemedText style={styles.inputLabel}>{label}</ThemedText>
@@ -250,7 +254,14 @@ export default function SalesScreen() {
                     placeholder={placeholder}
                     placeholderTextColor="#9CA3AF"
                     keyboardType={keyboard}
-                    onFocus={() => setFocusedField(fieldId)}
+                    onFocus={() => {
+                        setFocusedField(fieldId);
+                        if (yOffset !== undefined) {
+                            scrollRef.current?.scrollTo({ y: yOffset, animated: true });
+                        } else if (fieldId === 'price' || fieldId === 'qty') {
+                             scrollRef.current?.scrollToEnd({ animated: true });
+                        }
+                    }}
                     onBlur={() => setFocusedField(null)}
                 />
             </View>
@@ -270,8 +281,16 @@ export default function SalesScreen() {
                 <View style={{ width: 44 }} />
             </View>
 
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <KeyboardAvoidingView 
+                style={{ flex: 1 }} 
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            >
+                <ScrollView 
+                    ref={scrollRef}
+                    contentContainerStyle={styles.scrollContent} 
+                    showsVerticalScrollIndicator={false}
+                >
 
                     {/* ── Section 1: Date & Customer ── */}
                     <View style={styles.card}>
@@ -280,11 +299,16 @@ export default function SalesScreen() {
                             <ThemedText style={styles.sectionTitle}>Entry Details</ThemedText>
                         </View>
                         <View style={{ flexDirection: 'row', gap: 10 }}>
-                            <View style={{ width: 130 }}>
-                                {renderInput('Date', displayDate, setDisplayDate, 'DD/MM/YYYY', 'default', 'date')}
+                            <View style={{ width: 160 }}>
+                                <DatePicker
+                                    label="Date"
+                                    value={displayDate}
+                                    onChange={setDisplayDate}
+                                    format="DD-MM-YYYY"
+                                />
                             </View>
                             <View style={{ flex: 1 }}>
-                                {renderInput('Customer Name', customerName, setCustomerName, 'Enter name', 'default', 'customer')}
+                                {renderInput('Customer Name', customerName, setCustomerName, 'Enter name', 'default', 'customer', 0)}
                             </View>
                         </View>
                     </View>

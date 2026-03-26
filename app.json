@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Milk_Accounting",
-    "slug": "Milk_Accounting",
+    "name": "Milk Accounting",
+    "slug": "milk-accounting",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.jpeg",
@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.milkaccounting.app",
+      "bundleIdentifier": "com.ayushkumarsingh.milkaccounting",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -22,7 +22,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.ayush_kumar_singh.Milk_Accounting"
+      "package": "com.ayushkumarsingh.milkaccounting"
     },
     "web": {
       "output": "server",
@@ -42,7 +42,8 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -51,9 +52,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "0b8950a6-341d-4404-8395-0cada168b470"
+        "projectId": "b656a429-77bd-4663-bf11-e5e0aad326bd"
       }
     },
-    "owner": "ayush_kumar_singh1"
+    "owner": "ankit7979"
   }
 }

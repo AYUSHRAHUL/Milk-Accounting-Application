@@ -708,30 +708,47 @@ app.get('/api/reports/complete', async (req, res) => {
     const dailyData: Record<string, any> = {};
 
     const getDayStr = (d: any) => {
+      if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}/.test(d)) {
+        return d.substring(0, 10);
+      }
       const dt = new Date(d);
-      dt.setHours(0, 0, 0, 0);
-      return dt.toISOString().split('T')[0];
+      // Force Asia/Kolkata (IST) offset (+5:30) for consistent grouping regardless of server timezone
+      const istTime = new Date(dt.getTime() + (5.5 * 60 * 60 * 1000));
+      const y = istTime.getUTCFullYear();
+      const m = String(istTime.getUTCMonth() + 1).padStart(2, '0');
+      const dd = String(istTime.getUTCDate()).padStart(2, '0');
+      return `${y}-${m}-${dd}`;
     };
 
     const allDates = new Set<string>();
-    allDates.add(new Date().toLocaleDateString('en-CA')); // Always include today
+    allDates.add(getDayStr(new Date())); // Always include today
     [...milkEntries, ...milkProductions, ...productProductions, ...saleEntries].forEach((r: any) => {
       if (r.date) allDates.add(getDayStr(r.date));
     });
 
     const categories = [
-      'Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Flavoured Milk', 'Butter Milk', 
-      'Sweet Khoa', 'Unsweet Khoa', 'Shrikhand', 'Icecream', 'Gulabjamun', 
+      'Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Fl. milk', 'Butter Milk',
+      'Sweet Khoa', 'Unsweet Khoa', 'Shrikhand', 'Icecream', 'Gulabjamun',
       'Rasogolla', 'Yoghurt', 'Skim Milk Curd'
     ];
 
     allDates.forEach(day => {
       dailyData[day] = {
         date: day,
-        milk: { ob: 0, collections: {}, totalIn: 0, totalAvailable: 0, cardSales: 0, cashSales: 0, prod: {}, cb: 0 },
+        milk: {
+          ob: 0,
+          collections: {},
+          sourceTotals: { Cow: 0, Buffalo: 0, Other: 0 },
+          totalIn: 0,
+          totalAvailable: 0,
+          cardSales: 0,
+          cashSales: 0,
+          prod: {},
+          cb: 0
+        },
         sm: { ob: 0, prod: 0, total: 0, sale: 0, cb: 0 },
         cream: { ob: 0, prod: 0, total: 0, sale: 0, cb: 0 },
-        products: {} 
+        products: {}
       };
       categories.forEach(cat => {
         dailyData[day].products[cat.toLowerCase()] = { ob: 0, prod: 0, total: 0, sale: 0, cb: 0 };
@@ -742,11 +759,18 @@ app.get('/api/reports/complete', async (req, res) => {
     milkEntries.forEach((r: any) => {
       const day = getDayStr(r.date);
       const supplierName = r.supplier || 'Other';
-      
+
       if (!dailyData[day].milk.collections[supplierName]) {
         dailyData[day].milk.collections[supplierName] = 0;
       }
       dailyData[day].milk.collections[supplierName] += r.quantity;
+
+      const source = r.source || 'Other';
+      if (!dailyData[day].milk.sourceTotals[source]) {
+        dailyData[day].milk.sourceTotals[source] = 0;
+      }
+      dailyData[day].milk.sourceTotals[source] += r.quantity;
+
       dailyData[day].milk.totalIn += r.quantity;
     });
 
@@ -766,7 +790,7 @@ app.get('/api/reports/complete', async (req, res) => {
         dailyData[day].products[category] = { ob: 0, prod: 0, total: 0, sale: 0, cb: 0 };
       }
       dailyData[day].products[category].prod += r.quantityProduced;
-      
+
       if (r.milkUsed?.wholeMilk) dailyData[day].milk.prod[category] = (dailyData[day].milk.prod[category] || 0) + r.milkUsed.wholeMilk;
       if (r.milkUsed?.skimMilk) dailyData[day].sm.prod += r.milkUsed.skimMilk;
       if (r.milkUsed?.creamMilk) dailyData[day].cream.prod += r.milkUsed.creamMilk;
@@ -804,7 +828,7 @@ app.get('/api/reports/complete', async (req, res) => {
 
     const result = sortedDates.map(date => {
       const d = (dailyData as any)[date];
-      
+
       // Consolidated Milk
       d.milk.ob = milkRunning;
       d.milk.totalAvailable = d.milk.ob + d.milk.totalIn;
@@ -984,9 +1008,9 @@ app.put('/api/admin/users/:id', requireAdmin, async (req, res) => {
     await connectToDatabase();
     const id = req.params.id;
     const { name, email, role, modules, password } = req.body;
-    
+
     let updateData: any = { name, email: String(email).toLowerCase(), role, modules };
-    
+
     if (password) {
       const salt = await bcrypt.genSalt(10);
       updateData.passwordHash = await bcrypt.hash(String(password), salt);
@@ -994,7 +1018,7 @@ app.put('/api/admin/users/:id', requireAdmin, async (req, res) => {
 
     const updatedUser = await User.findByIdAndUpdate(id, { $set: updateData }, { new: true }).select('-passwordHash -password');
     if (!updatedUser) return res.status(404).json({ error: 'User not found' });
-    
+
     return res.status(200).json({ message: 'User updated successfully', user: updatedUser });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
@@ -1018,7 +1042,7 @@ app.get('/api/super-admin/admins', requireSuperAdmin, async (req, res) => {
     await connectToDatabase();
     const superAdminId = String(req.query.superAdminId || req.body.superAdminId);
     const admins = await User.find({ adminId: superAdminId, role: 'admin' }).select('-passwordHash -password').sort({ createdAt: -1 }).lean();
-    
+
     const adminsWithCounts = await Promise.all(admins.map(async (admin: any) => {
       const count = await User.countDocuments({ adminId: String(admin._id) });
       return { ...admin, userCount: count };
@@ -1075,7 +1099,7 @@ app.post('/api/super-admin/admins/:adminId/users', requireSuperAdmin, async (req
     await connectToDatabase();
     const adminId = req.params.adminId;
     const { name, email, password, modules } = req.body;
-    
+
     if (!name || !email || !password) return res.status(400).json({ error: 'Required fields missing' });
 
     const existingUser = await User.findOne({ email: String(email).toLowerCase() });

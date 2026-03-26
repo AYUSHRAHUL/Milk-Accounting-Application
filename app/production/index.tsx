@@ -6,7 +6,8 @@ import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import { DatePicker } from '@/components/ui/DatePicker';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -33,7 +34,10 @@ export default function MilkProductionScreen() {
 
     const [date, setDate] = useState(() => {
         const now = new Date();
-        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        return `${dd}-${mm}-${yyyy}`;
     });
     const [separationMilk, setSeparationMilk] = useState('');
     const [skimMilk, setSkimMilk] = useState('');
@@ -46,11 +50,15 @@ export default function MilkProductionScreen() {
     const [totalCollectedMilk, setTotalCollectedMilk] = useState<number>(0);
     const [totalUsedMilk, setTotalUsedMilk] = useState<number>(0);
     const [isCheckingStock, setIsCheckingStock] = useState(false);
+    const scrollRef = useRef<ScrollView>(null);
 
     useFocusEffect(
         useCallback(() => {
             const now = new Date();
-            const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const dd = String(now.getDate()).padStart(2, '0');
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const yyyy = now.getFullYear();
+            const today = `${dd}-${mm}-${yyyy}`;
             setDate(today);
         }, [])
     );
@@ -108,6 +116,9 @@ export default function MilkProductionScreen() {
             return;
         }
 
+        const [dd, mm, yyyy] = date.split('-').map(Number);
+        const prodDate = new Date(Date.UTC(yyyy, mm - 1, dd));
+
         setIsLoading(true);
         try {
             const response = await apiFetch('/api/production/separation', {
@@ -115,7 +126,7 @@ export default function MilkProductionScreen() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userId: user?.id,
-                    date,
+                    date: prodDate.toISOString(),
                     totalMilk: totalAvailable,
                     separationMilk: sepQty,
                     wholeMilk,
@@ -174,9 +185,14 @@ export default function MilkProductionScreen() {
                 </View>
             </View>
 
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <KeyboardAvoidingView 
+                style={{ flex: 1 }} 
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            >
                 {/* ScrollView kept for small screens, but behaves like a view on large screens to avoid scrolling */}
                 <ScrollView
+                    ref={scrollRef}
                     contentContainerStyle={[styles.scrollContent, isLargeScreen && { height: height - 70, justifyContent: 'center' }]}
                     showsVerticalScrollIndicator={false}
                     bounces={false}
@@ -239,20 +255,11 @@ export default function MilkProductionScreen() {
                                             Date
                                         </ThemedText>
                                     </View>
-                                    <View style={[styles.inputContainerCompact, {
-                                        flex: 1,
-                                        borderColor: inputBorderColor('date'),
-                                        backgroundColor: isDark ? '#0F172A' : '#F8FAFC',
-                                    }]}>
-                                        <Ionicons name="calendar-outline" size={16} color={activeFocused === 'date' ? theme.primary : (isDark ? '#4B5563' : '#9CA3AF')} style={{ marginRight: 8 }} />
-                                        <TextInput
-                                            style={[styles.textInputCompact, { color: isDark ? '#F8FAFC' : '#111827' }]}
+                                    <View style={{ flex: 1 }}>
+                                        <DatePicker
                                             value={date}
-                                            onChangeText={setDate}
-                                            placeholder="YYYY-MM-DD"
-                                            placeholderTextColor={isDark ? '#4B5563' : '#9CA3AF'}
-                                            onFocus={() => setActiveFocused('date')}
-                                            onBlur={() => setActiveFocused(null)}
+                                            onChange={setDate}
+                                            format="DD-MM-YYYY"
                                         />
                                     </View>
                                 </View>
@@ -289,12 +296,15 @@ export default function MilkProductionScreen() {
                                             value={separationMilk}
                                             onChangeText={setSeparationMilk}
                                             keyboardType="numeric"
-                                            placeholder="Quantity (L)"
+                                            placeholder="Quantity"
                                             placeholderTextColor={isDark ? '#4B5563' : '#9CA3AF'}
-                                            onFocus={() => setActiveFocused('sep')}
+                                            onFocus={() => {
+                                                setActiveFocused('sep');
+                                                scrollRef.current?.scrollTo({ y: 150, animated: true });
+                                            }}
                                             onBlur={() => setActiveFocused(null)}
                                         />
-                                        <ThemedText style={[styles.inputUnitCompact, { color: isDark ? '#64748B' : '#9CA3AF' }]}>L</ThemedText>
+                                        <ThemedText style={[styles.inputUnitCompact, { color: isDark ? '#64748B' : '#9CA3AF', fontWeight: '800' }]}>L</ThemedText>
                                     </View>
                                 </View>
 
@@ -342,20 +352,23 @@ export default function MilkProductionScreen() {
                                         style={[styles.resultCardCompact, { backgroundColor: isDark ? '#0C1A2E' : '#EFF6FF', borderColor: inputBorderColor('skim') }]}
                                         onPress={() => setActiveFocused('skim')}
                                     >
-                                        <ThemedText style={[styles.resultCardTagCompact, { color: isDark ? '#93C5FD' : '#1D4ED8' }]}>SKIM</ThemedText>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <TextInput
-                                                style={[styles.resultCardValueCompact, { color: isDark ? '#60A5FA' : '#1D4ED8', flex: 1 }]}
-                                                value={skimMilk}
-                                                onChangeText={setSkimMilk}
-                                                keyboardType="numeric"
-                                                placeholder="0.00"
-                                                placeholderTextColor={isDark ? '#1E3A5F' : '#BFDBFE'}
-                                                onFocus={() => setActiveFocused('skim')}
-                                                onBlur={() => setActiveFocused(null)}
-                                            />
-                                            <ThemedText style={[styles.inputUnitCompact, { color: isDark ? '#60A5FA' : '#1D4ED8' }]}>L</ThemedText>
-                                        </View>
+                                        <ThemedText style={[styles.resultCardTagCompact, { color: isDark ? '#94A3B8' : '#64748B' }]}>SKIM</ThemedText>
+                                        <View style={[styles.innerInputBoxCompact, { borderColor: isDark ? '#1D4ED840' : '#BFDBFE' }]}>
+                                             <TextInput
+                                                 style={[styles.resultCardValueCompact, { color: isDark ? '#60A5FA' : '#1D4ED8', flex: 1 }]}
+                                                 value={skimMilk}
+                                                 onChangeText={setSkimMilk}
+                                                 keyboardType="numeric"
+                                                 placeholder="0.00"
+                                                 placeholderTextColor={isDark ? '#1E3A5F' : '#BFDBFE'}
+                                                  onFocus={() => {
+                                                    setActiveFocused('skim');
+                                                    scrollRef.current?.scrollToEnd({ animated: true });
+                                                }}
+                                                 onBlur={() => setActiveFocused(null)}
+                                             />
+                                             <ThemedText style={[styles.inputUnitCompact, { color: isDark ? '#60A5FA' : '#1D4ED8', fontWeight: '800' }]}>L</ThemedText>
+                                         </View>
                                     </TouchableOpacity>
                                     <View style={{ width: 8 }} />
                                     <TouchableOpacity 
@@ -363,20 +376,23 @@ export default function MilkProductionScreen() {
                                         style={[styles.resultCardCompact, { backgroundColor: isDark ? '#2D1505' : '#FFFBEB', borderColor: inputBorderColor('cream') }]}
                                         onPress={() => setActiveFocused('cream')}
                                     >
-                                        <ThemedText style={[styles.resultCardTagCompact, { color: isDark ? '#FCD34D' : '#92400E' }]}>CREAM</ThemedText>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <TextInput
-                                                style={[styles.resultCardValueCompact, { color: isDark ? '#FBBF24' : '#D97706', flex: 1 }]}
-                                                value={creamMilkInput}
-                                                onChangeText={setCreamMilkInput}
-                                                keyboardType="numeric"
-                                                placeholder="0.00"
-                                                placeholderTextColor={isDark ? '#452109' : '#FDE68A'}
-                                                onFocus={() => setActiveFocused('cream')}
-                                                onBlur={() => setActiveFocused(null)}
-                                            />
-                                            <ThemedText style={[styles.inputUnitCompact, { color: isDark ? '#FBBF24' : '#D97706' }]}>L</ThemedText>
-                                        </View>
+                                        <ThemedText style={[styles.resultCardTagCompact, { color: isDark ? '#94A3B8' : '#64748B' }]}>CREAM</ThemedText>
+                                        <View style={[styles.innerInputBoxCompact, { borderColor: isDark ? '#D9770640' : '#FDE68A' }]}>
+                                             <TextInput
+                                                 style={[styles.resultCardValueCompact, { color: isDark ? '#FBBF24' : '#D97706', flex: 1 }]}
+                                                 value={creamMilkInput}
+                                                 onChangeText={setCreamMilkInput}
+                                                 keyboardType="numeric"
+                                                 placeholder="0.00"
+                                                 placeholderTextColor={isDark ? '#452109' : '#FDE68A'}
+                                                  onFocus={() => {
+                                                    setActiveFocused('cream');
+                                                    scrollRef.current?.scrollToEnd({ animated: true });
+                                                }}
+                                                 onBlur={() => setActiveFocused(null)}
+                                             />
+                                             <ThemedText style={[styles.inputUnitCompact, { color: isDark ? '#FBBF24' : '#D97706', fontWeight: '800' }]}>L</ThemedText>
+                                         </View>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -603,9 +619,20 @@ const styles = StyleSheet.create({
         flex: 1, 
         fontSize: 15, 
         fontWeight: '600',
+        padding: 0,
+        textAlignVertical: 'center',
         ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as any
     },
-    inputUnitCompact: { fontSize: 12, fontWeight: '600', marginLeft: 4 },
+    inputUnitCompact: { 
+        fontSize: 13, 
+        fontWeight: '900', 
+        marginLeft: 8, 
+        paddingLeft: 8, 
+        borderLeftWidth: 1,
+        borderColor: 'rgba(0,0,0,0.1)',
+        minWidth: 28,
+        textAlign: 'center'
+    },
 
     // ── Inline Flow Arrow
     flowArrowInline: { alignItems: 'center', justifyContent: 'center', width: 40 },
@@ -626,17 +653,36 @@ const styles = StyleSheet.create({
     resultGridCompact: { flexDirection: 'row' },
     resultCardCompact: {
         flex: 1,
-        borderRadius: 10,
-        padding: 10,
-        borderWidth: 1,
+        borderRadius: 14,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        borderWidth: 1.5,
         flexDirection: 'column',
+        minHeight: 70,
+        overflow: 'hidden',
+        alignItems: 'stretch',
         ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as any
     },
-    resultCardTagCompact: { fontSize: 10, fontWeight: '800', paddingBottom: 2 },
+    resultCardTagCompact: { fontSize: 10, fontWeight: '800', marginBottom: 4 }, // Increased margin
     resultCardValueCompact: { 
-        fontSize: 16, 
+        fontSize: 18, 
         fontWeight: '800',
+        height: 38,
+        padding: 0,
+        textAlignVertical: 'center',
+        flex: 1,
         ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as any 
+    },
+    innerInputBoxCompact: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.5)',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        borderWidth: 1,
+        height: 42,
+        width: '100%',
+        alignSelf: 'stretch',
     },
 
     // ── Summary Strip (Compact)

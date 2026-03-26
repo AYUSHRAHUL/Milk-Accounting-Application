@@ -1,7 +1,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { SuccessOverlay } from '@/components/ui/SuccessOverlay';
 import {
   ActivityIndicator,
@@ -27,6 +27,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [isSuccessVisible, setIsSuccessVisible] = useState(false);
@@ -94,6 +95,7 @@ export default function LoginScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <ScrollView
+            ref={scrollRef}
             contentContainerStyle={styles.scrollContainer}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -125,7 +127,10 @@ export default function LoginScreen() {
                     onChangeText={setEmail}
                     keyboardType="email-address"
                     autoCapitalize="none"
-                    onFocus={() => setFocusedField('email')}
+                    onFocus={() => {
+                      setFocusedField('email');
+                      scrollRef.current?.scrollTo({ y: 100, animated: true });
+                    }}
                     onBlur={() => setFocusedField(null)}
                     selectionColor="#22C55E"
                   />
@@ -146,7 +151,10 @@ export default function LoginScreen() {
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
-                    onFocus={() => setFocusedField('password')}
+                    onFocus={() => {
+                      setFocusedField('password');
+                      scrollRef.current?.scrollToEnd({ animated: true });
+                    }}
                     onBlur={() => setFocusedField(null)}
                     selectionColor="#22C55E"
                   />

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -10,18 +10,24 @@ export default function SuperAdminDashboardScreen() {
   const { user, logout } = useAuth();
   const [admins, setAdmins] = useState<any[]>([]);
 
-  useEffect(() => {
-    const fetchAdmins = async () => {
-      try {
-        const res = await apiFetch(`/api/super-admin/admins?superAdminId=${user?.id}`);
-        if(res.ok) {
-          const data = await res.json();
-          setAdmins(data);
-        }
-      } catch (e) {
-        console.error(e);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  const fetchAdmins = async () => {
+    setIsRefreshing(true);
+    try {
+      const res = await apiFetch(`/api/super-admin/admins?superAdminId=${user?.id}`);
+      if(res.ok) {
+        const data = await res.json();
+        setAdmins(data);
       }
-    };
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
     if (user?.id) fetchAdmins();
   }, [user]);
 
@@ -30,7 +36,14 @@ export default function SuperAdminDashboardScreen() {
   const handleLogout = async () => {
     if (logout) {
       await logout();
-      router.replace('/(auth)/login');
+      if (Platform.OS === 'web') {
+        alert('successfull logout');
+        router.replace('/(auth)/login');
+      } else {
+        Alert.alert('Logout Success', 'successfull logout', [
+          { text: 'OK', onPress: () => router.replace('/(auth)/login') }
+        ]);
+      }
     }
   };
 
@@ -42,7 +55,17 @@ export default function SuperAdminDashboardScreen() {
           <Ionicons name="log-out-outline" size={24} color="#EF4444" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Super Admin Panel</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity 
+          onPress={fetchAdmins} 
+          style={styles.refreshBtn}
+          disabled={isRefreshing}
+        >
+          <Ionicons 
+            name={isRefreshing ? "sync" : "refresh"} 
+            size={24} 
+            color={isRefreshing ? "#94A3B8" : "#3B82F6"} 
+          />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -102,6 +125,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF' 
   },
   backBtn: { padding: 8 },
+  refreshBtn: { padding: 8 },
   headerTitle: { 
     flex: 1, 
     textAlign: 'center', 
@@ -133,11 +157,16 @@ const styles = StyleSheet.create({
     borderRadius: 24, 
     borderWidth: 1, 
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 4
+    ...Platform.select({
+      web: { boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.05)' } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 4
+      }
+    })
   },
   kpiValue: { fontSize: 36, fontWeight: '900', color: '#1E293B', marginTop: 12 },
   kpiLabel: { fontSize: 14, fontWeight: '600', color: '#64748B', marginTop: 4 },
@@ -151,11 +180,16 @@ const styles = StyleSheet.create({
     padding: 20, 
     borderRadius: 24, 
     alignItems: 'center', 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 4 }, 
-    shadowOpacity: 0.05, 
-    shadowRadius: 12, 
-    elevation: 3 
+    ...Platform.select({
+      web: { boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.05)' } as any,
+      default: {
+        shadowColor: '#000', 
+        shadowOffset: { width: 0, height: 4 }, 
+        shadowOpacity: 0.05, 
+        shadowRadius: 12, 
+        elevation: 3 
+      }
+    })
   },
   iconBox: { 
     width: 56, 

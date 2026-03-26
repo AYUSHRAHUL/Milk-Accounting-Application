@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Switch, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 
 const ALL_MODULES = [
@@ -27,6 +27,7 @@ export default function AddUserScreen() {
   
   const [selectedModules, setSelectedModules] = useState<string[]>(['collection', 'history', 'production', 'suppliers', 'sales', 'reports']);
   const [isLoading, setIsLoading] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   const toggleModule = (modId: string) => {
     setSelectedModules(prev => 
@@ -76,67 +77,74 @@ export default function AddUserScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Name *</Text>
-          <TextInput 
-            style={styles.input} 
-            placeholder="John Doe" 
-            value={formData.name} 
-            onChangeText={v => setFormData({...formData, name: v})} 
-          />
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Email Address *</Text>
-          <TextInput 
-            style={styles.input} 
-            placeholder="john@example.com" 
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={formData.email} 
-            onChangeText={v => setFormData({...formData, email: v})} 
-          />
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Password *</Text>
-          <TextInput 
-            style={styles.input} 
-            placeholder="Strong password" 
-            secureTextEntry
-            value={formData.password} 
-            onChangeText={v => setFormData({...formData, password: v})} 
-          />
-        </View>
-
-
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Module Access Permissions</Text>
-          <View style={styles.modulesContainer}>
-            {ALL_MODULES.map(mod => (
-              <View key={mod.id} style={styles.moduleRow}>
-                <Text style={styles.moduleLabel}>{mod.label}</Text>
-                <Switch 
-                  value={selectedModules.includes(mod.id)} 
-                  onValueChange={() => toggleModule(mod.id)} 
-                  trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
-                  thumbColor={selectedModules.includes(mod.id) ? '#2563EB' : '#94A3B8'}
-                />
-              </View>
-            ))}
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Name *</Text>
+            <TextInput 
+              style={styles.input} 
+              placeholder="John Doe" 
+              value={formData.name} 
+              onChangeText={v => setFormData({...formData, name: v})} 
+              onFocus={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
+            />
           </View>
-        </View>
 
-        <TouchableOpacity 
-          style={[styles.submitBtn, isLoading && { opacity: 0.7 }]} 
-          onPress={handleSave} 
-          disabled={isLoading}
-        >
-          <Text style={styles.submitBtnText}>{isLoading ? 'Creating...' : 'Create User'}</Text>
-        </TouchableOpacity>
-      </ScrollView>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Email Address *</Text>
+            <TextInput 
+              style={styles.input} 
+              placeholder="john@example.com" 
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={formData.email} 
+              onChangeText={v => setFormData({...formData, email: v})} 
+              onFocus={() => scrollRef.current?.scrollTo({ y: 80, animated: true })}
+            />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Password *</Text>
+            <TextInput 
+              style={styles.input} 
+              placeholder="Strong password" 
+              secureTextEntry
+              value={formData.password} 
+              onChangeText={v => setFormData({...formData, password: v})} 
+              onFocus={() => scrollRef.current?.scrollTo({ y: 160, animated: true })}
+            />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Module Access Permissions</Text>
+            <View style={styles.modulesContainer}>
+              {ALL_MODULES.map(mod => (
+                <View key={mod.id} style={styles.moduleRow}>
+                  <Text style={styles.moduleLabel}>{mod.label}</Text>
+                  <Switch 
+                    value={selectedModules.includes(mod.id)} 
+                    onValueChange={() => toggleModule(mod.id)} 
+                    trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
+                    thumbColor={selectedModules.includes(mod.id) ? '#2563EB' : '#94A3B8'}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <TouchableOpacity 
+            style={[styles.submitBtn, isLoading && { opacity: 0.7 }]} 
+            onPress={handleSave} 
+            disabled={isLoading}
+          >
+            <Text style={styles.submitBtnText}>{isLoading ? 'Creating...' : 'Create User'}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

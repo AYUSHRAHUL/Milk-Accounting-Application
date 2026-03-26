@@ -1,7 +1,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { SuccessOverlay } from '@/components/ui/SuccessOverlay';
 import {
   ActivityIndicator,
@@ -28,6 +28,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
   const [role, setRole] = useState<'user' | 'admin' | 'super-admin'>('user');
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -96,6 +97,7 @@ export default function RegisterScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <ScrollView
+            ref={scrollRef}
             contentContainerStyle={styles.scrollContainer}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -127,7 +129,10 @@ export default function RegisterScreen() {
                     value={name}
                     onChangeText={setName}
                     autoCapitalize="words"
-                    onFocus={() => setFocusedField('name')}
+                    onFocus={() => {
+                      setFocusedField('name');
+                      scrollRef.current?.scrollTo({ y: 50, animated: true });
+                    }}
                     onBlur={() => setFocusedField(null)}
                     selectionColor="#22C55E"
                   />
@@ -149,7 +154,10 @@ export default function RegisterScreen() {
                     onChangeText={setEmail}
                     keyboardType="email-address"
                     autoCapitalize="none"
-                    onFocus={() => setFocusedField('email')}
+                    onFocus={() => {
+                      setFocusedField('email');
+                      scrollRef.current?.scrollTo({ y: 120, animated: true });
+                    }}
                     onBlur={() => setFocusedField(null)}
                     selectionColor="#22C55E"
                   />
@@ -170,7 +178,10 @@ export default function RegisterScreen() {
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
-                    onFocus={() => setFocusedField('password')}
+                    onFocus={() => {
+                      setFocusedField('password');
+                      scrollRef.current?.scrollToEnd({ animated: true });
+                    }}
                     onBlur={() => setFocusedField(null)}
                     selectionColor="#22C55E"
                   />

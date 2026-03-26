@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 
 export default function AddAdminScreen() {
@@ -12,6 +12,7 @@ export default function AddAdminScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   const handleAddAdmin = async () => {
     if (!name.trim() || !email.trim() || !password) {
@@ -52,58 +53,67 @@ export default function AddAdminScreen() {
         <View style={{ width: 44 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.formCard}>
-          <Text style={styles.label}>Admin Name</Text>
-          <View style={styles.inputContainer}>
-            <Ionicons name="person-outline" size={20} color="#94A3B8" />
-            <TextInput
-              style={styles.input}
-              placeholder="Full Name"
-              value={name}
-              onChangeText={setName}
-            />
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
+          <View style={styles.formCard}>
+            <Text style={styles.label}>Admin Name</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="person-outline" size={20} color="#94A3B8" />
+              <TextInput
+                style={styles.input}
+                placeholder="Full Name"
+                value={name}
+                onChangeText={setName}
+                onFocus={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
+              />
+            </View>
+
+            <Text style={styles.label}>Email Address</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="mail-outline" size={20} color="#94A3B8" />
+              <TextInput
+                style={styles.input}
+                placeholder="email@example.com"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                onFocus={() => scrollRef.current?.scrollTo({ y: 80, animated: true })}
+              />
+            </View>
+
+            <Text style={styles.label}>Temporary Password</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={20} color="#94A3B8" />
+              <TextInput
+                style={styles.input}
+                placeholder="Minimum 6 characters"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                onFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
+              />
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.submitBtn, isLoading && styles.btnDisabled]} 
+              onPress={handleAddAdmin}
+              disabled={isLoading}
+            >
+              {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.submitBtnText}>Create Admin</Text>}
+            </TouchableOpacity>
           </View>
 
-          <Text style={styles.label}>Email Address</Text>
-          <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color="#94A3B8" />
-            <TextInput
-              style={styles.input}
-              placeholder="email@example.com"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
+          <View style={styles.tipCard}>
+            <Ionicons name="bulb-outline" size={24} color="#EAB308" />
+            <Text style={styles.tipText}>Admins will have access to all system modules by default. You can manage their permissions from the admin management section.</Text>
           </View>
-
-          <Text style={styles.label}>Temporary Password</Text>
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color="#94A3B8" />
-            <TextInput
-              style={styles.input}
-              placeholder="Minimum 6 characters"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-          </View>
-
-          <TouchableOpacity 
-            style={[styles.submitBtn, isLoading && styles.btnDisabled]} 
-            onPress={handleAddAdmin}
-            disabled={isLoading}
-          >
-            {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.submitBtnText}>Create Admin</Text>}
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.tipCard}>
-          <Ionicons name="bulb-outline" size={24} color="#EAB308" />
-          <Text style={styles.tipText}>Admins will have access to all system modules by default. You can manage their permissions from the admin management section.</Text>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

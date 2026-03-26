@@ -7,6 +7,8 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
@@ -109,37 +111,67 @@ export default function ReportMilkScreen() {
   const formatCurrency = (amount: number) =>
     '₹ ' + (amount ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!filtered.length) {
       Alert.alert('No data to export');
       return;
     }
     const header = ['Date', 'Shift', 'Source', 'Fat Type', 'Quantity (L)', 'Cost / Litre', 'Total Cost'];
-    const rows = filtered.map((e) => [
-      formatDate(e.date),
-      e.shift,
-      e.source,
-      e.fatType,
-      e.quantity.toString(),
-      e.costPerLiter.toString(),
-      e.totalCost.toString(),
-    ]);
-    const csv = [header, ...rows]
-      .map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
+    
+    // Helper to escape CSV fields
+    const esc = (v: any) => {
+      const str = (v === null || v === undefined) ? '' : String(v);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
 
-    if (Platform.OS === 'web') {
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'milk-collection-report.csv');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } else {
-      Alert.alert('Export', 'Export is currently supported on web only.');
+    const rows = filtered.map((e) => [
+      esc(formatDate(e.date)),
+      esc(e.shift),
+      esc(e.source),
+      esc(e.fatType),
+      esc(e.quantity),
+      esc(e.costPerLiter),
+      esc(e.totalCost),
+    ]);
+    const csv = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
+
+    try {
+      if (Platform.OS === 'web') {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.body.appendChild(document.createElement('a'));
+        link.href = url;
+        link.setAttribute('download', 'milk-collection-report.csv');
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (!isSharingAvailable) {
+          Alert.alert('Error', 'Sharing is not available on this device');
+          return;
+        }
+
+        const fileName = `milk_report_${Date.now()}.csv`;
+        const dir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
+        const fileUri = `${dir}${fileName}`;
+        
+        await (FileSystem as any).writeAsStringAsync(fileUri, csv, { 
+          encoding: (FileSystem as any).EncodingType.UTF8 
+        });
+
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'text/csv',
+          dialogTitle: 'Export Milk Collection Report',
+          UTI: 'public.comma-separated-values',
+        });
+      }
+    } catch (error: any) {
+      console.error('Export Error:', error);
+      Alert.alert('Export Failed', 'Details: ' + (error?.message || 'An error occurred during export.'));
     }
     setExportModalVisible(false);
   };

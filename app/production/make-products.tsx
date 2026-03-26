@@ -4,7 +4,8 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { DatePicker } from '@/components/ui/DatePicker';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -13,6 +14,7 @@ import {
     Platform,
     ScrollView,
     StyleSheet,
+    Text,
     TextInput,
     TouchableOpacity,
     View,
@@ -26,7 +28,7 @@ const PRODUCT_LIST = [
     { name: 'Butter', color: '#FCD34D', icon: '🧈' },
     { name: 'Curd', color: '#3B82F6', icon: '🥛' },
     { name: 'Khoa', color: '#8B5CF6', icon: '🍮' },
-    { name: 'Flavoured Milk', color: '#EC4899', icon: '🧃' },
+    { name: 'Fl. milk', color: '#EC4899', icon: '🧃' },
     { name: 'Icecream', color: '#F472B6', icon: '🍨' },
     { name: 'Yoghurt', color: '#A78BFA', icon: '🍧' },
     { name: 'Srikhand', color: '#FDE047', icon: '🥣' },
@@ -46,18 +48,25 @@ export default function MakeProductsScreen() {
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingInventory, setIsFetchingInventory] = useState(true);
     const [showSuccess, setShowSuccess] = useState(false);
+    const scrollRef = useRef<ScrollView>(null);
 
     // Form State
     const [inventory, setInventory] = useState({ wholeMilk: 0, skimMilk: 0, creamMilk: 0 });
     const [date, setDate] = useState(() => {
         const now = new Date();
-        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        return `${dd}-${mm}-${yyyy}`;
     });
 
     useFocusEffect(
         useCallback(() => {
             const now = new Date();
-            const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const dd = String(now.getDate()).padStart(2, '0');
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const yyyy = now.getFullYear();
+            const today = `${dd}-${mm}-${yyyy}`;
             setDate(today);
         }, [])
     );
@@ -110,6 +119,9 @@ export default function MakeProductsScreen() {
             Alert.alert('Low Balance', `Cream Milk balance is ${inventory.creamMilk.toFixed(1)}L`); return;
         }
 
+        const [dd, mm, yyyy] = date.split('-').map(Number);
+        const prodDate = new Date(Date.UTC(yyyy, mm - 1, dd));
+
         setIsLoading(true);
         try {
             const res = await apiFetch('/api/production/make-product', {
@@ -117,7 +129,7 @@ export default function MakeProductsScreen() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userId: user.id,
-                    date,
+                    date: prodDate.toISOString(),
                     productName: selectedProduct,
                     quantityProduced: parseFloat(qtyProduced),
                     unit,
@@ -129,7 +141,6 @@ export default function MakeProductsScreen() {
                 setShowSuccess(true);
                 setQtyProduced(''); setUseWhole(''); setUseSkim(''); setUseCream('');
                 fetchInventory();
-                setTimeout(() => setShowSuccess(false), 2500);
             }
         } catch (error) {
             console.error('Save Product Error:', error);
@@ -162,11 +173,17 @@ export default function MakeProductsScreen() {
                     <View style={{ width: 44 }} />
                 </View>
 
-                <ScrollView
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.scrollContent}
-                    keyboardShouldPersistTaps="handled"
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 80} // Offset for header
+                    style={{ flex: 1 }}
                 >
+                    <ScrollView
+                        ref={scrollRef}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.scrollContent}
+                        keyboardShouldPersistTaps="handled"
+                    >
                     {/* ── INVENTORY OVERVIEW ── */}
                     <View style={styles.sectionHeader}>
                         <ThemedText style={styles.sectionTitle}>Raw Materials Available</ThemedText>
@@ -175,6 +192,17 @@ export default function MakeProductsScreen() {
                         <InventoryCard label="Whole Milk" value={inventory.wholeMilk} color="#22C55E" isDark={isDark} loading={isFetchingInventory} />
                         <InventoryCard label="Skim Milk" value={inventory.skimMilk} color="#3B82F6" isDark={isDark} loading={isFetchingInventory} />
                         <InventoryCard label="Cream" value={inventory.creamMilk} color="#F59E0B" isDark={isDark} loading={isFetchingInventory} />
+                    </View>
+
+                    <View style={[styles.sectionHeader, { marginTop: 16 }]}>
+                        <ThemedText style={styles.sectionTitle}>Production Date</ThemedText>
+                    </View>
+                    <View style={{ paddingHorizontal: PAGE_PADDING, marginBottom: 8 }}>
+                        <DatePicker
+                            value={date}
+                            onChange={setDate}
+                            format="DD-MM-YYYY"
+                        />
                     </View>
 
                     {/* ── PRODUCT SELECTION TALL PILLS ── */}
@@ -230,7 +258,6 @@ export default function MakeProductsScreen() {
                         })()}
                     </View>
 
-                    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, marginTop: 8 }}>
                         
                         {/* ── CONSUMPTION SECTION ── */}
                         <View style={[styles.formCard, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? '#334155' : '#E2E8F0' }]}>
@@ -238,9 +265,9 @@ export default function MakeProductsScreen() {
                             <ThemedText style={[styles.formSectionTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>Consumption</ThemedText>
                             
                             <View style={styles.usageGrid}>
-                                <UsageInputCol label="Whole" value={useWhole} onChange={setUseWhole} color="#22C55E" isDark={isDark} />
-                                <UsageInputCol label="Skim" value={useSkim} onChange={setUseSkim} color="#3B82F6" isDark={isDark} />
-                                <UsageInputCol label="Cream" value={useCream} onChange={setUseCream} color="#F59E0B" isDark={isDark} />
+                                <UsageInputCol label="Whole" value={useWhole} onChange={setUseWhole} color="#22C55E" isDark={isDark} onFocus={() => scrollRef.current?.scrollTo({ y: 400, animated: true })} />
+                                <UsageInputCol label="Skim" value={useSkim} onChange={setUseSkim} color="#3B82F6" isDark={isDark} onFocus={() => scrollRef.current?.scrollTo({ y: 400, animated: true })} />
+                                <UsageInputCol label="Cream" value={useCream} onChange={setUseCream} color="#F59E0B" isDark={isDark} onFocus={() => scrollRef.current?.scrollTo({ y: 400, animated: true })} />
                             </View>
 
                             {/* ── PRODUCTION YIELD SECTION ── */}
@@ -256,6 +283,7 @@ export default function MakeProductsScreen() {
                                     isDark={isDark} 
                                     placeholder="0.00"
                                     flex={2.5}
+                                    onFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
                                 />
                                 <View style={{ width: 12 }} />
                                 <YieldInputRow 
@@ -267,6 +295,7 @@ export default function MakeProductsScreen() {
                                     placeholder="kg"
                                     flex={1}
                                     isText
+                                    onFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
                                 />
                             </View>
 
@@ -281,8 +310,8 @@ export default function MakeProductsScreen() {
                             </View>
                         </TouchableOpacity>
 
-                    </KeyboardAvoidingView>
-                </ScrollView>
+                    </ScrollView>
+                </KeyboardAvoidingView>
             </View>
 
             {/* Success Modal */}
@@ -294,6 +323,32 @@ export default function MakeProductsScreen() {
                         </View>
                         <ThemedText style={[styles.successTitle, { color: isDark ? '#F8FAFC' : '#0F172A' }]}>Saved Successfully</ThemedText>
                         <ThemedText style={styles.successMessage}>Production entry has been recorded.</ThemedText>
+                        
+                        <TouchableOpacity 
+                            onPress={() => {
+                                setShowSuccess(false);
+                                router.replace('/(tabs)');
+                            }}
+                            style={[
+                                styles.okButton, 
+                                { 
+                                    backgroundColor: '#10B981', 
+                                    marginTop: 16,
+                                    ...Platform.select({
+                                        web: { boxShadow: '0px 4px 5px rgba(16, 185, 129, 0.3)' } as any,
+                                        default: {
+                                            shadowColor: '#10B981',
+                                            shadowOffset: { width: 0, height: 4 },
+                                            shadowOpacity: 0.3,
+                                            shadowRadius: 5,
+                                            elevation: 6
+                                        }
+                                    })
+                                }
+                            ]}
+                        >
+                            <Text style={styles.okButtonText}>OK</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
@@ -315,7 +370,7 @@ const InventoryCard = React.memo(({ label, value, color, isDark, loading }: any)
     </View>
 ));
 
-const UsageInputCol = React.memo(({ label, value, onChange, color, isDark }: any) => {
+const UsageInputCol = React.memo(({ label, value, onChange, color, isDark, onFocus }: any) => {
     const [isFocused, setIsFocused] = React.useState(false);
     return (
         <View style={styles.usageCol}>
@@ -334,7 +389,10 @@ const UsageInputCol = React.memo(({ label, value, onChange, color, isDark }: any
                     keyboardType="numeric"
                     value={value}
                     onChangeText={onChange}
-                    onFocus={() => setIsFocused(true)}
+                    onFocus={() => {
+                        setIsFocused(true);
+                        onFocus?.();
+                    }}
                     onBlur={() => setIsFocused(false)}
                 />
             </View>
@@ -342,7 +400,7 @@ const UsageInputCol = React.memo(({ label, value, onChange, color, isDark }: any
     );
 });
 
-const YieldInputRow = React.memo(({ label, value, onChange, color, isDark, placeholder, flex = 1, isText = false }: any) => {
+const YieldInputRow = React.memo(({ label, value, onChange, color, isDark, placeholder, flex = 1, isText = false, onFocus }: any) => {
     const [isFocused, setIsFocused] = React.useState(false);
     return (
         <View style={[styles.yieldCol, { flex }]}>
@@ -358,7 +416,10 @@ const YieldInputRow = React.memo(({ label, value, onChange, color, isDark, place
                     keyboardType={isText ? 'default' : 'numeric'}
                     value={value}
                     onChangeText={onChange}
-                    onFocus={() => setIsFocused(true)}
+                    onFocus={() => {
+                        setIsFocused(true);
+                        onFocus?.();
+                    }}
                     onBlur={() => setIsFocused(false)}
                 />
             </View>
@@ -463,7 +524,14 @@ const styles = StyleSheet.create({
         borderRadius: 10, 
         paddingHorizontal: 14 
     },
-    baseInput: { flex: 1, fontSize: 14, fontWeight: '600', height: '100%' },
+    baseInput: { 
+        flex: 1, 
+        fontSize: 14, 
+        fontWeight: '600', 
+        height: '100%',
+        padding: 0,
+        textAlignVertical: 'center',
+    },
     listDivider: { height: 1.5, marginVertical: 0 },
 
     /* Usage Grid Column Styles */
@@ -491,7 +559,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         justifyContent: 'center'
     },
-    baseInputYield: { flex: 1, fontSize: 15, fontWeight: '600', height: '100%' },
+    baseInputYield: { 
+        flex: 1, 
+        fontSize: 15, 
+        fontWeight: '600', 
+        height: '100%',
+        padding: 0,
+        textAlignVertical: 'center',
+    },
 
     submitWrapper: { marginTop: 16, paddingHorizontal: PAGE_PADDING },
     submitButton: { height: 50, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
@@ -501,5 +576,13 @@ const styles = StyleSheet.create({
     successModal: { width: '100%', maxWidth: 320, borderRadius: 20, padding: 32, alignItems: 'center', borderWidth: 1 },
     successIconCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#10B98115', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
     successTitle: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
-    successMessage: { fontSize: 15, color: '#64748B', textAlign: 'center', marginBottom: 8 },
+    successMessage: { fontSize: 15, color: '#64748B', textAlign: 'center', marginBottom: 24 },
+    okButton: {
+        width: '100%',
+        height: 50,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    okButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
 });

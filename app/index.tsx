@@ -125,7 +125,7 @@ export default function LandingScreen() {
             </Animated.View>
 
             <Animated.View style={[styles.textContainer, textAnimatedStyle]}>
-              <Text style={styles.title}>Milk Management{'\n'}App</Text>
+              <Text style={styles.title}>Mon ami{'\n'}dairyware</Text>
               <Text style={styles.subtitle}>Streamline your daily milk accounting</Text>
             </Animated.View>
           </View>
@@ -142,6 +142,7 @@ export default function LandingScreen() {
               <Text style={styles.loginButtonText}>Log In</Text>
             </AnimatedTouchableOpacity>
 
+            {/* 
             <AnimatedTouchableOpacity
               style={[styles.registerButton, registerButtonAnimatedStyle]}
               onPress={() => router.push('/(auth)/register')}
@@ -151,6 +152,7 @@ export default function LandingScreen() {
             >
               <Text style={styles.registerButtonText}>Create Account</Text>
             </AnimatedTouchableOpacity>
+            */}
           </Animated.View>
 
         </View>

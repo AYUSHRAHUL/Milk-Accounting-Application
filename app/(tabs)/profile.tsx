@@ -10,7 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type ProfileData = {
@@ -96,7 +96,14 @@ export default function ProfileScreen() {
         style: 'destructive',
         onPress: async () => {
           await logout();
-          router.replace('/(tabs)');
+          if (Platform.OS === 'web') {
+            alert('successfull logout');
+            router.replace('/(auth)/login');
+          } else {
+            Alert.alert('Logout Success', 'successfull logout', [
+              { text: 'OK', onPress: () => router.replace('/(auth)/login') }
+            ]);
+          }
         },
       },
     ]);
@@ -255,6 +262,18 @@ export default function ProfileScreen() {
                   accentColor={EMERALD_GREEN}
                 />
               </Card>
+
+              {/* Logout Section */}
+              <TouchableOpacity 
+                style={[styles.logoutButton, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]} 
+                onPress={handleLogout}
+              >
+                <View style={[styles.infoIconBox, { backgroundColor: '#FEE2E2' }]}>
+                  <Ionicons name="log-out-outline" size={22} color="#EF4444" />
+                </View>
+                <ThemedText style={[styles.logoutText, { color: '#B91C1C' }]}>Log Out</ThemedText>
+                <Ionicons name="chevron-forward" size={18} color="#EF4444" style={{ marginLeft: 'auto' }} />
+              </TouchableOpacity>
 
             </View>
           )}
@@ -462,5 +481,17 @@ const styles = StyleSheet.create({
   emptyButton: {
     width: 'auto',
     paddingHorizontal: 24,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+  logoutText: {
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

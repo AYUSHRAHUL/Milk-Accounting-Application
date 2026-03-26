@@ -10,6 +10,7 @@ import * as Print from 'expo-print';
 import { useAuth } from '@/context/AuthContext';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import * as Sharing from 'expo-sharing';
+import { DatePicker } from '@/components/ui/DatePicker';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
     Alert,
@@ -51,6 +52,21 @@ export default function MilkCollectionHistoryScreen() {
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
     const [activeChip, setActiveChip] = useState('All');
+    const [fromDate, setFromDate] = useState(() => {
+        const d = new Date();
+        d.setDate(1); // Default to start of month
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+    });
+    const [toDate, setToDate] = useState(() => {
+        const d = new Date();
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+    });
 
     const fetchHistory = async () => {
         try {
@@ -338,9 +354,6 @@ export default function MilkCollectionHistoryScreen() {
                     </ThemedText>
                 </View>
                 <View style={styles.actionButtons}>
-                    <TouchableOpacity style={styles.actionBtn} onPress={() => handlePrint(item)}>
-                        <Ionicons name="print-outline" size={18} color="#4B5563" />
-                    </TouchableOpacity>
                     <TouchableOpacity style={styles.actionBtn} onPress={() => openEditModal(item)}>
                         <Ionicons name="pencil-outline" size={18} color="#4B5563" />
                     </TouchableOpacity>
@@ -390,18 +403,20 @@ export default function MilkCollectionHistoryScreen() {
                         {/* Date Filters Group */}
                         <View style={styles.dateRangeContainer}>
                             <View style={styles.dateField}>
-                                <ThemedText style={styles.fieldLabel}>From</ThemedText>
-                                <TouchableOpacity style={styles.datePickerToggle}>
-                                    <Ionicons name="calendar-outline" size={16} color={theme.primary} />
-                                    <ThemedText style={styles.dateText}>01-11-2025</ThemedText>
-                                </TouchableOpacity>
+                                <DatePicker
+                                    label="From"
+                                    value={fromDate}
+                                    onChange={setFromDate}
+                                    format="DD/MM/YYYY"
+                                />
                             </View>
                             <View style={styles.dateField}>
-                                <ThemedText style={styles.fieldLabel}>To</ThemedText>
-                                <TouchableOpacity style={styles.datePickerToggle}>
-                                    <Ionicons name="calendar-outline" size={16} color={theme.primary} />
-                                    <ThemedText style={styles.dateText}>30-11-2025</ThemedText>
-                                </TouchableOpacity>
+                                <DatePicker
+                                    label="To"
+                                    value={toDate}
+                                    onChange={setToDate}
+                                    format="DD/MM/YYYY"
+                                />
                             </View>
                         </View>
 
@@ -556,30 +571,35 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
         justifyContent: 'space-between',
         backgroundColor: '#FFFFFF',
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: '700',
         color: '#111827',
     },
     content: {
         flex: 1,
-        padding: 16,
+        padding: 12,
     },
     filterSection: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 24,
-        padding: 20,
-        marginBottom: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 12,
-        elevation: 4,
+        borderRadius: 20,
+        padding: 14,
+        marginBottom: 10,
+        ...Platform.select({
+            web: { boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)' } as any,
+            default: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 8,
+                elevation: 3,
+            }
+        }),
         borderWidth: 1,
         borderColor: '#F3F4F6',
     },
@@ -587,35 +607,35 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F9FAFB',
-        borderRadius: 16,
+        borderRadius: 14,
         borderWidth: 1,
         borderColor: '#E5E7EB',
-        paddingHorizontal: 16,
-        height: 52,
-        marginBottom: 20,
+        paddingHorizontal: 14,
+        height: 44,
+        marginBottom: 12,
     },
     searchInput: {
         flex: 1,
-        marginLeft: 12,
-        fontSize: 15,
+        marginLeft: 10,
+        fontSize: 14,
         color: '#111827',
         fontWeight: '500',
     },
     filterGrid: {
-        gap: 20,
+        gap: 12,
     },
     dateRangeContainer: {
         flexDirection: 'row',
-        gap: 16,
+        gap: 10,
     },
     dateField: {
         flex: 1,
     },
     fieldLabel: {
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: '700',
         color: '#6B7280',
-        marginBottom: 8,
+        marginBottom: 6,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
@@ -623,30 +643,30 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F9FAFB',
-        borderRadius: 12,
+        borderRadius: 10,
         borderWidth: 1,
         borderColor: '#E5E7EB',
-        paddingHorizontal: 12,
-        height: 44,
-        gap: 10,
+        paddingHorizontal: 10,
+        height: 40,
+        gap: 8,
     },
     dateText: {
-        fontSize: 14,
+        fontSize: 13,
         color: '#374151',
         fontWeight: '600',
     },
     quickFiltersContainer: {
-        marginTop: 4,
+        marginTop: 2,
     },
     chipsRow: {
-        gap: 10,
-        paddingBottom: 4,
+        gap: 8,
+        paddingBottom: 2,
     },
     chip: {
         backgroundColor: '#F3F4F6',
-        borderRadius: 12,
-        paddingVertical: 8,
-        paddingHorizontal: 16,
+        borderRadius: 10,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
         borderWidth: 1,
         borderColor: 'transparent',
     },
@@ -655,7 +675,7 @@ const styles = StyleSheet.create({
         borderColor: '#4338CA',
     },
     chipText: {
-        fontSize: 13,
+        fontSize: 12,
         color: '#6B7280',
         fontWeight: '600',
     },
@@ -664,23 +684,28 @@ const styles = StyleSheet.create({
     },
     summaryCard: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 20,
-        padding: 20,
-        marginBottom: 20,
+        borderRadius: 18,
+        padding: 12,
+        marginBottom: 10,
         borderWidth: 1,
         borderColor: '#F3F4F6',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 15,
-        elevation: 4,
+        ...Platform.select({
+            web: { boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.04)' } as any,
+            default: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.04,
+                shadowRadius: 10,
+                elevation: 3,
+            }
+        }),
     },
     summaryGrid: {
         flexDirection: 'row',
         borderBottomWidth: 1,
         borderBottomColor: '#F3F4F6',
-        paddingBottom: 16,
-        marginBottom: 16,
+        paddingBottom: 8,
+        marginBottom: 8,
     },
     summaryBox: {
         flex: 1,
@@ -691,13 +716,13 @@ const styles = StyleSheet.create({
         borderLeftColor: '#F3F4F6',
     },
     summaryLabel: {
-        fontSize: 12,
+        fontSize: 11,
         color: '#6B7280',
         fontWeight: '600',
-        marginBottom: 4,
+        marginBottom: 2,
     },
     summaryValue: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: '700',
         color: '#22C55E',
     },
@@ -705,53 +730,58 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     totalLabel: {
-        fontSize: 13,
+        fontSize: 11,
         color: '#6B7280',
         fontWeight: '600',
-        marginBottom: 4,
+        marginBottom: 2,
     },
     totalAmount: {
-        fontSize: 28,
+        fontSize: 22,
         fontWeight: '800',
         color: '#22C55E',
     },
     listContainer: {
-        paddingBottom: 40,
+        paddingBottom: 20,
     },
     card: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 18,
-        padding: 16,
-        marginBottom: 12,
+        borderRadius: 14,
+        padding: 10,
+        marginBottom: 8,
         borderWidth: 1,
         borderColor: '#F1F5F9',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.03,
-        shadowRadius: 10,
-        elevation: 2,
+        ...Platform.select({
+            web: { boxShadow: '0px 1px 5px rgba(0, 0, 0, 0.01)' } as any,
+            default: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.01,
+                shadowRadius: 5,
+                elevation: 1,
+            }
+        }),
     },
     cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 14,
+        marginBottom: 8,
     },
     supplierBrand: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        gap: 8,
     },
     supplierIconBg: {
-        width: 32,
-        height: 32,
-        borderRadius: 10,
+        width: 28,
+        height: 28,
+        borderRadius: 8,
         backgroundColor: '#EEF2FF',
         alignItems: 'center',
         justifyContent: 'center',
     },
     supplierName: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '700',
         color: '#1F2937',
     },
@@ -759,22 +789,22 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F3F4F6',
-        paddingVertical: 4,
-        paddingHorizontal: 8,
-        borderRadius: 6,
+        paddingVertical: 3,
+        paddingHorizontal: 6,
+        borderRadius: 5,
     },
     dateTimeText: {
-        fontSize: 11,
+        fontSize: 10,
         color: '#6B7280',
         fontWeight: '600',
     },
     gridContainer: {
         flexDirection: 'row',
         backgroundColor: '#F8FAFC',
-        borderRadius: 12,
-        padding: 12,
+        borderRadius: 8,
+        padding: 8,
         justifyContent: 'space-between',
-        marginBottom: 14,
+        marginBottom: 8,
     },
     gridItem: {
         alignItems: 'center',
@@ -785,14 +815,14 @@ const styles = StyleSheet.create({
         borderLeftColor: '#E2E8F0',
     },
     gridLabel: {
-        fontSize: 10,
+        fontSize: 9,
         fontWeight: '700',
         color: '#94A3B8',
-        marginBottom: 4,
+        marginBottom: 2,
         textTransform: 'uppercase',
     },
     gridValue: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: '700',
         color: '#334155',
     },
@@ -800,7 +830,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingTop: 12,
+        paddingTop: 8,
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
     },
@@ -808,23 +838,23 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#DCFCE7',
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 8,
+        paddingVertical: 3,
+        paddingHorizontal: 8,
+        borderRadius: 6,
     },
     totalText: {
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: '700',
         color: '#166534',
     },
     actionButtons: {
         flexDirection: 'row',
-        gap: 12,
+        gap: 8,
     },
     actionBtn: {
-        width: 34,
-        height: 34,
-        borderRadius: 8,
+        width: 32,
+        height: 32,
+        borderRadius: 6,
         backgroundColor: '#F9FAFB',
         alignItems: 'center',
         justifyContent: 'center',

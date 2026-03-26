@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, View, ScrollView, TouchableOpacity, Platform, Alert } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -12,6 +12,7 @@ export interface ExcelReportEntry {
   milk: {
     ob: number;
     collections: Record<string, number>;
+    sourceTotals: Record<string, number>;
     totalIn: number;
     totalAvailable: number;
     cardSales: number;
@@ -51,6 +52,14 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
   const theme = Colors[colorScheme];
   const [filterMode, setFilterMode] = useState<'Date' | 'Month'>('Date');
 
+  const formatDateDisplay = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    if (parts.length === 2) return `${parts[1]}-${parts[0]}`;
+    return dateStr;
+  };
+
   const processedEntries = useMemo(() => {
     if (filterMode === 'Date') return entries;
 
@@ -64,6 +73,10 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
       } else {
         // Aggregate milk
         Object.keys(e.milk.collections).forEach(k => monthly[month].milk.collections[k] = (monthly[month].milk.collections[k] || 0) + e.milk.collections[k]);
+        if (e.milk.sourceTotals) {
+          if (!monthly[month].milk.sourceTotals) monthly[month].milk.sourceTotals = {};
+          Object.keys(e.milk.sourceTotals).forEach(k => monthly[month].milk.sourceTotals[k] = (monthly[month].milk.sourceTotals[k] || 0) + e.milk.sourceTotals[k]);
+        }
         monthly[month].milk.totalIn += e.milk.totalIn;
         monthly[month].milk.totalAvailable += e.milk.totalAvailable;
         monthly[month].milk.cardSales += e.milk.cardSales;
@@ -97,63 +110,96 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
   }, [entries, filterMode]);
 
   const exportCSV = async () => {
-    // Collect all dynamic keys
-    // These are already defined in useMemo below, but need to be available here.
-    // For simplicity, re-calculating them or moving them outside useMemo would be options.
-    // For this change, we'll assume they are available or define them locally if needed.
-    // Based on the provided context, they are defined below the exportCSV function.
-    // Let's define them here for the exportCSV function to work correctly.
-    const allProdKeys = Array.from(new Set(entries.flatMap(e => Object.keys(e.products))));
-    const allSupplierKeys = Array.from(new Set(entries.flatMap(e => Object.keys(e.milk.collections))));
-    const allProdUseKeys = Array.from(new Set(entries.flatMap(e => Object.keys(e.milk.prod))));
+    try {
+      // Collect all dynamic keys
+      const allProdKeys = Array.from(new Set(entries.flatMap(e => Object.keys(e.products))));
+      const allSupplierKeys = Array.from(new Set(entries.flatMap(e => Object.keys(e.milk.collections))));
 
-    const csvHeaders = [
-      'Date', 
-      'MILK_OB', 
-      ...allSupplierKeys.map(k => `MILK_COLL_${k.toUpperCase()}`),
-      'MILK_TOTAL_IN',
-      'MILK_TOTAL_AVAIL',
-      'MILK_CARD_SALE',
-      'MILK_CASH_SALE',
-      'MILK_CB',
-      'SM_PROD', 'SM_OB', 'SM_TOTAL', 'SM_SELL', 'SM_CB',
-      'CREAM_PROD', 'CREAM_OB', 'CREAM_TOTAL', 'CREAM_SELL', 'CREAM_CB',
-      ...allProdKeys.flatMap(k => [`${k.toUpperCase()}_PROD`, `${k.toUpperCase()}_OB`, `${k.toUpperCase()}_TOTAL`, `${k.toUpperCase()}_SELL`, `${k.toUpperCase()}_CB`])
-    ];
+      const csvHeaders = [
+        'Date', 
+        'MILK_OB', 
+        ...allSupplierKeys.map(k => `MILK_COLL_${k.toUpperCase()}`),
+        'MILK_COW',
+        'MILK_BUFF',
+        'MILK_GOAT',
+        'MILK_OTHER',
+        'MILK_TOTAL_IN',
+        'MILK_TOTAL_AVAIL',
+        'MILK_CARD_SALE',
+        'MILK_CASH_SALE',
+        'MILK_CB',
+        'SM_PROD', 'SM_OB', 'SM_TOTAL', 'SM_SELL', 'SM_CB',
+        'CREAM_PROD', 'CREAM_OB', 'CREAM_TOTAL', 'CREAM_SELL', 'CREAM_CB',
+        ...allProdKeys.flatMap(k => [`${k.toUpperCase()}_PROD`, `${k.toUpperCase()}_OB`, `${k.toUpperCase()}_TOTAL`, `${k.toUpperCase()}_SELL`, `${k.toUpperCase()}_CB`])
+      ];
 
-    const rows = entries.map(e => [
-      e.date,
-      e.milk.ob, 
-      ...allSupplierKeys.map(k => e.milk.collections[k] || 0),
-      e.milk.totalIn,
-      e.milk.totalAvailable,
-      e.milk.cardSales,
-      e.milk.cashSales,
-      e.milk.cb,
-      e.sm.prod, e.sm.ob, e.sm.total, e.sm.sale, e.sm.cb,
-      e.cream.prod, e.cream.ob, e.cream.total, e.cream.sale, e.cream.cb,
-      ...allProdKeys.flatMap(k => [
-        e.products[k]?.prod || 0,
-        e.products[k]?.ob || 0,
-        e.products[k]?.total || 0,
-        e.products[k]?.sale || 0,
-        e.products[k]?.cb || 0
-      ])
-    ]);
+      // Helper to escape CSV fields
+      const esc = (v: any) => {
+        const str = (v === null || v === undefined) ? '' : String(v);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
 
-    const csvContent = [csvHeaders.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const rows = entries.map(e => [
+        esc(formatDateDisplay(e.date)),
+        esc(e.milk.ob), 
+        ...allSupplierKeys.map(k => esc(e.milk.collections[k] || 0)),
+        esc(e.milk.sourceTotals?.['Cow'] || 0),
+        esc(e.milk.sourceTotals?.['Buffalo'] || 0),
+        esc(e.milk.sourceTotals?.['Goat'] || 0),
+        esc(e.milk.sourceTotals?.['Other'] || 0),
+        esc(e.milk.totalIn),
+        esc(e.milk.totalAvailable),
+        esc(e.milk.cardSales),
+        esc(e.milk.cashSales),
+        esc(e.milk.cb),
+        esc(e.sm.prod), esc(e.sm.ob), esc(e.sm.total), esc(e.sm.sale), esc(e.sm.cb),
+        esc(e.cream.prod), esc(e.cream.ob), esc(e.cream.total), esc(e.cream.sale), esc(e.cream.cb),
+        ...allProdKeys.flatMap(k => [
+          esc(e.products[k]?.prod || 0),
+          esc(e.products[k]?.ob || 0),
+          esc(e.products[k]?.total || 0),
+          esc(e.products[k]?.sale || 0),
+          esc(e.products[k]?.cb || 0)
+        ])
+      ]);
 
-    if (Platform.OS === 'web') {
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Detailed_Report_${new Date().toISOString().split('T')[0]}.csv`;
-      a.click();
-    } else {
-      const filename = `${(FileSystem as any).documentDirectory}detailed_report.csv`;
-      await (FileSystem as any).writeAsStringAsync(filename, csvContent, { encoding: (FileSystem as any).EncodingType.UTF8 });
-      await Sharing.shareAsync(filename);
+      const csvContent = [csvHeaders.join(','), ...rows.map(r => r.join(','))].join('\n');
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Detailed_Report_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+      } else {
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (!isSharingAvailable) {
+            Alert.alert('Error', 'Sharing is not available on this device');
+            return;
+        }
+
+        // Use cacheDirectory for temporary exports (less permission issues)
+        const fileName = `detailed_report.csv`;
+        const dir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
+        const fileUri = `${dir}${fileName}`;
+        
+        await (FileSystem as any).writeAsStringAsync(fileUri, csvContent, { 
+            encoding: (FileSystem as any).EncodingType.UTF8 
+        });
+
+        await Sharing.shareAsync(fileUri, {
+            mimeType: 'text/csv',
+            dialogTitle: 'Export Detailed Report',
+            UTI: 'public.comma-separated-values',
+        });
+      }
+    } catch (error: any) {
+        console.error('Export Error:', error);
+        Alert.alert('Export Failed', 'Details: ' + (error?.message || 'An error occurred. Make sure storage permissions are granted.'));
     }
   };
 
@@ -189,7 +235,7 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
           {/* Row 1: Main Section Headers */}
           <View style={styles.tableHeaderRow}>
             <View style={[styles.headerCell, { width: 100 }]}><ThemedText style={styles.headerText}>DATE (2026)</ThemedText></View>
-            <View style={[styles.accountHeader, { width: (allSupplierKeys.length + 5) * 60, backgroundColor: '#EFF6FF' }]}>
+            <View style={[styles.accountHeader, { width: (allSupplierKeys.length + 9) * 60, backgroundColor: '#EFF6FF' }]}>
               <ThemedText style={[styles.headerText, { color: '#1D4ED8' }]}>MILK ACCOUNT</ThemedText>
             </View>
             <View style={[styles.accountHeader, { width: 300, backgroundColor: theme.successMuted }]}>
@@ -212,6 +258,10 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
             {/* Milk Cols */}
             <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>O.B.</ThemedText></View>
             {allSupplierKeys.map(k => <View key={k} style={styles.subCol}><ThemedText style={styles.subHeaderText}>{k.toUpperCase().substring(0,6)}</ThemedText></View>)}
+            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>COW</ThemedText></View>
+            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>BUFF</ThemedText></View>
+            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>GOAT</ThemedText></View>
+            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>OTHER</ThemedText></View>
             <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>TOTAL</ThemedText></View>
             <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>CARD</ThemedText></View>
             <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>CASH</ThemedText></View>
@@ -247,11 +297,15 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
           <ScrollView style={{ height: 400 }}>
             {processedEntries.map((e, idx) => (
               <View key={e.date} style={[styles.dataRow, { backgroundColor: idx % 2 === 0 ? theme.background : theme.borderMuted + '20' }]}>
-                <View style={[styles.cell, { width: 100 }]}><ThemedText style={styles.cellText}>{e.date}</ThemedText></View>
+                <View style={[styles.cell, { width: 100 }]}><ThemedText style={styles.cellText}>{formatDateDisplay(e.date)}</ThemedText></View>
                 
                 {/* Milk Data */}
                 <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.milk.ob.toFixed(1)}</ThemedText></View>
                 {allSupplierKeys.map(k => <View key={k} style={styles.subCol}><ThemedText style={styles.cellText}>{(e.milk.collections[k] || 0).toFixed(1)}</ThemedText></View>)}
+                <View style={styles.subCol}><ThemedText style={styles.cellText}>{(e.milk.sourceTotals?.['Cow'] || 0).toFixed(1)}</ThemedText></View>
+                <View style={styles.subCol}><ThemedText style={styles.cellText}>{(e.milk.sourceTotals?.['Buffalo'] || 0).toFixed(1)}</ThemedText></View>
+                <View style={styles.subCol}><ThemedText style={styles.cellText}>{(e.milk.sourceTotals?.['Goat'] || 0).toFixed(1)}</ThemedText></View>
+                <View style={styles.subCol}><ThemedText style={styles.cellText}>{(e.milk.sourceTotals?.['Other'] || 0).toFixed(1)}</ThemedText></View>
                 <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.milk.totalIn.toFixed(1)}</ThemedText></View>
                 <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.milk.cardSales.toFixed(1)}</ThemedText></View>
                 <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.milk.cashSales.toFixed(1)}</ThemedText></View>
