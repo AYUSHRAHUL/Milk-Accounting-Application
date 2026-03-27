@@ -4,7 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
-import { writeAsStringAsync, EncodingType, cacheDirectory, documentDirectory } from 'expo-file-system/legacy';
+import { writeAsStringAsync, EncodingType, cacheDirectory, documentDirectory, StorageAccessFramework } from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
 export interface ExcelReportEntry {
@@ -176,34 +176,46 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
         a.download = `Detailed_Report_${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
       } else {
-        const isSharingAvailable = await Sharing.isAvailableAsync();
-        if (!isSharingAvailable) {
-            Alert.alert('Error', 'Sharing is not available on this device');
-            return;
-        }
-
-        // Use cacheDirectory for temporary exports (less permission issues)
         const fileName = `detailed_report_${Date.now()}.csv`;
-        const dir = cacheDirectory || documentDirectory;
-        
-        if (!dir) {
-          Alert.alert('Error', 'Storage directory not available on this device.');
-          return;
+
+        if (Platform.OS === 'android') {
+          const permissions = await StorageAccessFramework.requestDirectoryPermissionsAsync();
+          if (permissions.granted) {
+            const fileUri = await StorageAccessFramework.createFileAsync(permissions.directoryUri, fileName, 'text/csv');
+            await writeAsStringAsync(fileUri, csvContent, { encoding: EncodingType.UTF8 });
+            Alert.alert('Success', 'File saved successfully.');
+          } else {
+            Alert.alert('Permission Denied', 'Storage permission is required to save the file.');
+          }
+        } else {
+          const isSharingAvailable = await Sharing.isAvailableAsync();
+          if (!isSharingAvailable) {
+              Alert.alert('Error', 'Sharing is not available on this device');
+              return;
+          }
+
+          // Use cacheDirectory for temporary exports (less permission issues)
+          const dir = cacheDirectory || documentDirectory;
+          
+          if (!dir) {
+            Alert.alert('Error', 'Storage directory not available on this device.');
+            return;
+          }
+
+          // Ensure trailing slash
+          const dirWithSlash = dir.endsWith('/') ? dir : dir + '/';
+          const fileUri = `${dirWithSlash}${fileName}`;
+          
+          await writeAsStringAsync(fileUri, csvContent, { 
+              encoding: EncodingType.UTF8 
+          });
+
+          await Sharing.shareAsync(fileUri, {
+              mimeType: 'text/csv',
+              dialogTitle: 'Export Detailed Report',
+              UTI: 'public.comma-separated-values',
+          });
         }
-
-        // Ensure trailing slash
-        const dirWithSlash = dir.endsWith('/') ? dir : dir + '/';
-        const fileUri = `${dirWithSlash}${fileName}`;
-        
-        await writeAsStringAsync(fileUri, csvContent, { 
-            encoding: EncodingType.UTF8 
-        });
-
-        await Sharing.shareAsync(fileUri, {
-            mimeType: 'text/csv',
-            dialogTitle: 'Export Detailed Report',
-            UTI: 'public.comma-separated-values',
-        });
       }
     } catch (error: any) {
         console.error('Export Error:', error);
