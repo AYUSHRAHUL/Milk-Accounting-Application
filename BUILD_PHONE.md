@@ -12,7 +12,7 @@ The app is configured to use:
 
 ```bash
 npm i -g eas-cli
-eas login
+eas login 
 ```
 
 2. Deploy backend to Render
