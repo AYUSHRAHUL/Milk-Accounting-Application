@@ -8,6 +8,8 @@ import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { router, useFocusEffect } from 'expo-router';
+import { writeAsStringAsync, EncodingType, cacheDirectory, documentDirectory } from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
@@ -96,7 +98,7 @@ export default function ReportSuppliersScreen() {
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!filtered.length) { Alert.alert('No data to export'); return; }
     const header = ['Supplier ID', 'Name', 'Phone', 'Address', 'Animal Types', 'Status', 'Joined On'];
     const rows = filtered.map((e) => [
@@ -120,7 +122,29 @@ export default function ReportSuppliersScreen() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } else {
-      Alert.alert('Export', 'Export is currently supported on web only.');
+      try {
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (!isSharingAvailable) {
+          Alert.alert('Error', 'Sharing is not available on this device');
+          return;
+        }
+        const fileName = `suppliers_report_${Date.now()}.csv`;
+        const dir = cacheDirectory || documentDirectory;
+        if (!dir) {
+          Alert.alert('Error', 'Storage not available on this device.');
+          return;
+        }
+        const fileUri = `${dir}${fileName}`;
+        await writeAsStringAsync(fileUri, csv, { encoding: EncodingType.UTF8 });
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'text/csv',
+          dialogTitle: 'Export Suppliers Report',
+          UTI: 'public.comma-separated-values',
+        });
+      } catch (error: any) {
+        console.error('Export Error:', error);
+        Alert.alert('Export Failed', 'Details: ' + (error?.message || 'An error occurred during export.'));
+      }
     }
     setExportModal(false);
   };

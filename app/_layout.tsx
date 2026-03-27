@@ -9,7 +9,7 @@ import 'react-native-reanimated';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { PreferencesProvider } from '@/context/PreferencesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { LogBox, View, Platform, PermissionsAndroid } from 'react-native';
+import { LogBox, View, Platform } from 'react-native';
 import { CustomSplashScreen } from '@/components/SplashScreen';
 
 // Suppress known React Native Web deprecation warnings that clutter the console
@@ -31,21 +31,6 @@ function RootLayoutNav() {
   useEffect(() => {
     // Expo Router uses this to detect when it's safe to route
     setIsNavigationReady(true);
-    
-    // Request storage permission on Android at start
-    if (Platform.OS === 'android') {
-      (async () => {
-        try {
-          const granted = await PermissionsAndroid.requestMultiple([
-            PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-            PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-          ]);
-          console.log('Storage permissions status:', granted);
-        } catch (err) {
-          console.warn('Storage permission request failed', err);
-        }
-      })();
-    }
   }, []);
 
   useEffect(() => {

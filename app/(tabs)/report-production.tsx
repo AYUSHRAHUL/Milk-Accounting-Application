@@ -8,6 +8,8 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
+import { writeAsStringAsync, EncodingType, cacheDirectory, documentDirectory } from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
@@ -119,7 +121,7 @@ export default function ReportProductionScreen() {
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const data = activeTab === 'Products' ? filteredProducts : filteredSeparation;
     if (!data.length) {
       Alert.alert('No data to export');
@@ -129,16 +131,16 @@ export default function ReportProductionScreen() {
     let csv = '';
     if (activeTab === 'Products') {
       const header = ['Date', 'Product', 'Quantity', 'Whole Milk used', 'Skim used', 'Cream used'];
-      const rows = filteredProducts.map(e => [
-        formatDate(e.date), e.productName, `${e.quantityProduced} ${e.unit}`,
-        e.milkUsed.wholeMilk.toString(), e.milkUsed.skimMilk.toString(), e.milkUsed.creamMilk.toString()
-      ]);
+      const rows = filteredProducts.map(e =>
+        [formatDate(e.date), e.productName, `${e.quantityProduced} ${e.unit}`,
+        e.milkUsed.wholeMilk.toString(), e.milkUsed.skimMilk.toString(), e.milkUsed.creamMilk.toString()]
+      );
       csv = [header, ...rows].map(r => r.join(',')).join('\n');
     } else {
       const header = ['Date', 'Separated (L)', 'Skim Produced (L)', 'Cream Produced (L)', 'Loss'];
-      const rows = filteredSeparation.map(e => [
-        formatDate(e.date), e.separationMilk.toString(), e.skimMilk.toString(), e.creamMilk.toString(), e.loss.toString()
-      ]);
+      const rows = filteredSeparation.map(e =>
+        [formatDate(e.date), e.separationMilk.toString(), e.skimMilk.toString(), e.creamMilk.toString(), e.loss.toString()]
+      );
       csv = [header, ...rows].map(r => r.join(',')).join('\n');
     }
 
@@ -153,7 +155,29 @@ export default function ReportProductionScreen() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } else {
-      Alert.alert('Export', 'Export is currently supported on web only.');
+      try {
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (!isSharingAvailable) {
+          Alert.alert('Error', 'Sharing is not available on this device');
+          return;
+        }
+        const fileName = `${activeTab.toLowerCase()}_report_${Date.now()}.csv`;
+        const dir = cacheDirectory || documentDirectory;
+        if (!dir) {
+          Alert.alert('Error', 'Storage not available on this device.');
+          return;
+        }
+        const fileUri = `${dir}${fileName}`;
+        await writeAsStringAsync(fileUri, csv, { encoding: EncodingType.UTF8 });
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'text/csv',
+          dialogTitle: `Export ${activeTab} Report`,
+          UTI: 'public.comma-separated-values',
+        });
+      } catch (error: any) {
+        console.error('Export Error:', error);
+        Alert.alert('Export Failed', 'Details: ' + (error?.message || 'An error occurred during export.'));
+      }
     }
     setExportModalVisible(false);
   };

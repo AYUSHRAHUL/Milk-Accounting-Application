@@ -4,7 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system';
+import { writeAsStringAsync, EncodingType, cacheDirectory, documentDirectory } from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
 export interface ExcelReportEntry {
@@ -184,22 +184,19 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
 
         // Use cacheDirectory for temporary exports (less permission issues)
         const fileName = `detailed_report_${Date.now()}.csv`;
-        // Handle directory more robustly
-        let dir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
-        
-        // Ensure trailing slash
-        if (dir && !dir.endsWith('/')) {
-            dir += '/';
-        }
+        const dir = cacheDirectory || documentDirectory;
         
         if (!dir) {
-          Alert.alert('Error', 'Storage directory not available. Please ensure app has storage permissions.');
+          Alert.alert('Error', 'Storage directory not available on this device.');
           return;
         }
-        const fileUri = `${dir}${fileName}`;
+
+        // Ensure trailing slash
+        const dirWithSlash = dir.endsWith('/') ? dir : dir + '/';
+        const fileUri = `${dirWithSlash}${fileName}`;
         
-        await (FileSystem as any).writeAsStringAsync(fileUri, csvContent, { 
-            encoding: 'utf8' 
+        await writeAsStringAsync(fileUri, csvContent, { 
+            encoding: EncodingType.UTF8 
         });
 
         await Sharing.shareAsync(fileUri, {

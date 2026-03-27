@@ -22,8 +22,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.ayushkumarsingh.milkaccounting",
-      "permissions": ["READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
+      "package": "com.ayushkumarsingh.milkaccounting"
     },
     "web": {
       "output": "server",

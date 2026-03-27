@@ -7,7 +7,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
-import * as FileSystem from 'expo-file-system';
+import { writeAsStringAsync, EncodingType, cacheDirectory, documentDirectory } from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -156,11 +156,15 @@ export default function ReportMilkScreen() {
         }
 
         const fileName = `milk_report_${Date.now()}.csv`;
-        const dir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
+        const dir = cacheDirectory || documentDirectory;
+        if (!dir) {
+          Alert.alert('Error', 'Storage not available on this device.');
+          return;
+        }
         const fileUri = `${dir}${fileName}`;
         
-        await (FileSystem as any).writeAsStringAsync(fileUri, csv, { 
-          encoding: 'utf8' 
+        await writeAsStringAsync(fileUri, csv, { 
+          encoding: EncodingType.UTF8 
         });
 
         await Sharing.shareAsync(fileUri, {
