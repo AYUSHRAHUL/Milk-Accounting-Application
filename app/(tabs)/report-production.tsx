@@ -11,6 +11,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { writeAsStringAsync, EncodingType, cacheDirectory, documentDirectory, StorageAccessFramework } from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import React, { useCallback, useMemo, useState } from 'react';
+import { downloadCSVLocally } from '@/lib/exportHelper';
 import {
   Alert,
   Modal,
@@ -156,35 +157,7 @@ export default function ReportProductionScreen() {
       URL.revokeObjectURL(url);
     } else {
       try {
-        const fileName = `${activeTab.toLowerCase()}_report_${Date.now()}.csv`;
-        if (Platform.OS === 'android') {
-          const permissions = await StorageAccessFramework.requestDirectoryPermissionsAsync();
-          if (permissions.granted) {
-            const fileUri = await StorageAccessFramework.createFileAsync(permissions.directoryUri, fileName, 'text/csv');
-            await writeAsStringAsync(fileUri, csv, { encoding: EncodingType.UTF8 });
-            Alert.alert('Success', 'File saved successfully.');
-          } else {
-            Alert.alert('Permission Denied', 'Storage permission is required to save the file.');
-          }
-        } else {
-          const isSharingAvailable = await Sharing.isAvailableAsync();
-          if (!isSharingAvailable) {
-            Alert.alert('Error', 'Sharing is not available on this device');
-            return;
-          }
-          const dir = cacheDirectory || documentDirectory;
-          if (!dir) {
-            Alert.alert('Error', 'Storage not available on this device.');
-            return;
-          }
-          const fileUri = `${dir}${fileName}`;
-          await writeAsStringAsync(fileUri, csv, { encoding: EncodingType.UTF8 });
-          await Sharing.shareAsync(fileUri, {
-            mimeType: 'text/csv',
-            dialogTitle: `Export ${activeTab} Report`,
-            UTI: 'public.comma-separated-values',
-          });
-        }
+        await downloadCSVLocally(csv, activeTab.toLowerCase() + '_report', `Export ${activeTab} Report`);
       } catch (error: any) {
         console.error('Export Error:', error);
         Alert.alert('Export Failed', 'Details: ' + (error?.message || 'An error occurred during export.'));

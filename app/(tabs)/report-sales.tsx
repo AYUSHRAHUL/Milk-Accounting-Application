@@ -11,6 +11,7 @@ import { writeAsStringAsync, EncodingType, cacheDirectory, documentDirectory, St
 import * as Sharing from 'expo-sharing';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
+import { downloadCSVLocally } from '@/lib/exportHelper';
 import {
   Alert,
   Modal,
@@ -154,36 +155,7 @@ export default function ReportSalesScreen() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       } else {
-        const fileName = `sales_report_${Date.now()}.csv`;
-
-        if (Platform.OS === 'android') {
-          const permissions = await StorageAccessFramework.requestDirectoryPermissionsAsync();
-          if (permissions.granted) {
-            const fileUri = await StorageAccessFramework.createFileAsync(permissions.directoryUri, fileName, 'text/csv');
-            await writeAsStringAsync(fileUri, csv, { encoding: EncodingType.UTF8 });
-            Alert.alert('Success', 'File saved successfully.');
-          } else {
-            Alert.alert('Permission Denied', 'Storage permission is required to save the file.');
-          }
-        } else {
-          const isSharingAvailable = await Sharing.isAvailableAsync();
-          if (!isSharingAvailable) {
-            Alert.alert('Error', 'Sharing is not available on this device');
-            return;
-          }
-          const dir = cacheDirectory || documentDirectory;
-          if (!dir) {
-            Alert.alert('Error', 'Storage not available on this device.');
-            return;
-          }
-          const fileUri = `${dir}${fileName}`;
-          await writeAsStringAsync(fileUri, csv, { encoding: EncodingType.UTF8 });
-          await Sharing.shareAsync(fileUri, {
-            mimeType: 'text/csv',
-            dialogTitle: 'Export Sales Report',
-            UTI: 'public.comma-separated-values',
-          });
-        }
+        await downloadCSVLocally(csv, 'sales_report', 'Export Sales Report');
       }
     } catch (error: any) {
       console.error('Export Error:', error);
