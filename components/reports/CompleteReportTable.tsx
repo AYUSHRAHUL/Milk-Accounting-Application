@@ -117,7 +117,7 @@ export function CompleteReportTable({ entries }: CompleteReportTableProps) {
 
       try {
         await (FileSystem as any).writeAsStringAsync(fileUri, csvContent, {
-          encoding: (FileSystem as any).EncodingType.UTF8,
+          encoding: 'utf8',
         });
 
         if (await Sharing.isAvailableAsync()) {

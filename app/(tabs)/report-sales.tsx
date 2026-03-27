@@ -161,11 +161,11 @@ export default function ReportSalesScreen() {
         }
 
         const fileName = `sales_report_${Date.now()}.csv`;
-        const dir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
+        const dir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory || '';
         const fileUri = `${dir}${fileName}`;
         
         await (FileSystem as any).writeAsStringAsync(fileUri, csv, { 
-          encoding: (FileSystem as any).EncodingType.UTF8 
+          encoding: 'utf8' 
         });
 
         await Sharing.shareAsync(fileUri, {

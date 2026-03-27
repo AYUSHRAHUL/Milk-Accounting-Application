@@ -169,10 +169,17 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
       icon: 'log-out-outline',
       variant: 'danger',
       onPress: () => {
-        const doLogout = () => {
+        const doLogout = async () => {
           props.navigation.closeDrawer();
           logout();
-          router.replace('/(auth)/register');
+          if (Platform.OS === 'web') {
+            alert('successfull logout');
+            router.replace('/(auth)/login');
+          } else {
+            Alert.alert('Success', 'successfull logout', [
+              { text: 'OK', onPress: () => router.replace('/(auth)/login') }
+            ]);
+          }
         };
 
         if (Platform.OS === 'web') {

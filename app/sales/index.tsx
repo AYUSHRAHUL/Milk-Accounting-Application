@@ -16,6 +16,7 @@ import {
     Platform,
     ScrollView,
     StyleSheet,
+    Text,
     TextInput,
     TouchableOpacity,
     View
@@ -242,13 +243,15 @@ export default function SalesScreen() {
         placeholder: string,
         keyboard: any = 'default',
         fieldId: string,
+        icon?: string,
         yOffset?: number
     ) => (
         <View style={styles.inputGroup}>
-            <ThemedText style={styles.inputLabel}>{label}</ThemedText>
-            <View style={[styles.inputWrapper, focusedField === fieldId && styles.inputFocused]}>
+            <Text style={[styles.inputLabel, { color: colorScheme === 'dark' ? '#94A3B8' : '#374151' }]}>{label}</Text>
+            <View style={[styles.inputWrapper, focusedField === fieldId && styles.inputFocused, { flexDirection: 'row', alignItems: 'center' }]}>
+                {icon && <Ionicons name={icon as any} size={19} color="#10B981" style={{ marginRight: 10 }} />}
                 <TextInput
-                    style={[styles.textInput, { color: theme.text }, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
+                    style={[styles.textInput, { flex: 1, color: theme.text }, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
                     value={value}
                     onChangeText={setValue}
                     placeholder={placeholder}
@@ -308,7 +311,7 @@ export default function SalesScreen() {
                                 />
                             </View>
                             <View style={{ flex: 1 }}>
-                                {renderInput('Customer Name', customerName, setCustomerName, 'Enter name', 'default', 'customer', 0)}
+                                {renderInput('Customer Name', customerName, setCustomerName, 'Enter name', 'default', 'customer', 'person-outline', 0)}
                             </View>
                         </View>
                     </View>
@@ -635,10 +638,10 @@ const styles = StyleSheet.create({
     sectionDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981', marginRight: 8 },
     sectionTitle: { fontSize: 14, fontWeight: '700', color: '#374151' },
     inputGroup: { marginBottom: 12 },
-    inputLabel: { fontSize: 12, fontWeight: '600', color: '#6B7280', marginBottom: 5 },
+    inputLabel: { fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 4 },
     inputWrapper: {
-        height: 46, borderRadius: 12, borderWidth: 1.5,
-        borderColor: '#F3F4F6', backgroundColor: '#F9FAFB',
+        height: 48, borderRadius: 12, borderWidth: 1,
+        borderColor: '#E5E7EB', backgroundColor: '#F9FAFB',
         paddingHorizontal: 12, justifyContent: 'center',
     },
     inputFocused: { borderColor: '#10B981', backgroundColor: '#fff' },

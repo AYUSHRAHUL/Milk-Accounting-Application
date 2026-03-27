@@ -1,23 +1,23 @@
+import { router } from 'expo-router';
 import React, { useEffect } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
   Dimensions,
   Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
 import Animated, {
-  type SharedValue,
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSpring,
-  withDelay,
   Easing,
+  type SharedValue,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
 } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Logo from '@/assets/images/logo.jpeg';
 
@@ -111,13 +111,13 @@ export default function LandingScreen() {
     <View style={styles.container}>
       {/* Top Green Background */}
       <View style={styles.topBackground} />
-      
+
       {/* Soft curve transition */}
       <CurvedSeparator />
 
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
-          
+
           {/* Top Section - Logo & Text */}
           <View style={styles.topSection}>
             <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
@@ -125,7 +125,7 @@ export default function LandingScreen() {
             </Animated.View>
 
             <Animated.View style={[styles.textContainer, textAnimatedStyle]}>
-              <Text style={styles.title}>Mon ami{'\n'}dairyware</Text>
+              <Text style={styles.title}>Milk Accounting{'\n'}App</Text>
               <Text style={styles.subtitle}>Streamline your daily milk accounting</Text>
             </Animated.View>
           </View>

@@ -183,12 +183,16 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
         }
 
         // Use cacheDirectory for temporary exports (less permission issues)
-        const fileName = `detailed_report.csv`;
+        const fileName = `detailed_report_${Date.now()}.csv`;
         const dir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
+        if (!dir) {
+          Alert.alert('Error', 'Storage directory not available');
+          return;
+        }
         const fileUri = `${dir}${fileName}`;
         
         await (FileSystem as any).writeAsStringAsync(fileUri, csvContent, { 
-            encoding: (FileSystem as any).EncodingType.UTF8 
+            encoding: 'utf8' 
         });
 
         await Sharing.shareAsync(fileUri, {

@@ -160,7 +160,7 @@ export default function ReportMilkScreen() {
         const fileUri = `${dir}${fileName}`;
         
         await (FileSystem as any).writeAsStringAsync(fileUri, csv, { 
-          encoding: (FileSystem as any).EncodingType.UTF8 
+          encoding: 'utf8' 
         });
 
         await Sharing.shareAsync(fileUri, {

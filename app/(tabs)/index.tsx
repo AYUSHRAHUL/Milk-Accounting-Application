@@ -124,7 +124,7 @@ function DashboardBanner() {
           <Ionicons name="sparkles" size={12} color="#FDE047" />
           <Text style={styles.bannerBadgeText}>Premium Version</Text>
         </View>
-        <Text style={styles.bannerTitle}>MOM AMI DAIRYWARE</Text>
+        <Text style={styles.bannerTitle}>Milk Accounting App</Text>
         <Text style={styles.bannerSubtitle}>Monitor your growth in real-time</Text>
       </View>
     </View>

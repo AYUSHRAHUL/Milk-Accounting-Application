@@ -205,8 +205,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 activeOpacity={0.7}
             >
                 <Ionicons
-                    name="calendar-sharp"
-                    size={18}
+                    name="calendar-outline"
+                    size={19}
                     color={theme.primary}
                     style={{ marginRight: 10 }}
                 />
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingHorizontal: 14,
     },
-    dateText: { fontSize: 16, fontWeight: '600' },
+    dateText: { fontSize: 15, fontWeight: '500' },
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(15, 23, 42, 0.4)',
