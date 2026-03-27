@@ -5,7 +5,24 @@ import { ThemedText } from '../themed-text';
 import { Colors, Spacing } from '../../constants/theme';
 import { useColorScheme } from '../../hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
-import type { DailyReportData } from '../../services/reportService';
+export interface DailyReportData {
+  milkCollection: {
+    totalLiters: number;
+    numberOfFarmers: number;
+  };
+  sales: {
+    totalMilkSold: number;
+    totalRevenue: number;
+  };
+  production: {
+    totalProductsProduced: number;
+    wastage: number;
+  };
+  suppliers: {
+    totalActiveSuppliers: number;
+    totalAmountPaid: number;
+  };
+}
 
 interface DailyReportCardProps {
   data: DailyReportData;

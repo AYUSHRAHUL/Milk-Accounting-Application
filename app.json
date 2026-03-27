@@ -49,12 +49,12 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
+    "owner": "milk001",
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "b656a429-77bd-4663-bf11-e5e0aad326bd"
+        "projectId": "0e019443-3ea4-4d36-ad9a-aa50de21c4b9"
       }
-    },
-    "owner": "ankit7979"
+    }
   }
 }
