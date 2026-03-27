@@ -113,7 +113,15 @@ export function CompleteReportTable({ entries }: CompleteReportTableProps) {
       document.body.removeChild(link);
     } else {
       const fileName = `Detailed_${filterMode}_${Date.now()}.csv`;
-      const fileUri = (FileSystem as any).documentDirectory + fileName;
+      let dir = (FileSystem as any).documentDirectory || (FileSystem as any).cacheDirectory;
+      if (dir && !dir.endsWith('/')) {
+        dir += '/';
+      }
+      if (!dir) {
+        Alert.alert('Error', 'Storage directory not available. Please ensure app has storage permissions.');
+        return;
+      }
+      const fileUri = dir + fileName;
 
       try {
         await (FileSystem as any).writeAsStringAsync(fileUri, csvContent, {

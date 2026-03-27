@@ -94,14 +94,20 @@ export default function ProfileScreen() {
       {
         text: 'Logout',
         style: 'destructive',
-        onPress: async () => {
-          await logout();
+        onPress: () => {
           if (Platform.OS === 'web') {
             alert('successfull logout');
+            logout();
             router.replace('/(auth)/login');
           } else {
             Alert.alert('Logout Success', 'successfull logout', [
-              { text: 'OK', onPress: () => router.replace('/(auth)/login') }
+              { 
+                text: 'OK', 
+                onPress: () => {
+                  logout();
+                  router.replace('/(auth)/login');
+                } 
+              }
             ]);
           }
         },

@@ -184,9 +184,16 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
 
         // Use cacheDirectory for temporary exports (less permission issues)
         const fileName = `detailed_report_${Date.now()}.csv`;
-        const dir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
+        // Handle directory more robustly
+        let dir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
+        
+        // Ensure trailing slash
+        if (dir && !dir.endsWith('/')) {
+            dir += '/';
+        }
+        
         if (!dir) {
-          Alert.alert('Error', 'Storage directory not available');
+          Alert.alert('Error', 'Storage directory not available. Please ensure app has storage permissions.');
           return;
         }
         const fileUri = `${dir}${fileName}`;
@@ -229,7 +236,7 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
           </View>
           <TouchableOpacity onPress={exportCSV} style={[styles.exportBtn, { backgroundColor: theme.successMuted }]}>
             <Ionicons name="download-outline" size={18} color={theme.success} />
-            <ThemedText style={[styles.exportText, { color: theme.success }]}>Export</ThemedText>
+            <ThemedText style={[styles.exportText, { color: theme.success }]}>Export as CSV</ThemedText>
           </TouchableOpacity>
         </View>
       </View>

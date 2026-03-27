@@ -35,13 +35,19 @@ export default function SuperAdminDashboardScreen() {
 
   const handleLogout = async () => {
     if (logout) {
-      await logout();
       if (Platform.OS === 'web') {
         alert('successfull logout');
+        await logout();
         router.replace('/(auth)/login');
       } else {
         Alert.alert('Logout Success', 'successfull logout', [
-          { text: 'OK', onPress: () => router.replace('/(auth)/login') }
+          { 
+            text: 'OK', 
+            onPress: () => {
+              logout();
+              router.replace('/(auth)/login');
+            } 
+          }
         ]);
       }
     }

@@ -171,13 +171,19 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
       onPress: () => {
         const doLogout = async () => {
           props.navigation.closeDrawer();
-          logout();
           if (Platform.OS === 'web') {
             alert('successfull logout');
+            logout();
             router.replace('/(auth)/login');
           } else {
             Alert.alert('Success', 'successfull logout', [
-              { text: 'OK', onPress: () => router.replace('/(auth)/login') }
+              { 
+                text: 'OK', 
+                onPress: () => {
+                  logout(); 
+                  router.replace('/(auth)/login');
+                } 
+              }
             ]);
           }
         };
