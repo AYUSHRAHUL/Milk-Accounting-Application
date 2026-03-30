@@ -248,10 +248,10 @@ export default function SalesScreen() {
     ) => (
         <View style={styles.inputGroup}>
             <Text style={[styles.inputLabel, { color: colorScheme === 'dark' ? '#94A3B8' : '#374151' }]}>{label}</Text>
-            <View style={[styles.inputWrapper, focusedField === fieldId && styles.inputFocused, { flexDirection: 'row', alignItems: 'center' }]}>
-                {icon && <Ionicons name={icon as any} size={19} color="#10B981" style={{ marginRight: 10 }} />}
+            <View style={[styles.inputWrapper, focusedField === fieldId && styles.inputFocused]}>
+                {icon && <Ionicons name={icon as any} size={19} color="#10B981" style={styles.inputIcon} />}
                 <TextInput
-                    style={[styles.textInput, { flex: 1, color: theme.text }, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
+                    style={[styles.textInput, { color: theme.text }, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
                     value={value}
                     onChangeText={setValue}
                     placeholder={placeholder}
@@ -301,8 +301,8 @@ export default function SalesScreen() {
                             <View style={styles.sectionDot} />
                             <ThemedText style={styles.sectionTitle}>Entry Details</ThemedText>
                         </View>
-                        <View style={{ flexDirection: 'row', gap: 10 }}>
-                            <View style={{ width: 160 }}>
+                        <View style={styles.splitRow}>
+                            <View style={[styles.splitCol, { flex: 1.1, paddingRight: 5 }]}>
                                 <DatePicker
                                     label="Date"
                                     value={displayDate}
@@ -310,7 +310,7 @@ export default function SalesScreen() {
                                     format="DD-MM-YYYY"
                                 />
                             </View>
-                            <View style={{ flex: 1 }}>
+                            <View style={[styles.splitCol, { flex: 1.5, paddingLeft: 5 }]}>
                                 {renderInput('Customer Name', customerName, setCustomerName, 'Enter name', 'default', 'customer', 'person-outline', 0)}
                             </View>
                         </View>
@@ -392,11 +392,11 @@ export default function SalesScreen() {
                             </View>
                         )}
 
-                        <View style={styles.row}>
-                            <View style={{ flex: 1 }}>
+                        <View style={styles.splitRow}>
+                            <View style={[styles.splitCol, { flex: 1, paddingRight: 6 }]}>
                                 {renderInput('Quantity', quantity, setQuantity, '0.0', 'numeric', 'qty')}
                             </View>
-                            <View style={{ flex: 1, marginLeft: 12 }}>
+                            <View style={[styles.splitCol, { flex: 1, paddingLeft: 6 }]}>
                                 {renderInput('Price per Unit ₹', pricePerUnit, setPricePerUnit, '0', 'numeric', 'price')}
                             </View>
                         </View>
@@ -631,31 +631,69 @@ const styles = StyleSheet.create({
     headerTitle: { flex: 1, textAlign: 'center', fontSize: 20, fontWeight: '800', color: '#111827' },
     scrollContent: { paddingHorizontal: 16, paddingBottom: 40 },
     card: {
-        backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 12,
+        backgroundColor: '#fff', 
+        borderRadius: 20, 
+        padding: 14, // Slightly reduced padding for more internal space
+        marginBottom: 12,
         shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
+        overflow: 'hidden', // Ensure no content leaks out
     },
-    sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    sectionHeader: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        marginBottom: 14,
+        width: '100%',
+    },
     sectionDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981', marginRight: 8 },
-    sectionTitle: { fontSize: 14, fontWeight: '700', color: '#374151' },
-    inputGroup: { marginBottom: 12 },
-    inputLabel: { fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 4 },
+    sectionTitle: { fontSize: 13, fontWeight: '800', color: '#1E293B', textTransform: 'uppercase', letterSpacing: 0.3 },
+    inputGroup: { marginBottom: 10, width: '100%' },
+    inputLabel: { fontSize: 12, fontWeight: '600', color: '#64748B', marginBottom: 6 },
     inputWrapper: {
-        height: 48, borderRadius: 12, borderWidth: 1,
+        width: '100%', height: 48, borderRadius: 12, borderWidth: 1,
         borderColor: '#E5E7EB', backgroundColor: '#F9FAFB',
-        paddingHorizontal: 12, justifyContent: 'center',
+        paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center',
+        overflow: 'hidden', // Forces content to remain inside
     },
-    inputFocused: { borderColor: '#10B981', backgroundColor: '#fff' },
-    textInput: { fontSize: 15, fontWeight: '500' },
-    productGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    inputFocused: { borderColor: '#10B981', backgroundColor: '#fff', borderWidth: 1.5 },
+    inputIcon: { marginRight: 8 },
+    textInput: { flex: 1, height: '100%', fontSize: 14, fontWeight: '600', textAlignVertical: 'center' },
+    splitRow: { flexDirection: 'row', width: '100%', alignItems: 'flex-start', marginBottom: 8 },
+    splitCol: { justifyContent: 'center' },
+    productGrid: { 
+        flexDirection: 'row', 
+        flexWrap: 'wrap', 
+        justifyContent: 'flex-start',
+    },
     productCard: {
-        width: '23.5%', paddingVertical: 10, paddingHorizontal: 4, borderRadius: 12,
-        backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: '#F3F4F6',
+        width: '23.5%', // Reduced from 25%
+        marginHorizontal: '0.75%', // Dynamic spacing
+        paddingVertical: 8, 
+        paddingHorizontal: 4, 
+        borderRadius: 12,
+        backgroundColor: '#F9FAFB', 
+        borderWidth: 1.5, 
+        borderColor: '#F3F4F6',
         alignItems: 'center',
+        minHeight: 100, 
+        marginBottom: 8,
     },
-    productIcon: { fontSize: 18, marginBottom: 3 },
-    productName: { fontSize: 11, fontWeight: '600', color: '#374151', marginBottom: 4, textAlign: 'center' },
-    stockBadge: { paddingHorizontal: 5, paddingVertical: 2, borderRadius: 6 },
-    stockText: { fontSize: 9, fontWeight: '700' },
+    productIcon: { fontSize: 16, marginBottom: 2 }, // Reduced icon size
+    productName: { 
+        fontSize: 10, 
+        fontWeight: '700', 
+        color: '#374151', 
+        marginBottom: 4, 
+        textAlign: 'center',
+        height: 24, // Reduced from 28
+        textAlignVertical: 'center',
+    },
+    stockBadge: { 
+        paddingHorizontal: 4, 
+        paddingVertical: 2, 
+        borderRadius: 6,
+        marginTop: 'auto', 
+    },
+    stockText: { fontSize: 8, fontWeight: '800', textAlign: 'center' },
     row: { flexDirection: 'row', marginBottom: 8 },
     warningBanner: {
         flexDirection: 'row', alignItems: 'center', gap: 8,

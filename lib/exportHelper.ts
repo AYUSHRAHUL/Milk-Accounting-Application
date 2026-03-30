@@ -1,7 +1,7 @@
-import { Platform, Alert } from 'react-native';
-import { writeAsStringAsync, EncodingType, cacheDirectory, documentDirectory, StorageAccessFramework } from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { cacheDirectory, documentDirectory, EncodingType, StorageAccessFramework, writeAsStringAsync } from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import { Alert, Platform } from 'react-native';
 
 /**
  * Helper to export CSV directly to device storage without repeatedly asking for location.
@@ -20,11 +20,11 @@ export const downloadCSVLocally = async (csvData: string, baseFileName: string, 
     } catch (directWriteError) {
       // Direct write to public folder denied or failed, fallback to SAF (Storage Access Framework)
       // SAF prompts the user once, but we can save their chosen directory for future silent writes.
-      
+
       try {
         const STORAGE_KEY = '@app_export_directory_uri';
         let savedDirUri = await AsyncStorage.getItem(STORAGE_KEY);
-        
+
         // If we have a previously saved directory from SAF, write silently to it!
         if (savedDirUri) {
           try {
@@ -44,11 +44,11 @@ export const downloadCSVLocally = async (csvData: string, baseFileName: string, 
           const permissions = await StorageAccessFramework.requestDirectoryPermissionsAsync(
             StorageAccessFramework.getUriForDirectoryInRoot('Download')
           );
-          
+
           if (permissions.granted) {
             // Remember this location for the future so we never have to ask again!
             await AsyncStorage.setItem(STORAGE_KEY, permissions.directoryUri);
-            
+
             const fileUri = await StorageAccessFramework.createFileAsync(permissions.directoryUri, fileName, 'text/csv');
             await writeAsStringAsync(fileUri, csvData, { encoding: EncodingType.UTF8 });
             Alert.alert('Download Complete', 'File saved natively. Future downloads will automatically save here.');
@@ -74,11 +74,11 @@ export const downloadCSVLocally = async (csvData: string, baseFileName: string, 
         Alert.alert('Error', 'Storage not available on this device.');
         return;
       }
-      
+
       // Ensure trailing slash for dir
       const dirWithSlash = dir.endsWith('/') ? dir : dir + '/';
       const fileUri = `${dirWithSlash}${fileName}`;
-      
+
       await writeAsStringAsync(fileUri, csvData, { encoding: EncodingType.UTF8 });
       await Sharing.shareAsync(fileUri, {
         mimeType: 'text/csv',
@@ -86,7 +86,7 @@ export const downloadCSVLocally = async (csvData: string, baseFileName: string, 
         UTI: 'public.comma-separated-values',
       });
     } catch (error: any) {
-        Alert.alert('Export Failed', 'Details: ' + error.message);
+      Alert.alert('Export Failed', 'Details: ' + error.message);
     }
   }
 };

@@ -26,7 +26,7 @@ import MilkCollectionImage from '@/assets/milkcollection.png';
 import ReportsImage from '@/assets/reports.png';
 import SalesImage from '@/assets/sales.png';
 import SuppliersImage from '@/assets/supplier.png';
-import ViewCollectionsImage from '@/assets/view collection.png';
+import HistoryImage from '@/assets/images/history.png';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
@@ -41,12 +41,12 @@ interface FeatureCard {
 }
 
 const FEATURES: FeatureCard[] = [
-  { title: 'Milk Collection', id: 'collection', route: '/milk-collection', image: MilkCollectionImage, icon: 'water', useTint: true },
-  { title: 'View Collections', id: 'history', route: '/milk-collection/history', image: ViewCollectionsImage, icon: 'list', useTint: true },
-  { title: 'Production', id: 'production', route: '/production', image: null, icon: 'flask', useTint: true },
   { title: 'Suppliers', id: 'suppliers', route: '/suppliers', image: SuppliersImage, icon: 'people', useTint: true },
+  { title: 'Milk Collection', id: 'collection', route: '/milk-collection', image: MilkCollectionImage, icon: 'water', useTint: true },
+  { title: 'Production', id: 'production', route: '/production', image: null, icon: 'flask', useTint: true },
   { title: 'Sales', id: 'sales', route: '/sales', image: SalesImage, icon: 'cash', useTint: true },
   { title: 'Reports', id: 'reports', route: '/reports', image: ReportsImage, icon: 'bar-chart', useTint: true },
+  { title: 'History', id: 'history', route: '/milk-collection/history', image: HistoryImage, icon: 'list', useTint: true },
 ];
 
 // Dashboard Card
@@ -124,7 +124,7 @@ function DashboardBanner() {
           <Ionicons name="sparkles" size={12} color="#FDE047" />
           <Text style={styles.bannerBadgeText}>Premium Version</Text>
         </View>
-        <Text style={styles.bannerTitle}>MON AMI DAIRYWARE</Text>
+        <Text style={styles.bannerTitle}>MOM AMI DAIRYWARE</Text>
         <Text style={styles.bannerSubtitle}>Monitor your growth in real-time</Text>
       </View>
     </View>
@@ -136,6 +136,7 @@ export default function DashboardScreen() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [openingBalance, setOpeningBalance] = useState<number | null>(null);
   const [closingBalance, setClosingBalance] = useState<number | null>(null);
+  const [closingBalanceDate, setClosingBalanceDate] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -146,6 +147,7 @@ export default function DashboardScreen() {
           const data = await res.json();
           setOpeningBalance(data.openingBalance);
           setClosingBalance(data.closingBalance);
+          setClosingBalanceDate(data.closingBalanceDate);
         }
       } catch (error) {
         console.error('Dashboard Summary Error:', error);
@@ -163,8 +165,12 @@ export default function DashboardScreen() {
   }
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const formatDate = (date: Date) => {
+    return `${date.getDate().toString().padStart(2, '0')} ${months[date.getMonth()]} ${date.getFullYear()}`;
+  };
   const today = new Date();
-  const dateStr = `${today.getDate().toString().padStart(2, '0')} ${months[today.getMonth()]} ${today.getFullYear()}`;
+  const todayStr = formatDate(today);
+  const cbDateStr = closingBalanceDate ? formatDate(new Date(closingBalanceDate)) : todayStr;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -205,7 +211,7 @@ export default function DashboardScreen() {
                 <Ionicons name="sunny-outline" size={18} color="#3B82F6" />
               </View>
               <View style={styles.kpiContent}>
-                <Text style={styles.kpiLabel}>Opening Bal. ({dateStr})</Text>
+                <Text style={styles.kpiLabel}>Opening Bal. ({todayStr})</Text>
                 <Text style={styles.kpiValue}>
                   {openingBalance !== null ? `${openingBalance.toFixed(1)}L` : '--'}
                 </Text>
@@ -218,7 +224,7 @@ export default function DashboardScreen() {
                 <Ionicons name="moon-outline" size={18} color="#10B981" />
               </View>
               <View style={styles.kpiContent}>
-                <Text style={styles.kpiLabel}>Closing Bal. ({dateStr})</Text>
+                <Text style={styles.kpiLabel}>Closing Bal. ({cbDateStr})</Text>
                 <Text style={styles.kpiValue}>
                   {closingBalance !== null ? `${closingBalance.toFixed(1)}L` : '--'}
                 </Text>

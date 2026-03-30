@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
-import { ThemedText } from '../themed-text';
+import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import React, { useMemo, useState } from 'react';
+import { Alert, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Colors, Spacing } from '../../constants/theme';
 import { useColorScheme } from '../../hooks/use-color-scheme';
-import { Ionicons } from '@expo/vector-icons';
-import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
+import { ThemedText } from '../themed-text';
 
 export interface CompleteReportEntry {
   date: string;
@@ -145,7 +145,7 @@ export function CompleteReportTable({ entries }: CompleteReportTableProps) {
       {/* Header and Controls */}
       <View style={styles.controlsHeader}>
         <ThemedText style={styles.sectionTitle}>Complete Analysis Details</ThemedText>
-        
+
         <View style={styles.controlsRight}>
           <TouchableOpacity onPress={downloadCSV} style={styles.downloadBtn} activeOpacity={0.7}>
             <Ionicons name="download-outline" size={16} color="#FFF" />
@@ -153,14 +153,14 @@ export function CompleteReportTable({ entries }: CompleteReportTableProps) {
           </TouchableOpacity>
 
           <View style={[styles.toggleGroup, { borderColor: theme.borderMuted }]}>
-            <TouchableOpacity 
-              style={[styles.toggleBtn, filterMode === 'day' && { backgroundColor: theme.primary, borderRightColor: theme.borderMuted }]} 
+            <TouchableOpacity
+              style={[styles.toggleBtn, filterMode === 'day' && { backgroundColor: theme.primary, borderRightColor: theme.borderMuted }]}
               onPress={() => setFilterMode('day')}
             >
               <ThemedText style={[styles.toggleText, filterMode === 'day' && styles.toggleTextActive]}>Day</ThemedText>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.toggleBtn, filterMode === 'month' && { backgroundColor: theme.primary }]} 
+            <TouchableOpacity
+              style={[styles.toggleBtn, filterMode === 'month' && { backgroundColor: theme.primary }]}
               onPress={() => setFilterMode('month')}
             >
               <ThemedText style={[styles.toggleText, filterMode === 'month' && styles.toggleTextActive]}>Month</ThemedText>
@@ -176,7 +176,7 @@ export function CompleteReportTable({ entries }: CompleteReportTableProps) {
         </TouchableOpacity>
         <Ionicons name="calendar-outline" size={18} color={theme.primary} style={{ marginRight: 6 }} />
         <ThemedText style={styles.dateText}>
-          {filterMode === 'day' 
+          {filterMode === 'day'
             ? selectedDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
             : selectedDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
           }
@@ -216,15 +216,15 @@ export function CompleteReportTable({ entries }: CompleteReportTableProps) {
                   ]}
                 >
                   <ThemedText style={[styles.cell, { width: 90, fontSize: 13, fontWeight: 'bold' }]}>{formatDateShort(item.date)}</ThemedText>
-                  
+
                   <View style={[styles.cell, { width: 100 }]}>
                     <ThemedText style={{ textAlign: 'right', color: theme.textSecondary }}>{formatLiters(item.openingBalance)}</ThemedText>
                   </View>
-                  
+
                   <View style={[styles.cell, { width: 120 }]}>
                     <ThemedText style={{ textAlign: 'right', fontWeight: 'bold' }}>{formatLiters(item.milkCollection)}</ThemedText>
                   </View>
-                  
+
                   <View style={[styles.cell, { width: 100, alignItems: 'flex-end', justifyContent: 'center' }]}>
                     <View style={{ backgroundColor: theme.primaryMuted, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
                       <ThemedText style={{ color: theme.primary, fontWeight: '800' }}>{formatLiters(item.availableMilk)}</ThemedText>
@@ -360,6 +360,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    minWidth: 700, 
+    minWidth: 700,
   },
 });

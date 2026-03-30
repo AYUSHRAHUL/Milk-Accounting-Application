@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/lib/api';
 import { router, Stack } from 'expo-router';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { getCLRCorrection } from '@/lib/milkCalculations';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     Alert,
@@ -28,6 +29,7 @@ const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 const MILK_SOURCES = ['Cow', 'Buffalo', 'Goat', 'Other'];
 const SHIFTS = ['Morning', 'Evening'];
+const MBRT_OPTIONS = ['Very good', 'Fair', 'Poor', 'very Poor'];
 
 // ─── Source Card ──────────────────────────────────────────────────
 function SourceCard({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
@@ -101,9 +103,17 @@ export default function MilkCollectionScreen() {
   const [fatType, setFatType] = useState('');
   const [snf, setSnf] = useState('');
   const [clr, setClr] = useState('');
+  const [lr, setLr] = useState('');
+  const [temp, setTemp] = useState('');
+  const [ts, setTs] = useState('');
   const [quantity, setQuantity] = useState('');
   const [costPerLiter, setCostPerLiter] = useState('');
   const [totalCost, setTotalCost] = useState('0.00');
+  const [mbrt, setMbrt] = useState('');
+  const [mbrtHours, setMbrtHours] = useState('');
+  const [mbrtMinutes, setMbrtMinutes] = useState('');
+  const [cob, setCob] = useState('');
+  const [showMbrtDropdown, setShowMbrtDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
@@ -185,6 +195,56 @@ export default function MilkCollectionScreen() {
     setTotalCost((qty * cost).toFixed(2));
   }, [quantity, costPerLiter]);
 
+  // --- MBRT Auto-calculation ---
+  useEffect(() => {
+    const hrs = parseInt(mbrtHours) || 0;
+    const mins = parseInt(mbrtMinutes) || 0;
+    const totalMinutes = hrs * 60 + mins;
+
+    if (mbrtHours === '' && mbrtMinutes === '') {
+      setMbrt('');
+      return;
+    }
+
+    if (totalMinutes >= 360) { // 6 hrs
+      setMbrt('Very good');
+    } else if (totalMinutes >= 120) { // 2 hrs to 5 hrs 59 mins
+      setMbrt('Fair');
+    } else if (totalMinutes >= 30) { // 30 mins to 1 hr 59 mins
+      setMbrt('Poor');
+    } else { // < 30 mins
+      setMbrt('very Poor');
+    }
+  }, [mbrtHours, mbrtMinutes]);
+
+  // CLR, SNF & TS Auto-calculation
+  useEffect(() => {
+    const fatVal = parseFloat(fatType) || 0;
+    const tempVal = parseFloat(temp) || 0;
+
+    let correction = 0;
+
+    // 1. Get CLR from table (Correction Factor)
+    if (tempVal > 0) {
+      correction = getCLRCorrection(tempVal, fatVal);
+      setClr(correction.toFixed(1));
+    } else {
+      setClr('');
+      setSnf('');
+      setTs('');
+      return;
+    }
+
+    // 2. Calculate SNF & TS using the CLR value (table correction)
+    // SNF = (CLR / 4) + (0.25 * Fat) + 0.44
+    const calculatedSnf = (correction / 4) + (0.25 * fatVal) + 0.44;
+    setSnf(calculatedSnf.toFixed(3));
+
+    // TS = SNF + Fat
+    const calculatedTs = calculatedSnf + fatVal;
+    setTs(calculatedTs.toFixed(3));
+  }, [fatType, temp]);
+
   const handleSave = async () => {
     if (!supplier || !quantity || !costPerLiter || (source === 'Other' && !customSource) || !date || !time) {
       Alert.alert('Missing Fields', 'Please fill in all mandatory fields.');
@@ -210,9 +270,15 @@ export default function MilkCollectionScreen() {
           fatType,
           snf: snf ? parseFloat(snf) : undefined,
           clr: clr ? parseFloat(clr) : undefined,
+          lr: lr ? parseFloat(lr) : undefined,
+          temp: temp ? parseFloat(temp) : undefined,
+          ts: ts ? parseFloat(ts) : undefined,
           quantity: parseFloat(quantity),
           costPerLiter: parseFloat(costPerLiter),
           totalCost: parseFloat(totalCost),
+          mbrt: mbrt || undefined,
+          mbrtTime: (mbrtHours || mbrtMinutes) ? `${mbrtHours.padStart(2, '0')}:${mbrtMinutes.padStart(2, '0')}` : undefined,
+          cob: cob || undefined,
         }),
       });
 
@@ -465,6 +531,38 @@ export default function MilkCollectionScreen() {
 
               <View style={styles.row}>
                 <View style={styles.halfField}>
+                  <Text style={styles.label}>LR</Text>
+                  <TextInput
+                    style={inputStyle('lr')}
+                    placeholder="e.g. 28"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="numeric"
+                    value={lr}
+                    onChangeText={setLr}
+                    onFocus={() => {
+                      setFocusedField('lr');
+                      scrollRef.current?.scrollTo({ y: 350, animated: true });
+                    }}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <View style={styles.halfField}>
+                  <Text style={styles.label}>Temp (°C)</Text>
+                  <TextInput
+                    style={inputStyle('temp')}
+                    placeholder="e.g. 4"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="numeric"
+                    value={temp}
+                    onChangeText={setTemp}
+                    onFocus={() => {
+                      setFocusedField('temp');
+                      scrollRef.current?.scrollTo({ y: 350, animated: true });
+                    }}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <View style={styles.halfField}>
                   <Text style={styles.label}>Fat (%)</Text>
                   <TextInput
                     style={inputStyle('fat')}
@@ -473,40 +571,8 @@ export default function MilkCollectionScreen() {
                     keyboardType="numeric"
                     value={fatType}
                     onChangeText={setFatType}
-                     onFocus={() => {
+                    onFocus={() => {
                       setFocusedField('fat');
-                      scrollRef.current?.scrollTo({ y: 350, animated: true });
-                    }}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </View>
-                <View style={styles.halfField}>
-                  <Text style={styles.label}>SNF (%)</Text>
-                  <TextInput
-                    style={inputStyle('snf')}
-                    placeholder="e.g. 8.5"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="numeric"
-                    value={snf}
-                    onChangeText={setSnf}
-                     onFocus={() => {
-                      setFocusedField('snf');
-                      scrollRef.current?.scrollTo({ y: 350, animated: true });
-                    }}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </View>
-                <View style={styles.halfField}>
-                  <Text style={styles.label}>CLR</Text>
-                  <TextInput
-                    style={inputStyle('clr')}
-                    placeholder="e.g. 28"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="numeric"
-                    value={clr}
-                    onChangeText={setClr}
-                     onFocus={() => {
-                      setFocusedField('clr');
                       scrollRef.current?.scrollTo({ y: 350, animated: true });
                     }}
                     onBlur={() => setFocusedField(null)}
@@ -514,18 +580,108 @@ export default function MilkCollectionScreen() {
                 </View>
               </View>
 
-              <View style={{ marginTop: 4 }}>
-                <Text style={styles.label}>Quantity (L)</Text>
+              <View style={styles.row}>
+                <View style={styles.halfField}>
+                  <Text style={styles.label}>CLR</Text>
+                  <TextInput
+                    style={[styles.textInput, styles.readOnlyInput]}
+                    placeholder="0.0"
+                    placeholderTextColor="#9CA3AF"
+                    value={clr}
+                    editable={false}
+                  />
+                </View>
+                <View style={styles.halfField}>
+                  <Text style={styles.label}>SNF (%)</Text>
+                  <TextInput
+                    style={[styles.textInput, styles.readOnlyInput]}
+                    placeholder="0.00"
+                    placeholderTextColor="#9CA3AF"
+                    value={snf}
+                    editable={false}
+                  />
+                </View>
+                <View style={styles.halfField}>
+                  <Text style={styles.label}>TS (%)</Text>
+                  <TextInput
+                    style={[styles.textInput, styles.readOnlyInput]}
+                    placeholder="0.00"
+                    placeholderTextColor="#9CA3AF"
+                    value={ts}
+                    editable={false}
+                  />
+                </View>
+              </View>
+              <View style={styles.row}>
+                <View style={styles.halfField}>
+                  <Text style={styles.label}>Quantity (L)</Text>
+                  <TextInput
+                    style={inputStyle('quantity')}
+                    placeholder="0.0"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="numeric"
+                    value={quantity}
+                    onChangeText={setQuantity}
+                     onFocus={() => {
+                      setFocusedField('quantity');
+                      scrollRef.current?.scrollTo({ y: 450, animated: true });
+                    }}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+
+                <View style={styles.halfField}>
+                  <Text style={styles.label}>MBRT Time</Text>
+                  <View style={styles.mbrtTimeBox}>
+                    <View style={styles.mbrtCol}>
+                      <Text style={styles.mbrtTimeHeaderText}>hrs</Text>
+                      <TextInput
+                        style={[styles.mbrtTimeInput, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
+                        placeholder="00"
+                        placeholderTextColor="#9CA3AF"
+                        keyboardType="numeric"
+                        value={mbrtHours}
+                        onChangeText={(t) => setMbrtHours(t.replace(/[^0-9]/g, ''))}
+                        maxLength={2}
+                      />
+                    </View>
+                    <View style={styles.verticalDivider} />
+                    <View style={styles.mbrtCol}>
+                      <Text style={styles.mbrtTimeHeaderText}>mins</Text>
+                      <TextInput
+                        style={[styles.mbrtTimeInput, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
+                        placeholder="00"
+                        placeholderTextColor="#9CA3AF"
+                        keyboardType="numeric"
+                        value={mbrtMinutes}
+                        onChangeText={(t) => setMbrtMinutes(t.replace(/[^0-9]/g, ''))}
+                        maxLength={2}
+                      />
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.halfField}>
+                  <Text style={styles.label}>MBRT Status</Text>
+                  <View style={[styles.textInput, styles.readOnlyInput, { justifyContent: 'center' }]}>
+                    <Text style={{ color: mbrt ? '#111827' : '#9CA3AF', fontSize: 13, fontWeight: '600' }}>
+                      {mbrt || '---'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={{ marginTop: 12 }}>
+                <Text style={styles.label}>COB (Clot on Boiling)</Text>
                 <TextInput
-                  style={inputStyle('quantity')}
-                  placeholder="0.0"
+                  style={inputStyle('cob')}
+                  placeholder="e.g. Negative"
                   placeholderTextColor="#9CA3AF"
-                  keyboardType="numeric"
-                  value={quantity}
-                  onChangeText={setQuantity}
-                   onFocus={() => {
-                    setFocusedField('quantity');
-                    scrollRef.current?.scrollTo({ y: 450, animated: true });
+                  value={cob}
+                  onChangeText={setCob}
+                  onFocus={() => {
+                    setFocusedField('cob');
+                    scrollRef.current?.scrollTo({ y: 550, animated: true });
                   }}
                   onBlur={() => setFocusedField(null)}
                 />
@@ -680,6 +836,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
     color: '#111827',
     fontSize: 15,
+  },
+  readOnlyInput: {
+    backgroundColor: '#F3F4F6',
+    color: '#6B7280',
   },
   textInputFocused: {
     borderColor: '#22C55E',
@@ -959,4 +1119,53 @@ const styles = StyleSheet.create({
     color: '#166534',
     fontWeight: '600',
   },
-});
+  mbrtDropdown: {
+    marginTop: 4,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  mbrtTimeBox: {
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    backgroundColor: '#FAFAFA',
+    overflow: 'hidden',
+    flexDirection: 'row',
+  },
+  mbrtCol: {
+    flex: 1,
+    flexDirection: 'column',
+  },
+  mbrtTimeHeaderText: {
+    backgroundColor: '#F3F4F6',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    textAlign: 'center',
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+    paddingVertical: 2,
+  },
+  verticalDivider: {
+    width: 1,
+    backgroundColor: '#E5E7EB',
+    height: '100%',
+  },
+  mbrtTimeInput: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#111827',
+    padding: 0,
+    margin: 0,
+  },
+});

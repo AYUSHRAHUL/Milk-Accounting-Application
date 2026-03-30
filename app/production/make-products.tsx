@@ -265,9 +265,9 @@ export default function MakeProductsScreen() {
                             <ThemedText style={[styles.formSectionTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>Consumption</ThemedText>
                             
                             <View style={styles.usageGrid}>
-                                <UsageInputCol label="Whole" value={useWhole} onChange={setUseWhole} color="#22C55E" isDark={isDark} onFocus={() => scrollRef.current?.scrollTo({ y: 400, animated: true })} />
-                                <UsageInputCol label="Skim" value={useSkim} onChange={setUseSkim} color="#3B82F6" isDark={isDark} onFocus={() => scrollRef.current?.scrollTo({ y: 400, animated: true })} />
-                                <UsageInputCol label="Cream" value={useCream} onChange={setUseCream} color="#F59E0B" isDark={isDark} onFocus={() => scrollRef.current?.scrollTo({ y: 400, animated: true })} />
+                                <UsageInputCol label="Whole" value={useWhole} onChange={setUseWhole} avail={inventory.wholeMilk} color="#22C55E" isDark={isDark} onFocus={() => scrollRef.current?.scrollTo({ y: 400, animated: true })} />
+                                <UsageInputCol label="Skim" value={useSkim} onChange={setUseSkim} avail={inventory.skimMilk} color="#3B82F6" isDark={isDark} onFocus={() => scrollRef.current?.scrollTo({ y: 400, animated: true })} />
+                                <UsageInputCol label="Cream" value={useCream} onChange={setUseCream} avail={inventory.creamMilk} color="#F59E0B" isDark={isDark} onFocus={() => scrollRef.current?.scrollTo({ y: 400, animated: true })} />
                             </View>
 
                             {/* ── PRODUCTION YIELD SECTION ── */}
@@ -370,17 +370,24 @@ const InventoryCard = React.memo(({ label, value, color, isDark, loading }: any)
     </View>
 ));
 
-const UsageInputCol = React.memo(({ label, value, onChange, color, isDark, onFocus }: any) => {
+const UsageInputCol = React.memo(({ label, value, onChange, avail, color, isDark, onFocus }: any) => {
     const [isFocused, setIsFocused] = React.useState(false);
+    const numValue = parseFloat(value) || 0;
+    const isExceeded = numValue > avail + 0.01;
+
     return (
         <View style={styles.usageCol}>
             <View style={styles.usageColHeader}>
                 <View style={[styles.invDot, { backgroundColor: color }]} />
-                <ThemedText style={styles.usageColLabel}>{label}</ThemedText>
+                <ThemedText style={[styles.usageColLabel, { color: isExceeded ? '#EF4444' : '#64748B' }]}>{label}</ThemedText>
             </View>
             <View style={[
                 styles.inputBoxCol,
-                { backgroundColor: isDark ? '#0F172A' : '#FAFCFF', borderColor: isFocused ? color : (isDark ? '#334155' : '#F1F5F9') }
+                { 
+                    backgroundColor: isDark ? '#0F172A' : '#FAFCFF', 
+                    borderColor: isExceeded ? '#EF4444' : (isFocused ? color : (isDark ? '#334155' : '#F1F5F9')),
+                    borderWidth: isExceeded || isFocused ? 2 : 1
+                }
             ]}>
                 <TextInput
                     style={[styles.baseInput, { color: isDark ? '#F8FAFC' : '#1E293B' }, Platform.OS === 'web' && { outlineStyle: 'none' } as any]}
@@ -393,7 +400,13 @@ const UsageInputCol = React.memo(({ label, value, onChange, color, isDark, onFoc
                         setIsFocused(true);
                         onFocus?.();
                     }}
-                    onBlur={() => setIsFocused(false)}
+                    onBlur={() => {
+                        setIsFocused(false);
+                        if (isExceeded) {
+                             if (Platform.OS === 'web') alert(`Warning: ${label} usage exceeds available stock (${avail.toFixed(1)}L)!`);
+                             else Alert.alert('Warning', `${label} usage exceeds available stock (${avail.toFixed(1)}L)!`);
+                        }
+                    }}
                 />
             </View>
         </View>

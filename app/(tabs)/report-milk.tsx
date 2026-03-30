@@ -3,15 +3,13 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Colors, Spacing } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
+import { downloadCSVLocally } from '@/lib/exportHelper';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/context/AuthContext';
-import { writeAsStringAsync, EncodingType, cacheDirectory, documentDirectory, StorageAccessFramework } from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { downloadCSVLocally } from '@/lib/exportHelper';
 import {
   Alert,
   Modal,
@@ -25,12 +23,16 @@ import {
 interface MilkEntryRow {
   _id: string;
   date: string;
+  supplier: string;
   shift: string;
   source: string;
   fatType: string;
   quantity: number;
   costPerLiter: number;
   totalCost: number;
+  mbrt?: string;
+  mbrtTime?: string;
+  cob?: string;
 }
 
 type ShiftFilter = 'All' | 'Morning' | 'Evening';
@@ -58,12 +60,16 @@ export default function ReportMilkScreen() {
       const mapped: MilkEntryRow[] = data.map((item: any) => ({
         _id: item._id,
         date: item.date,
+        supplier: item.supplier,
         shift: item.shift,
         source: item.source,
         fatType: item.fatType,
         quantity: item.quantity,
         costPerLiter: item.costPerLiter,
         totalCost: item.totalCost,
+        mbrt: item.mbrt,
+        mbrtTime: item.mbrtTime,
+        cob: item.cob,
       }));
       setEntries(mapped);
     } catch (error) {
@@ -117,8 +123,8 @@ export default function ReportMilkScreen() {
       Alert.alert('No data to export');
       return;
     }
-    const header = ['Date', 'Shift', 'Source', 'Fat Type', 'Quantity (L)', 'Cost / Litre', 'Total Cost'];
-    
+    const header = ['Date', 'Supplier', 'Shift', 'Source', 'Fat Type', 'Quantity (L)', 'Cost / Litre', 'Total Cost', 'MBRT Status', 'MBRT Time', 'COB'];
+
     // Helper to escape CSV fields
     const esc = (v: any) => {
       const str = (v === null || v === undefined) ? '' : String(v);
@@ -130,12 +136,16 @@ export default function ReportMilkScreen() {
 
     const rows = filtered.map((e) => [
       esc(formatDate(e.date)),
+      esc(e.supplier),
       esc(e.shift),
       esc(e.source),
       esc(e.fatType),
       esc(e.quantity),
       esc(e.costPerLiter),
       esc(e.totalCost),
+      esc(e.mbrt || ''),
+      esc(e.mbrtTime || ''),
+      esc(e.cob || ''),
     ]);
     const csv = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
 
@@ -332,7 +342,7 @@ export default function ReportMilkScreen() {
               <View>
                 {/* Column headers */}
                 <View style={[styles.tableRow, { backgroundColor: theme.surfaceMuted }]}>
-                  {['Date', 'Shift', 'Source', 'Fat Type', 'Qty (L)', '₹/L', 'Total'].map((h) => (
+                  {['Date', 'Supplier', 'Shift', 'Source', 'Fat Type', 'Qty (L)', '₹/L', 'Total', 'MBRT Status', 'MBRT Time', 'COB'].map((h) => (
                     <ThemedText key={h} style={[styles.cell, styles.colHeader, { color: theme.text }]}>
                       {h}
                     </ThemedText>
@@ -353,6 +363,7 @@ export default function ReportMilkScreen() {
                       style={[styles.tableRow, { backgroundColor: rowBg, borderBottomColor: theme.borderMuted }]}
                     >
                       <ThemedText style={styles.cell}>{formatDate(entry.date)}</ThemedText>
+                      <ThemedText style={[styles.cell, { fontWeight: '600', maxWidth: 100 }]} numberOfLines={1}>{entry.supplier}</ThemedText>
                       <View style={styles.cell}>
                         <View style={[
                           styles.shiftBadge,
@@ -375,6 +386,9 @@ export default function ReportMilkScreen() {
                       <ThemedText style={[styles.cell, { color: theme.error, fontWeight: '700' }]}>
                         {formatCurrency(entry.totalCost)}
                       </ThemedText>
+                      <ThemedText style={styles.cell}>{entry.mbrt || 'N/A'}</ThemedText>
+                      <ThemedText style={styles.cell}>{entry.mbrtTime || 'N/A'}</ThemedText>
+                      <ThemedText style={styles.cell}>{entry.cob || 'N/A'}</ThemedText>
                     </View>
                   );
                 })}

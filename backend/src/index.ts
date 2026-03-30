@@ -236,7 +236,7 @@ app.post('/api/milk/collection', async (req, res) => {
   try {
     await connectToDatabase();
     const body = req.body ?? {};
-    const { userId, supplier, date, shift, source, customSource, fatType, snf, clr, quantity, costPerLiter, totalCost } =
+    const { userId, supplier, date, shift, source, customSource, fatType, snf, clr, lr, temp, ts, quantity, costPerLiter, totalCost, mbrt, mbrtTime, cob } =
       body;
 
     if (!userId || !supplier || !date || !shift || !source || !quantity || !costPerLiter || !totalCost) {
@@ -256,6 +256,9 @@ app.post('/api/milk/collection', async (req, res) => {
       quantity,
       costPerLiter,
       totalCost,
+      mbrt,
+      mbrtTime,
+      cob,
     });
 
     await newEntry.save();
@@ -374,12 +377,60 @@ app.get('/api/production/milk-summary', async (req, res) => {
     const openingBalance = Math.max(0, totalCollectedBeforeToday - totalSeparatedBeforeToday - totalWholeUsedBeforeToday);
     const closingBalance = Math.max(0, totalCollected - totalSeparated - totalWholeUsed);
 
+    const sourceCounts = await MilkEntry.aggregate([
+      { $match: { userId: matchUserId } },
+      { $group: { _id: '$source', total: { $sum: '$quantity' } } },
+    ]);
+
+    const sourceTotals: Record<string, number> = { Cow: 0, Buffalo: 0, Goat: 0, Other: 0 };
+    sourceCounts.forEach((s: any) => {
+      if (s._id in sourceTotals) sourceTotals[s._id] = s.total;
+      else sourceTotals.Other += s.total;
+    });
+
+    const sourceProduced = await MilkProduction.aggregate([
+      { $match: { userId: matchUserId } },
+      { $group: {
+          _id: null,
+          totalCow: { $sum: '$sourceSeparation.cow' },
+          totalBuffalo: { $sum: '$sourceSeparation.buffalo' },
+          totalGoat: { $sum: '$sourceSeparation.goat' },
+          totalOther: { $sum: '$sourceSeparation.other' },
+      }}
+    ]);
+
+    const separatedMap = sourceProduced[0] || { totalCow: 0, totalBuffalo: 0, totalGoat: 0, totalOther: 0 };
+
+    const sourceAvailable = {
+      Cow: Math.max(0, sourceTotals.Cow - separatedMap.totalCow),
+      Buffalo: Math.max(0, sourceTotals.Buffalo - separatedMap.totalBuffalo),
+      Goat: Math.max(0, sourceTotals.Goat - separatedMap.totalGoat),
+      Other: Math.max(0, sourceTotals.Other - separatedMap.totalOther),
+    };
+
+    const [lastMilkEntry, lastSeparation, lastProduct] = await Promise.all([
+      MilkEntry.findOne({ userId: matchUserId as any }).sort({ date: -1 }).select('date'),
+      MilkProduction.findOne({ userId: matchUserId as any }).sort({ date: -1 }).select('date'),
+      ProductProduction.findOne({ userId: matchUserId as any, 'milkUsed.wholeMilk': { $gt: 0 } }).sort({ date: -1 }).select('date')
+    ]);
+
+    const dates = [
+      lastMilkEntry?.date,
+      lastSeparation?.date,
+      lastProduct?.date
+    ].filter(d => !!d).map(d => new Date(d!).getTime());
+
+    const lastActiveDate = dates.length > 0 ? new Date(Math.max(...dates)) : null;
+
     return res.status(200).json({
       availableMilk: totalCollected - totalSeparated - totalWholeUsed,
       openingBalance,
       closingBalance,
+      closingBalanceDate: lastActiveDate,
       totalCollected,
-      totalUsed: totalSeparated + totalWholeUsed
+      totalUsed: totalSeparated + totalWholeUsed,
+      sourceTotals,
+      sourceAvailable
     });
   } catch (error: any) {
     console.error('Milk Summary Error:', error);
@@ -390,7 +441,7 @@ app.get('/api/production/milk-summary', async (req, res) => {
 app.post('/api/production/separation', async (req, res) => {
   try {
     await connectToDatabase();
-    const { userId, date, totalMilk, separationMilk, wholeMilk, skimMilk, creamMilk } = req.body ?? {};
+    const { userId, date, totalMilk, separationMilk, wholeMilk, skimMilk, creamMilk, sourceSeparation } = req.body ?? {};
 
     if (!userId || !date || totalMilk === undefined || separationMilk === undefined || wholeMilk === undefined || skimMilk === undefined || creamMilk === undefined) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -401,6 +452,7 @@ app.post('/api/production/separation', async (req, res) => {
       date,
       totalMilk,
       separationMilk,
+      sourceSeparation: sourceSeparation || { cow: 0, buffalo: 0, goat: 0, other: 0 },
       wholeMilk,
       skimMilk,
       creamMilk

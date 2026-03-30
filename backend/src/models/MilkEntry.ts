@@ -10,9 +10,15 @@ export interface IMilkEntry extends Document {
   fatType: string;
   snf?: number;
   clr?: number;
+  lr?: number;
+  temp?: number;
+  ts?: number;
   quantity: number;
   costPerLiter: number;
   totalCost: number;
+  mbrt?: string;
+  mbrtTime?: string;
+  cob?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,9 +34,15 @@ const MilkEntrySchema: Schema = new Schema(
     fatType: { type: String, required: false },
     snf: { type: Number },
     clr: { type: Number },
+    lr: { type: Number },
+    temp: { type: Number },
+    ts: { type: Number },
     quantity: { type: Number, required: true },
     costPerLiter: { type: Number, required: true },
     totalCost: { type: Number, required: true },
+    mbrt: { type: String, enum: ['Very good', 'Fair', 'Poor', 'very Poor'] },
+    mbrtTime: { type: String },
+    cob: { type: String },
   },
   { timestamps: true }
 );

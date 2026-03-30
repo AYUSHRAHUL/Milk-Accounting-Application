@@ -3,15 +3,13 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { Colors, Spacing } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
+import { downloadCSVLocally } from '@/lib/exportHelper';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/context/AuthContext';
-import { writeAsStringAsync, EncodingType, cacheDirectory, documentDirectory, StorageAccessFramework } from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { downloadCSVLocally } from '@/lib/exportHelper';
 import {
   Alert,
   Modal,
@@ -94,8 +92,8 @@ export default function ReportSalesScreen() {
 
   const availableProducts = useMemo(() => {
     const defaultProducts = [
-      'Paneer', 'Ghee', 'Butter', 'Curd', 
-      'Khoa', 'Fl. milk', 'Icecream', 'Yoghurt', 
+      'Paneer', 'Ghee', 'Butter', 'Curd',
+      'Khoa', 'Fl. milk', 'Icecream', 'Yoghurt',
       'Srikhand', 'Rasgolla', 'Gulabjamun', 'Rabbari'
     ];
     const dataProducts = entries.map(e => e.productType).filter(p => !!p);
@@ -123,7 +121,7 @@ export default function ReportSalesScreen() {
       return;
     }
     const header = ['Date', 'Customer', 'Product', 'Qty', 'Price / Unit', 'Total Amount', 'Payment'];
-    
+
     // Helper to escape CSV fields
     const esc = (v: any) => {
       const str = (v === null || v === undefined) ? '' : String(v);

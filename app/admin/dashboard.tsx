@@ -81,7 +81,7 @@ export default function AdminDashboardScreen() {
         {/* Modules Available */}
         <Text style={styles.sectionTitle}>System Modules</Text>
         <View style={styles.moduleList}>
-          {['Milk Collection', 'View Collections', 'Production', 'Suppliers', 'Sales', 'Reports'].map((mod, i) => (
+          {['Milk Collection', 'History', 'Production', 'Suppliers', 'Sales', 'Reports'].map((mod, i) => (
             <View key={i} style={styles.moduleItem}>
               <Ionicons name="cube-outline" size={20} color="#64748B" />
               <Text style={styles.moduleText}>{mod}</Text>

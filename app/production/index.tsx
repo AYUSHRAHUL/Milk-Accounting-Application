@@ -40,6 +40,10 @@ export default function MilkProductionScreen() {
         return `${dd}-${mm}-${yyyy}`;
     });
     const [separationMilk, setSeparationMilk] = useState('');
+    const [cowSep, setCowSep] = useState('');
+    const [buffaloSep, setBuffaloSep] = useState('');
+    const [goatSep, setGoatSep] = useState('');
+    const [otherSep, setOtherSep] = useState('');
     const [skimMilk, setSkimMilk] = useState('');
     const [creamMilkInput, setCreamMilkInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -48,6 +52,8 @@ export default function MilkProductionScreen() {
     // Stock Tracking
     const [availableMilk, setAvailableMilk] = useState<number | null>(null);
     const [totalCollectedMilk, setTotalCollectedMilk] = useState<number>(0);
+    const [sourceTotals, setSourceTotals] = useState({ Cow: 0, Buffalo: 0, Goat: 0, Other: 0 });
+    const [sourceAvailable, setSourceAvailable] = useState({ Cow: 0, Buffalo: 0, Goat: 0, Other: 0 });
     const [totalUsedMilk, setTotalUsedMilk] = useState<number>(0);
     const [isCheckingStock, setIsCheckingStock] = useState(false);
     const scrollRef = useRef<ScrollView>(null);
@@ -73,6 +79,8 @@ export default function MilkProductionScreen() {
                     const data = await res.json();
                     setAvailableMilk(data.availableMilk);
                     setTotalCollectedMilk(data.totalCollected || 0);
+                    setSourceTotals(data.sourceTotals || { Cow: 0, Buffalo: 0, Goat: 0, Other: 0 });
+                    setSourceAvailable(data.sourceAvailable || { Cow: 0, Buffalo: 0, Goat: 0, Other: 0 });
                     setTotalUsedMilk(data.totalUsed || 0);
                 } else {
                     setAvailableMilk(0);
@@ -93,25 +101,45 @@ export default function MilkProductionScreen() {
 
     // Derived values
     const totalAvailable = availableMilk || 0;
-    const sepQty = parseFloat(separationMilk) || 0;
+    
+    // Total separation is the sum of source-wise inputs
+    const cSep = parseFloat(cowSep) || 0;
+    const bSep = parseFloat(buffaloSep) || 0;
+    const gSep = parseFloat(goatSep) || 0;
+    const oSep = parseFloat(otherSep) || 0;
+    const sepQty = cSep + bSep + gSep + oSep;
+    
     const wholeMilk = Math.max(0, totalAvailable - sepQty);
     const skimQty = parseFloat(skimMilk) || 0;
     const creamMilk = parseFloat(creamMilkInput) || 0;
+    const isDivisionExceeded = (skimQty + creamMilk) > sepQty;
 
     const sepPercent = totalAvailable > 0 ? Math.min((sepQty / totalAvailable) * 100, 100) : 0;
     const skimPercent = sepQty > 0 ? Math.min((skimQty / sepQty) * 100, 100) : 0;
     const creamPercent = sepQty > 0 ? Math.min((creamMilk / sepQty) * 100, 100) : 0;
 
     const handleSave = async () => {
-        if (!date || separationMilk === '' || skimMilk === '' || creamMilkInput === '') {
-            Alert.alert('Missing Fields', 'Please enter Separation, Skim, and Cream quantities.');
+        if (!date || sepQty === 0 || skimMilk === '' || creamMilkInput === '') {
+            Alert.alert('Missing Fields', 'Please enter Separation (Cow, Buffalo, etc.), Skim, and Cream quantities.');
             return;
         }
-        if (sepQty > totalAvailable) {
-            Alert.alert('Error', 'Separation Milk cannot exceed total available milk.');
+        if (cSep > sourceAvailable.Cow) {
+            Alert.alert('Error', `Cow separation cannot exceed available Cow milk (${sourceAvailable.Cow.toFixed(1)}L)`);
             return;
         }
-        if (skimQty + creamMilk > sepQty) {
+        if (bSep > sourceAvailable.Buffalo) {
+            Alert.alert('Error', `Buffalo separation cannot exceed available Buffalo milk (${sourceAvailable.Buffalo.toFixed(1)}L)`);
+            return;
+        }
+        if (gSep > sourceAvailable.Goat) {
+            Alert.alert('Error', `Goat separation cannot exceed available Goat milk (${sourceAvailable.Goat.toFixed(1)}L)`);
+            return;
+        }
+        if (oSep > sourceAvailable.Other) {
+            Alert.alert('Error', `Other separation cannot exceed available Other milk (${sourceAvailable.Other.toFixed(1)}L)`);
+            return;
+        }
+        if (isDivisionExceeded) {
             Alert.alert('Error', 'The sum of Skim and Cream cannot exceed separated milk quantity.');
             return;
         }
@@ -129,6 +157,12 @@ export default function MilkProductionScreen() {
                     date: prodDate.toISOString(),
                     totalMilk: totalAvailable,
                     separationMilk: sepQty,
+                    sourceSeparation: {
+                        cow: cSep,
+                        buffalo: bSep,
+                        goat: gSep,
+                        other: oSep,
+                    },
                     wholeMilk,
                     skimMilk: skimQty,
                     creamMilk,
@@ -222,13 +256,8 @@ export default function MilkProductionScreen() {
                                     ) : (
                                         <View style={styles.bannerStatsRow}>
                                             <View style={styles.bannerStatItem}>
-                                                <ThemedText style={styles.bannerStatValue}>{totalCollectedMilk.toFixed(1)}</ThemedText>
-                                                <ThemedText style={styles.bannerStatLabel}>Collected</ThemedText>
-                                            </View>
-                                            <View style={styles.bannerDividerCompact} />
-                                            <View style={styles.bannerStatItem}>
-                                                <ThemedText style={[styles.bannerStatValue, { fontSize: 24, color: '#fff' }]}>{totalAvailable.toFixed(1)} ltr</ThemedText>
-                                                <ThemedText style={[styles.bannerStatLabel, { color: '#fff' }]}>Available</ThemedText>
+                                                <ThemedText style={[styles.bannerStatValue, { fontSize: 28, color: '#fff' }]}>{totalAvailable.toFixed(1)} ltr</ThemedText>
+                                                <ThemedText style={styles.bannerStatLabel}>Available</ThemedText>
                                             </View>
                                             <View style={styles.bannerDividerCompact} />
                                             <View style={styles.bannerStatItem}>
@@ -284,33 +313,69 @@ export default function MilkProductionScreen() {
                                     </View>
                                 </View>
 
-                                <View style={styles.inputGroupCompact}>
-                                    <View style={[styles.inputContainerCompact, {
-                                        borderColor: inputBorderColor('sep'),
-                                        borderWidth: activeFocused === 'sep' ? 2 : 1,
-                                        backgroundColor: isDark ? '#0F172A' : '#F8FAFC',
-                                    }]}>
-                                        <Ionicons name="beaker-outline" size={16} color={activeFocused === 'sep' ? theme.primary : (isDark ? '#4B5563' : '#9CA3AF')} style={{ marginRight: 8 }} />
-                                        <TextInput
-                                            style={[styles.textInputCompact, { color: isDark ? '#F8FAFC' : '#111827', fontWeight: '700' }]}
-                                            value={separationMilk}
-                                            onChangeText={setSeparationMilk}
-                                            keyboardType="numeric"
-                                            placeholder="Quantity"
-                                            placeholderTextColor={isDark ? '#4B5563' : '#9CA3AF'}
-                                            onFocus={() => {
-                                                setActiveFocused('sep');
-                                                scrollRef.current?.scrollTo({ y: 150, animated: true });
-                                            }}
-                                            onBlur={() => setActiveFocused(null)}
-                                        />
-                                        <ThemedText style={[styles.inputUnitCompact, { color: isDark ? '#64748B' : '#9CA3AF', fontWeight: '800' }]}>L</ThemedText>
-                                    </View>
+                                {/* Source-wise input boxes */}
+                                <View style={styles.sourceSepGrid}>
+                                    {[
+                                        { label: 'Cow', value: cowSep, setter: setCowSep, avail: sourceAvailable.Cow, color: '#16A34A', key: 'cow' },
+                                        { label: 'Buff.', value: buffaloSep, setter: setBuffaloSep, avail: sourceAvailable.Buffalo, color: '#059669', key: 'buff' },
+                                        { label: 'Goat', value: goatSep, setter: setGoatSep, avail: sourceAvailable.Goat, color: '#0D9488', key: 'goat' },
+                                        { label: 'Other', value: otherSep, setter: setOtherSep, avail: sourceAvailable.Other, color: '#0891B2', key: 'other' },
+                                    ].map((item) => {
+                                        const isExceeded = (parseFloat(item.value) || 0) > item.avail;
+                                        return (
+                                            <View key={item.key} style={styles.sourceSepItem}>
+                                                <ThemedText style={[styles.sourceAvailLabel, { color: isExceeded ? '#EF4444' : (isDark ? '#94A3B8' : '#64748B') }]}>
+                                                    Avail: {item.avail.toFixed(1)}L
+                                                </ThemedText>
+                                                <ThemedText style={[styles.sourceBoxTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>{item.label}</ThemedText>
+                                                <View style={[styles.sourceInputBox, { 
+                                                    borderColor: isExceeded ? '#EF4444' : (activeFocused === item.key ? item.color : (isDark ? '#2D3748' : '#E5E7EB')),
+                                                    backgroundColor: isDark ? '#0F172A' : '#F8FAFC',
+                                                    borderWidth: activeFocused === item.key || isExceeded ? 2 : 1
+                                                }]}>
+                                                    <TextInput
+                                                        style={[styles.sourceInputText, { color: isDark ? '#F8FAFC' : '#111827' }]}
+                                                        value={item.value}
+                                                        onChangeText={(val) => {
+                                                            item.setter(val);
+                                                        }}
+                                                        keyboardType="numeric"
+                                                        placeholder="0"
+                                                        placeholderTextColor={isDark ? '#4B5563' : '#9CA3AF'}
+                                                        onFocus={() => {
+                                                            setActiveFocused(item.key);
+                                                            scrollRef.current?.scrollTo({ y: 150, animated: true });
+                                                        }}
+                                                        onBlur={() => {
+                                                            setActiveFocused(null);
+                                                            const num = parseFloat(item.value) || 0;
+                                                            if (num > item.avail) {
+                                                                if (Platform.OS === 'web') {
+                                                                    alert(`Warning: ${item.label} exceeds available milk!`);
+                                                                } else {
+                                                                    Alert.alert('Warning', `${item.label} exceeds available milk!`);
+                                                                }
+                                                            }
+                                                        }}
+                                                    />
+                                                </View>
+                                            </View>
+                                        );
+                                    })}
                                 </View>
 
-                                <View style={[styles.resultRowCompact, { backgroundColor: isDark ? '#0F172A' : '#F0FDF4', borderColor: isDark ? '#166534' : '#BBF7D0' }]}>
+                                <View style={[styles.resultRowCompact, { backgroundColor: isDark ? '#0F172A' : '#F0FDF4', borderColor: isDark ? '#166534' : '#BBF7D0', marginTop: 12 }]}>
                                     <View style={styles.resultLeftCompact}>
-                                        <ThemedText style={[styles.resultTagCompact, { color: isDark ? '#4ADE80' : '#16A34A' }]}>WHOLE MILK:</ThemedText>
+                                        <ThemedText style={[styles.resultTagCompact, { color: isDark ? '#4ADE80' : '#16A34A' }]}>TOTAL SEPARATION:</ThemedText>
+                                    </View>
+                                    <ThemedText style={[styles.resultBigValueCompact, { color: isDark ? '#4ADE80' : '#16A34A' }]}>
+                                        {sepQty.toFixed(2)} L
+                                    </ThemedText>
+                                </View>
+
+                                <View style={[styles.resultRowCompact, { backgroundColor: isDark ? '#0F172A' : '#F0FDF4', borderColor: isDark ? '#166534' : '#BBF7D0', marginTop: 8 }]}>
+                                    <View style={styles.resultLeftCompact}>
+                                        <ThemedText style={[styles.resultTagCompact, { color: isDark ? '#4ADE80' : '#16A34A' }]}>WHOLE MILK LEFT:</ThemedText>
                                     </View>
                                     <ThemedText style={[styles.resultBigValueCompact, { color: isDark ? '#4ADE80' : '#16A34A' }]}>
                                         {wholeMilk.toFixed(2)} L
@@ -349,11 +414,15 @@ export default function MilkProductionScreen() {
                                 <View style={styles.resultGridCompact}>
                                     <TouchableOpacity 
                                         activeOpacity={0.8}
-                                        style={[styles.resultCardCompact, { backgroundColor: isDark ? '#0C1A2E' : '#EFF6FF', borderColor: inputBorderColor('skim') }]}
+                                        style={[styles.resultCardCompact, { 
+                                            backgroundColor: isDark ? '#0C1A2E' : '#EFF6FF', 
+                                            borderColor: isDivisionExceeded ? '#EF4444' : inputBorderColor('skim'),
+                                            borderWidth: isDivisionExceeded ? 2 : 1
+                                        }]}
                                         onPress={() => setActiveFocused('skim')}
                                     >
                                         <ThemedText style={[styles.resultCardTagCompact, { color: isDark ? '#94A3B8' : '#64748B' }]}>SKIM</ThemedText>
-                                        <View style={[styles.innerInputBoxCompact, { borderColor: isDark ? '#1D4ED840' : '#BFDBFE' }]}>
+                                        <View style={[styles.innerInputBoxCompact, { borderColor: isDivisionExceeded ? '#EF4444' : (isDark ? '#1D4ED840' : '#BFDBFE') }]}>
                                              <TextInput
                                                  style={[styles.resultCardValueCompact, { color: isDark ? '#60A5FA' : '#1D4ED8', flex: 1 }]}
                                                  value={skimMilk}
@@ -365,7 +434,13 @@ export default function MilkProductionScreen() {
                                                     setActiveFocused('skim');
                                                     scrollRef.current?.scrollToEnd({ animated: true });
                                                 }}
-                                                 onBlur={() => setActiveFocused(null)}
+                                                 onBlur={() => {
+                                                     setActiveFocused(null);
+                                                     if (isDivisionExceeded) {
+                                                         if (Platform.OS === 'web') alert('Warning: Skim + Cream exceeds separated milk!');
+                                                         else Alert.alert('Warning', 'Skim + Cream exceeds separated milk!');
+                                                     }
+                                                 }}
                                              />
                                              <ThemedText style={[styles.inputUnitCompact, { color: isDark ? '#60A5FA' : '#1D4ED8', fontWeight: '800' }]}>L</ThemedText>
                                          </View>
@@ -373,11 +448,15 @@ export default function MilkProductionScreen() {
                                     <View style={{ width: 8 }} />
                                     <TouchableOpacity 
                                         activeOpacity={0.8}
-                                        style={[styles.resultCardCompact, { backgroundColor: isDark ? '#2D1505' : '#FFFBEB', borderColor: inputBorderColor('cream') }]}
+                                        style={[styles.resultCardCompact, { 
+                                            backgroundColor: isDark ? '#2D1505' : '#FFFBEB', 
+                                            borderColor: isDivisionExceeded ? '#EF4444' : inputBorderColor('cream'),
+                                            borderWidth: isDivisionExceeded ? 2 : 1
+                                        }]}
                                         onPress={() => setActiveFocused('cream')}
                                     >
                                         <ThemedText style={[styles.resultCardTagCompact, { color: isDark ? '#94A3B8' : '#64748B' }]}>CREAM</ThemedText>
-                                        <View style={[styles.innerInputBoxCompact, { borderColor: isDark ? '#D9770640' : '#FDE68A' }]}>
+                                        <View style={[styles.innerInputBoxCompact, { borderColor: isDivisionExceeded ? '#EF4444' : (isDark ? '#D9770640' : '#FDE68A') }]}>
                                              <TextInput
                                                  style={[styles.resultCardValueCompact, { color: isDark ? '#FBBF24' : '#D97706', flex: 1 }]}
                                                  value={creamMilkInput}
@@ -389,7 +468,13 @@ export default function MilkProductionScreen() {
                                                     setActiveFocused('cream');
                                                     scrollRef.current?.scrollToEnd({ animated: true });
                                                 }}
-                                                 onBlur={() => setActiveFocused(null)}
+                                                 onBlur={() => {
+                                                     setActiveFocused(null);
+                                                     if (isDivisionExceeded) {
+                                                         if (Platform.OS === 'web') alert('Warning: Skim + Cream exceeds separated milk!');
+                                                         else Alert.alert('Warning', 'Skim + Cream exceeds separated milk!');
+                                                     }
+                                                 }}
                                              />
                                              <ThemedText style={[styles.inputUnitCompact, { color: isDark ? '#FBBF24' : '#D97706', fontWeight: '800' }]}>L</ThemedText>
                                          </View>
@@ -582,8 +667,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     bannerStatItem: { alignItems: 'center', flex: 1 },
-    bannerStatValue: { color: 'rgba(255,255,255,0.85)', fontSize: 18, fontWeight: '800' },
-    bannerStatLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '600', marginTop: 2 },
+    bannerStatValue: { color: 'rgba(255,255,255,1)', fontSize: 22, fontWeight: '800' },
+    bannerStatLabel: { color: 'rgba(255,255,255,0.9)', fontSize: 11.5, fontWeight: '800', marginTop: 2 },
+    sourceBreakdownRow: {
+        flexDirection: 'row',
+        gap: 6,
+        marginTop: 6,
+        paddingHorizontal: 4,
+        justifyContent: 'center',
+    },
+    sourceText: {
+        fontSize: 10.5,
+        fontWeight: '800',
+        color: 'rgba(255,255,255,0.85)',
+        textTransform: 'uppercase',
+    },
     bannerDividerCompact: { width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.2)' },
 
     // ── Section Cards (Compact)
@@ -632,6 +730,40 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(0,0,0,0.1)',
         minWidth: 28,
         textAlign: 'center'
+    },
+
+    // ── Source Sep Grid
+    sourceSepGrid: {
+        flexDirection: 'row',
+        gap: 6,
+        marginTop: 4,
+    },
+    sourceSepItem: {
+        flex: 1,
+        marginBottom: 8,
+    },
+    sourceBoxTitle: {
+        fontSize: 12,
+        fontWeight: '800',
+        marginBottom: 4,
+    },
+    sourceAvailLabel: {
+        fontSize: 10,
+        fontWeight: '700',
+        marginBottom: 2,
+    },
+    sourceInputBox: {
+        height: 48,
+        borderRadius: 12,
+        paddingHorizontal: 8,
+        justifyContent: 'center',
+    },
+    sourceInputText: {
+        fontSize: 16,
+        fontWeight: '700',
+        padding: 0,
+        textAlignVertical: 'center',
+        ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as any
     },
 
     // ── Inline Flow Arrow

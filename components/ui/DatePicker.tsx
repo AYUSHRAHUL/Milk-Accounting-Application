@@ -241,12 +241,15 @@ const styles = StyleSheet.create({
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
         height: 48,
         borderWidth: 1,
         borderRadius: 12,
-        paddingHorizontal: 14,
+        paddingHorizontal: 12,
+        width: '100%',
+        overflow: 'hidden', 
     },
-    dateText: { fontSize: 15, fontWeight: '500' },
+    dateText: { fontSize: 14, fontWeight: '600' },
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(15, 23, 42, 0.4)',

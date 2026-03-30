@@ -10,8 +10,9 @@ import * as Print from 'expo-print';
 import { useAuth } from '@/context/AuthContext';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import * as Sharing from 'expo-sharing';
+import { getCLRCorrection } from '@/lib/milkCalculations';
 import { DatePicker } from '@/components/ui/DatePicker';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
     Alert,
     FlatList,
@@ -35,9 +36,15 @@ interface MilkEntryData {
     fatType: string;
     snf?: number;
     clr?: number;
+    lr?: number;
+    temp?: number;
+    ts?: number;
     quantity: number;
     costPerLiter: number;
     totalCost: number;
+    mbrt?: string;
+    mbrtTime?: string;
+    cob?: string;
 }
 
 export default function MilkCollectionHistoryScreen() {
@@ -133,20 +140,83 @@ export default function MilkCollectionHistoryScreen() {
         fatType: '',
         snf: '',
         clr: '',
-        costPerLiter: ''
+        lr: '',
+        temp: '',
+        ts: '',
+        costPerLiter: '',
+        mbrt: '',
+        mbrtHours: '',
+        mbrtMinutes: '',
+        cob: ''
     });
 
     const openEditModal = (item: MilkEntryData) => {
         setEditingItem(item);
         setEditForm({
-            quantity: item.quantity.toString(),
-            fatType: item.fatType.toString(),
+            quantity: (item.quantity || 0).toString(),
+            fatType: (item.fatType || '').toString(),
             snf: (item.snf || '').toString(),
             clr: (item.clr || '').toString(),
-            costPerLiter: item.costPerLiter.toString()
+            lr: (item.lr || '').toString(),
+            temp: (item.temp || '').toString(),
+            ts: (item.ts || '').toString(),
+            costPerLiter: (item.costPerLiter || 0).toString(),
+            mbrt: item.mbrt || '',
+            mbrtHours: item.mbrtTime ? item.mbrtTime.split(':')[0] : '',
+            mbrtMinutes: item.mbrtTime ? item.mbrtTime.split(':')[1] : '',
+            cob: item.cob || ''
         });
         setIsEditModalVisible(true);
     };
+
+    // --- Auto-calculation logic for Edit Modal ---
+    useEffect(() => {
+        if (!isEditModalVisible) return;
+
+        const fat = parseFloat(editForm.fatType) || 0;
+        const temp = parseFloat(editForm.temp) || 0;
+        const lr = parseFloat(editForm.lr) || 0;
+
+        if (lr > 0 && temp > 0) {
+            const correction = getCLRCorrection(temp, fat);
+            const calculatedClr = lr + correction;
+            const calculatedSnf = calculatedClr / 4 + fat * 0.2 + 0.7;
+            const calculatedTs = fat + calculatedSnf;
+
+            setEditForm(prev => ({
+                ...prev,
+                clr: calculatedClr.toFixed(1),
+                snf: calculatedSnf.toFixed(2),
+                ts: calculatedTs.toFixed(2)
+            }));
+        }
+    }, [editForm.fatType, editForm.temp, editForm.lr, isEditModalVisible]);
+
+    // --- MBRT Auto-calculation for Edit Modal ---
+    useEffect(() => {
+        if (!isEditModalVisible) return;
+
+        const hrs = parseInt(editForm.mbrtHours) || 0;
+        const mins = parseInt(editForm.mbrtMinutes) || 0;
+        const totalMinutes = hrs * 60 + mins;
+
+        if (editForm.mbrtHours === '' && editForm.mbrtMinutes === '') {
+            if (editForm.mbrt !== '') {
+                setEditForm(prev => ({ ...prev, mbrt: '' }));
+            }
+            return;
+        }
+
+        let status = '';
+        if (totalMinutes >= 360) status = 'Very good';
+        else if (totalMinutes >= 120) status = 'Fair';
+        else if (totalMinutes >= 30) status = 'Poor';
+        else status = 'very Poor';
+
+        if (status && status !== editForm.mbrt) {
+            setEditForm(prev => ({ ...prev, mbrt: status }));
+        }
+    }, [editForm.mbrtHours, editForm.mbrtMinutes, isEditModalVisible]);
 
     const handleUpdate = async () => {
         if (!editingItem) return;
@@ -157,8 +227,14 @@ export default function MilkCollectionHistoryScreen() {
             fatType: editForm.fatType,
             snf: parseFloat(editForm.snf) || 0,
             clr: parseFloat(editForm.clr) || 0,
+            lr: parseFloat(editForm.lr) || 0,
+            temp: parseFloat(editForm.temp) || 0,
+            ts: parseFloat(editForm.ts) || 0,
             costPerLiter: parseFloat(editForm.costPerLiter),
-            totalCost: parseFloat(editForm.quantity) * parseFloat(editForm.costPerLiter)
+            totalCost: parseFloat(editForm.quantity) * parseFloat(editForm.costPerLiter),
+            mbrt: editForm.mbrt,
+            mbrtTime: (editForm.mbrtHours || editForm.mbrtMinutes) ? `${editForm.mbrtHours.padStart(2, '0')}:${editForm.mbrtMinutes.padStart(2, '0')}` : undefined,
+            cob: editForm.cob
         };
 
         try {
@@ -344,6 +420,20 @@ export default function MilkCollectionHistoryScreen() {
                     <ThemedText style={styles.gridLabel}>RATE</ThemedText>
                     <ThemedText style={styles.gridValue}>₹{item.costPerLiter?.toFixed(2) || '0.00'}</ThemedText>
                 </View>
+                {item.mbrt && (
+                    <View style={[styles.gridItem, styles.gridBorder]}>
+                        <ThemedText style={styles.gridLabel}>MBRT</ThemedText>
+                        <ThemedText style={[styles.gridValue, { fontSize: 10 }]}>
+                            {item.mbrtTime ? `${item.mbrtTime} • ` : ''}{item.mbrt}
+                        </ThemedText>
+                    </View>
+                )}
+                {item.cob && (
+                    <View style={[styles.gridItem, styles.gridBorder]}>
+                        <ThemedText style={styles.gridLabel}>COB</ThemedText>
+                        <ThemedText style={[styles.gridValue, { fontSize: 11 }]}>{item.cob}</ThemedText>
+                    </View>
+                )}
             </View>
 
             <View style={styles.cardFooter}>
@@ -498,25 +588,113 @@ export default function MilkCollectionHistoryScreen() {
                         </View>
 
                         <View style={styles.modalBody}>
-                            <ThemedText style={styles.inputLabel}>Quantity (Liters)</ThemedText>
-                            <TextInput
-                                style={styles.modalInput}
-                                value={editForm.quantity}
-                                onChangeText={(t) => setEditForm(prev => ({ ...prev, quantity: t }))}
-                                keyboardType="numeric"
-                            />
-
+                            {/* --- Row 1: LR, Temp, Fat --- */}
                             <View style={styles.inputRow}>
                                 <View style={{ flex: 1, marginRight: 8 }}>
-                                    <ThemedText style={styles.inputLabel}>FAT %</ThemedText>
+                                    <ThemedText style={styles.inputLabel}>LR</ThemedText>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        value={editForm.lr}
+                                        onChangeText={(t) => setEditForm(prev => ({ ...prev, lr: t }))}
+                                        keyboardType="numeric"
+                                        placeholder="e.g. 28"
+                                    />
+                                </View>
+                                <View style={{ flex: 1, marginHorizontal: 4 }}>
+                                    <ThemedText style={styles.inputLabel}>Temp (°C)</ThemedText>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        value={editForm.temp}
+                                        onChangeText={(t) => setEditForm(prev => ({ ...prev, temp: t }))}
+                                        keyboardType="numeric"
+                                        placeholder="e.g. 4"
+                                    />
+                                </View>
+                                <View style={{ flex: 1, marginLeft: 8 }}>
+                                    <ThemedText style={styles.inputLabel}>Fat (%)</ThemedText>
                                     <TextInput
                                         style={styles.modalInput}
                                         value={editForm.fatType}
                                         onChangeText={(t) => setEditForm(prev => ({ ...prev, fatType: t }))}
                                         keyboardType="numeric"
+                                        placeholder="e.g. 4.5"
+                                    />
+                                </View>
+                            </View>
+
+                            {/* --- Row 2: CLR, SNF, TS (Read-only) --- */}
+                            <View style={styles.inputRow}>
+                                <View style={{ flex: 1, marginRight: 8 }}>
+                                    <ThemedText style={styles.inputLabel}>CLR</ThemedText>
+                                    <TextInput
+                                        style={[styles.modalInput, { backgroundColor: '#F3F4F6', color: '#6B7280' }]}
+                                        value={editForm.clr}
+                                        editable={false}
+                                        placeholder="0.0"
+                                    />
+                                </View>
+                                <View style={{ flex: 1, marginHorizontal: 4 }}>
+                                    <ThemedText style={styles.inputLabel}>SNF (%)</ThemedText>
+                                    <TextInput
+                                        style={[styles.modalInput, { backgroundColor: '#F3F4F6', color: '#6B7280' }]}
+                                        value={editForm.snf}
+                                        editable={false}
+                                        placeholder="0.00"
                                     />
                                 </View>
                                 <View style={{ flex: 1, marginLeft: 8 }}>
+                                    <ThemedText style={styles.inputLabel}>TS (%)</ThemedText>
+                                    <TextInput
+                                        style={[styles.modalInput, { backgroundColor: '#F3F4F6', color: '#6B7280' }]}
+                                        value={editForm.ts}
+                                        editable={false}
+                                        placeholder="0.00"
+                                    />
+                                </View>
+                            </View>
+
+                            {/* --- Row 3: Quantity, MBRT Time, MBRT Status --- */}
+                            <View style={styles.inputRow}>
+                                <View style={{ flex: 1, marginRight: 5 }}>
+                                    <ThemedText style={styles.inputLabel}>Qty (L)</ThemedText>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        value={editForm.quantity}
+                                        onChangeText={(t) => setEditForm(prev => ({ ...prev, quantity: t }))}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                                <View style={{ flex: 1, marginHorizontal: 5 }}>
+                                    <ThemedText style={styles.inputLabel}>MBRT Time</ThemedText>
+                                    <View style={{ borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, backgroundColor: '#FFFFFF', flexDirection: 'row', height: 48, overflow: 'hidden' }}>
+                                        <View style={{ flex: 1, flexDirection: 'column' }}>
+                                            <ThemedText style={{ backgroundColor: '#F9FAFB', borderBottomWidth: 1, borderBottomColor: '#D1D5DB', textAlign: 'center', fontSize: 11, fontWeight: '600', color: '#6B7280', paddingVertical: 2 }}>hrs</ThemedText>
+                                            <TextInput
+                                                style={{ flex: 1, textAlign: 'center', fontSize: 15, color: '#111827', padding: 0 }}
+                                                value={editForm.mbrtHours}
+                                                onChangeText={(t) => setEditForm(prev => ({ ...prev, mbrtHours: t.replace(/[^0-9]/g, '') }))}
+                                                keyboardType="numeric"
+                                                placeholder="00"
+                                                placeholderTextColor="#9CA3AF"
+                                                maxLength={2}
+                                            />
+                                        </View>
+                                        <View style={{ width: 1, backgroundColor: '#D1D5DB', height: '100%' }} />
+                                        <View style={{ flex: 1, flexDirection: 'column' }}>
+                                            <ThemedText style={{ backgroundColor: '#F9FAFB', borderBottomWidth: 1, borderBottomColor: '#D1D5DB', textAlign: 'center', fontSize: 11, fontWeight: '600', color: '#6B7280', paddingVertical: 2 }}>mins</ThemedText>
+                                            <TextInput
+                                                style={{ flex: 1, textAlign: 'center', fontSize: 15, color: '#111827', padding: 0 }}
+                                                value={editForm.mbrtMinutes}
+                                                onChangeText={(t) => setEditForm(prev => ({ ...prev, mbrtMinutes: t.replace(/[^0-9]/g, '') }))}
+                                                keyboardType="numeric"
+                                                placeholder="00"
+                                                placeholderTextColor="#9CA3AF"
+                                                maxLength={2}
+                                            />
+                                        </View>
+                                    </View>
+                                </View>
+                                <View style={{ flex: 1, marginLeft: 5 }}>
                                     <ThemedText style={styles.inputLabel}>Rate (₹/L)</ThemedText>
                                     <TextInput
                                         style={styles.modalInput}
@@ -527,25 +705,23 @@ export default function MilkCollectionHistoryScreen() {
                                 </View>
                             </View>
 
-                            <View style={styles.inputRow}>
-                                <View style={{ flex: 1, marginRight: 8 }}>
-                                    <ThemedText style={styles.inputLabel}>SNF</ThemedText>
-                                    <TextInput
-                                        style={styles.modalInput}
-                                        value={editForm.snf}
-                                        onChangeText={(t) => setEditForm(prev => ({ ...prev, snf: t }))}
-                                        keyboardType="numeric"
-                                    />
+                            <View style={{ marginBottom: 12 }}>
+                                <ThemedText style={styles.inputLabel}>MBRT Status (Auto-calculated)</ThemedText>
+                                <View style={[styles.modalInput, { backgroundColor: '#F3F4F6', height: 45, justifyContent: 'center' }]}>
+                                    <ThemedText style={{ color: editForm.mbrt ? '#111827' : '#9CA3AF', fontWeight: '600' }}>
+                                        {editForm.mbrt || '---'}
+                                    </ThemedText>
                                 </View>
-                                <View style={{ flex: 1, marginLeft: 8 }}>
-                                    <ThemedText style={styles.inputLabel}>CLR</ThemedText>
-                                    <TextInput
-                                        style={styles.modalInput}
-                                        value={editForm.clr}
-                                        onChangeText={(t) => setEditForm(prev => ({ ...prev, clr: t }))}
-                                        keyboardType="numeric"
-                                    />
-                                </View>
+                            </View>
+
+                            <View style={{ marginBottom: 12 }}>
+                                <ThemedText style={styles.inputLabel}>COB (Clot on Boiling)</ThemedText>
+                                <TextInput
+                                    style={styles.modalInput}
+                                    value={editForm.cob}
+                                    onChangeText={(t) => setEditForm(prev => ({ ...prev, cob: t }))}
+                                    placeholder="e.g. Negative"
+                                />
                             </View>
 
                             <TouchableOpacity

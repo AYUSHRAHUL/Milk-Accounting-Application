@@ -6,12 +6,10 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
+import { downloadCSVLocally } from '@/lib/exportHelper';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { writeAsStringAsync, EncodingType, cacheDirectory, documentDirectory, StorageAccessFramework } from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import React, { useCallback, useMemo, useState } from 'react';
-import { downloadCSVLocally } from '@/lib/exportHelper';
 import {
   Alert,
   Modal,
@@ -212,15 +210,15 @@ export default function ReportProductionScreen() {
           </TouchableOpacity>
 
           <View style={[styles.periodFilter, { backgroundColor: theme.surfaceMuted }]}>
-             {(['All', 'Today', '7D', '30D'] as PeriodFilter[]).map(p => (
-               <TouchableOpacity 
-                key={p} 
+            {(['All', 'Today', '7D', '30D'] as PeriodFilter[]).map(p => (
+              <TouchableOpacity
+                key={p}
                 onPress={() => setPeriodFilter(p)}
                 style={[styles.periodPill, periodFilter === p && { backgroundColor: '#F59E0B' }]}
-               >
-                 <ThemedText style={[styles.periodText, periodFilter === p && { color: '#fff' }]}>{p}</ThemedText>
-               </TouchableOpacity>
-             ))}
+              >
+                <ThemedText style={[styles.periodText, periodFilter === p && { color: '#fff' }]}>{p}</ThemedText>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
@@ -261,7 +259,7 @@ export default function ReportProductionScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View>
                 <View style={[styles.tableRow, { backgroundColor: theme.surfaceMuted }]}>
-                  {activeTab === 'Products' 
+                  {activeTab === 'Products'
                     ? ['Date', 'Product', 'Yield', 'Whole Used', 'Skim Used', 'Cream Used'].map(h => <ThemedText key={h} style={styles.cellHeader}>{h}</ThemedText>)
                     : ['Date', 'Separated', 'Skim Out', 'Cream Out', 'Loss'].map(h => <ThemedText key={h} style={styles.cellHeader}>{h}</ThemedText>)
                   }

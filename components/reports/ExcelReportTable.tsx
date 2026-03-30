@@ -1,12 +1,10 @@
-import React, { useMemo, useState } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, Platform, Alert } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Ionicons } from '@expo/vector-icons';
-import { writeAsStringAsync, EncodingType, cacheDirectory, documentDirectory, StorageAccessFramework } from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import { downloadCSVLocally } from '@/lib/exportHelper';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useMemo, useState } from 'react';
+import { Alert, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export interface ExcelReportEntry {
   date: string;
@@ -117,8 +115,8 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
       const allSupplierKeys = Array.from(new Set(entries.flatMap(e => Object.keys(e.milk.collections))));
 
       const csvHeaders = [
-        'Date', 
-        'MILK_OB', 
+        'Date',
+        'MILK_OB',
         ...allSupplierKeys.map(k => `MILK_COLL_${k.toUpperCase()}`),
         'MILK_COW',
         'MILK_BUFF',
@@ -145,7 +143,7 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
 
       const rows = entries.map(e => [
         esc(formatDateDisplay(e.date)),
-        esc(e.milk.ob), 
+        esc(e.milk.ob),
         ...allSupplierKeys.map(k => esc(e.milk.collections[k] || 0)),
         esc(e.milk.sourceTotals?.['Cow'] || 0),
         esc(e.milk.sourceTotals?.['Buffalo'] || 0),
@@ -180,8 +178,8 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
         await downloadCSVLocally(csvContent, 'detailed_report', 'Export Detailed Report');
       }
     } catch (error: any) {
-        console.error('Export Error:', error);
-        Alert.alert('Export Failed', 'Details: ' + (error?.message || 'An error occurred. Make sure storage permissions are granted.'));
+      console.error('Export Error:', error);
+      Alert.alert('Export Failed', 'Details: ' + (error?.message || 'An error occurred. Make sure storage permissions are granted.'));
     }
   };
 
@@ -194,7 +192,7 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
       <View style={styles.headerRow}>
         <ThemedText style={styles.title}>Excel Detailed View</ThemedText>
         <View style={styles.controls}>
-           <View style={[styles.toggleGroup, { backgroundColor: theme.borderMuted }]}>
+          <View style={[styles.toggleGroup, { backgroundColor: theme.borderMuted }]}>
             {['Date', 'Month'].map((m) => (
               <TouchableOpacity
                 key={m}
@@ -236,10 +234,10 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
           {/* Row 2: Sub-column Headers */}
           <View style={styles.tableHeaderRow}>
             <View style={[styles.headerCell, { width: 100 }]}></View>
-            
+
             {/* Milk Cols */}
             <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>O.B.</ThemedText></View>
-            {allSupplierKeys.map(k => <View key={k} style={styles.subCol}><ThemedText style={styles.subHeaderText}>{k.toUpperCase().substring(0,6)}</ThemedText></View>)}
+            {allSupplierKeys.map(k => <View key={k} style={styles.subCol}><ThemedText style={styles.subHeaderText}>{k.toUpperCase().substring(0, 6)}</ThemedText></View>)}
             <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>COW</ThemedText></View>
             <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>BUFF</ThemedText></View>
             <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>GOAT</ThemedText></View>
@@ -280,7 +278,7 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
             {processedEntries.map((e, idx) => (
               <View key={e.date} style={[styles.dataRow, { backgroundColor: idx % 2 === 0 ? theme.background : theme.borderMuted + '20' }]}>
                 <View style={[styles.cell, { width: 100 }]}><ThemedText style={styles.cellText}>{formatDateDisplay(e.date)}</ThemedText></View>
-                
+
                 {/* Milk Data */}
                 <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.milk.ob.toFixed(1)}</ThemedText></View>
                 {allSupplierKeys.map(k => <View key={k} style={styles.subCol}><ThemedText style={styles.cellText}>{(e.milk.collections[k] || 0).toFixed(1)}</ThemedText></View>)}
@@ -319,7 +317,7 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
                 ))}
               </View>
             ))}
-            </ScrollView>
+          </ScrollView>
         </View>
       </ScrollView>
     </View>
