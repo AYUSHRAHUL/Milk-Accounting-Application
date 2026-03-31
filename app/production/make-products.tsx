@@ -51,7 +51,12 @@ export default function MakeProductsScreen() {
     const scrollRef = useRef<ScrollView>(null);
 
     // Form State
-    const [inventory, setInventory] = useState({ wholeMilk: 0, skimMilk: 0, creamMilk: 0 });
+    const [inventory, setInventory] = useState({ 
+        wholeMilk: 0, 
+        skimMilk: 0, 
+        creamMilk: 0,
+        sourceAvailable: { Cow: 0, Buffalo: 0, Goat: 0, Other: 0 }
+    });
     const [date, setDate] = useState(() => {
         const now = new Date();
         const dd = String(now.getDate()).padStart(2, '0');
@@ -73,7 +78,10 @@ export default function MakeProductsScreen() {
     const [selectedProduct, setSelectedProduct] = useState('Ghee');
     const [qtyProduced, setQtyProduced] = useState('');
     const [unit, setUnit] = useState('kg');
-    const [useWhole, setUseWhole] = useState('');
+    const [useCow, setUseCow] = useState('');
+    const [useBuff, setUseBuff] = useState('');
+    const [useGoat, setUseGoat] = useState('');
+    const [useOther, setUseOther] = useState('');
     const [useSkim, setUseSkim] = useState('');
     const [useCream, setUseCream] = useState('');
     const [showAllProducts, setShowAllProducts] = useState(false);
@@ -85,7 +93,12 @@ export default function MakeProductsScreen() {
             const res = await apiFetch(`/api/production/inventory?userId=${user.id}`);
             if (res.ok) {
                 const data = await res.json();
-                setInventory(data);
+                setInventory({
+                    wholeMilk: data.wholeMilk || 0,
+                    skimMilk: data.skimMilk || 0,
+                    creamMilk: data.creamMilk || 0,
+                    sourceAvailable: data.sourceAvailable || { Cow: 0, Buffalo: 0, Goat: 0, Other: 0 }
+                });
             }
         } catch (error) {
             console.error('Fetch Inventory Error:', error);
@@ -100,17 +113,30 @@ export default function MakeProductsScreen() {
 
     const handleProduce = async () => {
         if (!user?.id) return;
-        if (!qtyProduced || (!useWhole && !useSkim && !useCream)) {
+        const cUsed = parseFloat(useCow) || 0;
+        const bUsed = parseFloat(useBuff) || 0;
+        const gUsed = parseFloat(useGoat) || 0;
+        const oUsed = parseFloat(useOther) || 0;
+        const skimUsed = parseFloat(useSkim) || 0;
+        const creamUsed = parseFloat(useCream) || 0;
+        const wholeUsed = cUsed + bUsed + gUsed + oUsed;
+
+        if (!qtyProduced || (wholeUsed === 0 && skimUsed === 0 && creamUsed === 0)) {
             Alert.alert('Missing Information', 'Please provide the quantity produced and the milk used.');
             return;
         }
 
-        const wholeUsed = parseFloat(useWhole) || 0;
-        const skimUsed = parseFloat(useSkim) || 0;
-        const creamUsed = parseFloat(useCream) || 0;
-
-        if (wholeUsed > inventory.wholeMilk + 0.01) {
-            Alert.alert('Low Balance', `Whole Milk balance is ${inventory.wholeMilk.toFixed(1)}L`); return;
+        if (cUsed > inventory.sourceAvailable.Cow + 0.01) {
+            Alert.alert('Low Balance', `Cow Milk balance is ${inventory.sourceAvailable.Cow.toFixed(1)}L`); return;
+        }
+        if (bUsed > inventory.sourceAvailable.Buffalo + 0.01) {
+            Alert.alert('Low Balance', `Buffalo Milk balance is ${inventory.sourceAvailable.Buffalo.toFixed(1)}L`); return;
+        }
+        if (gUsed > inventory.sourceAvailable.Goat + 0.01) {
+            Alert.alert('Low Balance', `Goat Milk balance is ${inventory.sourceAvailable.Goat.toFixed(1)}L`); return;
+        }
+        if (oUsed > inventory.sourceAvailable.Other + 0.01) {
+            Alert.alert('Low Balance', `Other Milk balance is ${inventory.sourceAvailable.Other.toFixed(1)}L`); return;
         }
         if (skimUsed > inventory.skimMilk + 0.01) {
             Alert.alert('Low Balance', `Skim Milk balance is ${inventory.skimMilk.toFixed(1)}L`); return;
@@ -133,13 +159,15 @@ export default function MakeProductsScreen() {
                     productName: selectedProduct,
                     quantityProduced: parseFloat(qtyProduced),
                     unit,
-                    milkUsed: { wholeMilk: wholeUsed, skimMilk: skimUsed, creamMilk: creamUsed }
+                    milkUsed: { wholeMilk: wholeUsed, skimMilk: skimUsed, creamMilk: creamUsed },
+                    sourceWholeUsed: { cow: cUsed, buff: bUsed, goat: gUsed, other: oUsed }
                 })
             });
 
             if (res.ok) {
                 setShowSuccess(true);
-                setQtyProduced(''); setUseWhole(''); setUseSkim(''); setUseCream('');
+                setQtyProduced(''); setUseCow(''); setUseBuff(''); setUseGoat(''); setUseOther('');
+                setUseSkim(''); setUseCream('');
                 fetchInventory();
             }
         } catch (error) {
@@ -152,6 +180,27 @@ export default function MakeProductsScreen() {
     const currentProductColor = useMemo(() => {
         return PRODUCT_LIST.find(p => p.name === selectedProduct)?.color || '#16A34A';
     }, [selectedProduct]);
+
+    // Live Usage Totals
+    const totalWholeUsed = useMemo(() => {
+        return (parseFloat(useCow) || 0) + (parseFloat(useBuff) || 0) + (parseFloat(useGoat) || 0) + (parseFloat(useOther) || 0);
+    }, [useCow, useBuff, useGoat, useOther]);
+
+    const totalSkimUsed = useMemo(() => parseFloat(useSkim) || 0, [useSkim]);
+    const totalCreamUsed = useMemo(() => parseFloat(useCream) || 0, [useCream]);
+
+    // Total Available Milk (Live Remaining)
+    const totalAvailableMilk = useMemo(() => {
+        const cowLeft = Math.max(0, (inventory.sourceAvailable.Cow || 0) - (parseFloat(useCow) || 0));
+        const buffLeft = Math.max(0, (inventory.sourceAvailable.Buffalo || 0) - (parseFloat(useBuff) || 0));
+        const goatLeft = Math.max(0, (inventory.sourceAvailable.Goat || 0) - (parseFloat(useGoat) || 0));
+        const otherLeft = Math.max(0, (inventory.sourceAvailable.Other || 0) - (parseFloat(useOther) || 0));
+        return cowLeft + buffLeft + goatLeft + otherLeft;
+    }, [inventory.sourceAvailable, useCow, useBuff, useGoat, useOther]);
+
+    // Live remaining for Skim & Cream
+    const skimLeft = useMemo(() => Math.max(0, inventory.skimMilk - totalSkimUsed), [inventory.skimMilk, totalSkimUsed]);
+    const creamLeft = useMemo(() => Math.max(0, inventory.creamMilk - totalCreamUsed), [inventory.creamMilk, totalCreamUsed]);
 
     return (
         <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF' }]}>
@@ -188,10 +237,43 @@ export default function MakeProductsScreen() {
                     <View style={styles.sectionHeader}>
                         <ThemedText style={styles.sectionTitle}>Raw Materials Available</ThemedText>
                     </View>
-                    <View style={styles.inventoryGrid}>
-                        <InventoryCard label="Whole Milk" value={inventory.wholeMilk} color="#22C55E" isDark={isDark} loading={isFetchingInventory} />
-                        <InventoryCard label="Skim Milk" value={inventory.skimMilk} color="#3B82F6" isDark={isDark} loading={isFetchingInventory} />
-                        <InventoryCard label="Cream" value={inventory.creamMilk} color="#F59E0B" isDark={isDark} loading={isFetchingInventory} />
+                    <View style={{ paddingHorizontal: PAGE_PADDING }}>
+                        {/* Whole Milk Main Section */}
+                        <View style={[styles.wholeMilkContainer, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? '#334155' : '#E2E8F0' }]}>
+                            <View style={styles.invHeader}>
+                                <View style={[styles.invDot, { backgroundColor: '#22C55E' }]} />
+                                <ThemedText style={styles.invLabel}>Available Milk</ThemedText>
+                                <View style={{ flex: 1 }} />
+                                <ThemedText style={[styles.invValueMain, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>
+                                    {isFetchingInventory ? '--' : totalAvailableMilk.toFixed(1)}<ThemedText style={styles.invUnit}> L</ThemedText>
+                                </ThemedText>
+                            </View>
+
+                            <View style={styles.usageInputGrid}>
+                                <UsageInputBox label="Cow" value={useCow} setter={setUseCow} avail={inventory.sourceAvailable.Cow} isDark={isDark} />
+                                <UsageInputBox label="Buff." value={useBuff} setter={setUseBuff} avail={inventory.sourceAvailable.Buffalo} isDark={isDark} />
+                                <UsageInputBox label="Goat" value={useGoat} setter={setUseGoat} avail={inventory.sourceAvailable.Goat} isDark={isDark} />
+                                <UsageInputBox label="Other" value={useOther} setter={setUseOther} avail={inventory.sourceAvailable.Other} isDark={isDark} />
+                            </View>
+                        </View>
+
+                        {/* Raw Material Ingredients (Stock vs Usage) */}
+                        <View style={styles.secondaryInventoryRow}>
+                            <InventoryCard 
+                                label="Skim Milk" 
+                                value={skimLeft} 
+                                color="#3B82F6" 
+                                isDark={isDark} 
+                                loading={isFetchingInventory} 
+                            />
+                            <InventoryCard 
+                                label="Cream" 
+                                value={creamLeft} 
+                                color="#F59E0B" 
+                                isDark={isDark} 
+                                loading={isFetchingInventory} 
+                            />
+                        </View>
                     </View>
 
                     <View style={[styles.sectionHeader, { marginTop: 16 }]}>
@@ -259,19 +341,44 @@ export default function MakeProductsScreen() {
                     </View>
 
                         
-                        {/* ── CONSUMPTION SECTION ── */}
+                        {/* ── CONSUMPTION SECTION (Other Milks & Yield) ── */}
                         <View style={[styles.formCard, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? '#334155' : '#E2E8F0' }]}>
                             
-                            <ThemedText style={[styles.formSectionTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>Consumption</ThemedText>
-                            
-                            <View style={styles.usageGrid}>
-                                <UsageInputCol label="Whole" value={useWhole} onChange={setUseWhole} avail={inventory.wholeMilk} color="#22C55E" isDark={isDark} onFocus={() => scrollRef.current?.scrollTo({ y: 400, animated: true })} />
-                                <UsageInputCol label="Skim" value={useSkim} onChange={setUseSkim} avail={inventory.skimMilk} color="#3B82F6" isDark={isDark} onFocus={() => scrollRef.current?.scrollTo({ y: 400, animated: true })} />
-                                <UsageInputCol label="Cream" value={useCream} onChange={setUseCream} avail={inventory.creamMilk} color="#F59E0B" isDark={isDark} onFocus={() => scrollRef.current?.scrollTo({ y: 400, animated: true })} />
+                            {/* Milk Usage Section (Integrated) */}
+                            <ThemedText style={[styles.formSectionTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>Milk Usage</ThemedText>
+                            <View style={styles.yieldContainer}>
+                                <YieldInputRow 
+                                    label="Whole Milk" 
+                                    value={totalWholeUsed.toString()} 
+                                    color="#22C55E" 
+                                    isDark={isDark} 
+                                    placeholder="0"
+                                    flex={1}
+                                    isText={true} // Display as text/read-only info
+                                />
+                                <View style={{ width: 8 }} />
+                                <YieldInputRow 
+                                    label="Skim Milk" 
+                                    value={useSkim} 
+                                    onChange={setUseSkim} 
+                                    color="#3B82F6" 
+                                    isDark={isDark} 
+                                    placeholder="0"
+                                    flex={1}
+                                />
+                                <View style={{ width: 8 }} />
+                                <YieldInputRow 
+                                    label="Cream" 
+                                    value={useCream} 
+                                    onChange={setUseCream} 
+                                    color="#F59E0B" 
+                                    isDark={isDark} 
+                                    placeholder="0"
+                                    flex={1}
+                                />
                             </View>
 
-                            {/* ── PRODUCTION YIELD SECTION ── */}
-                            <View style={[styles.sectionDivider, { backgroundColor: isDark ? '#334155' : '#F1F5F9' }]} />
+                            <View style={[styles.sectionDivider, { backgroundColor: isDark ? '#334155' : '#F1F5F9', marginTop: 16 }]} />
                             <ThemedText style={[styles.formSectionTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>Production Yield</ThemedText>
                             
                             <View style={styles.yieldContainer}>
@@ -358,7 +465,7 @@ export default function MakeProductsScreen() {
 
 // ── CUSTOM COMPONENTS ──
 
-const InventoryCard = React.memo(({ label, value, color, isDark, loading }: any) => (
+const InventoryCard = React.memo(({ label, value, color, isDark, loading, subValue }: any) => (
     <View style={[styles.invCard, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? '#334155' : '#E2E8F0' }]}>
         <View style={styles.invHeader}>
             <View style={[styles.invDot, { backgroundColor: color }]} />
@@ -367,48 +474,41 @@ const InventoryCard = React.memo(({ label, value, color, isDark, loading }: any)
         <ThemedText style={[styles.invValue, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>
             {loading ? '--' : value.toFixed(1)}<ThemedText style={styles.invUnit}> L</ThemedText>
         </ThemedText>
+        {subValue && !loading && (
+            <ThemedText style={styles.invSubValue}>{subValue}</ThemedText>
+        )}
     </View>
 ));
 
-const UsageInputCol = React.memo(({ label, value, onChange, avail, color, isDark, onFocus }: any) => {
-    const [isFocused, setIsFocused] = React.useState(false);
-    const numValue = parseFloat(value) || 0;
-    const isExceeded = numValue > avail + 0.01;
-
+const UsageInputBox = React.memo(({ label, value, setter, avail, isDark, onFocus }: any) => {
+    const isExceeded = (parseFloat(value) || 0) > avail + 0.01;
     return (
-        <View style={styles.usageCol}>
-            <View style={styles.usageColHeader}>
-                <View style={[styles.invDot, { backgroundColor: color }]} />
-                <ThemedText style={[styles.usageColLabel, { color: isExceeded ? '#EF4444' : '#64748B' }]}>{label}</ThemedText>
-            </View>
-            <View style={[
-                styles.inputBoxCol,
-                { 
-                    backgroundColor: isDark ? '#0F172A' : '#FAFCFF', 
-                    borderColor: isExceeded ? '#EF4444' : (isFocused ? color : (isDark ? '#334155' : '#F1F5F9')),
-                    borderWidth: isExceeded || isFocused ? 2 : 1
-                }
-            ]}>
+        <View style={styles.sourceUsageItem}>
+            <ThemedText style={[styles.sourceLabelText, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>{label}</ThemedText>
+            <View style={[styles.sourceInputContainer, { 
+                borderColor: isExceeded ? '#EF4444' : (isDark ? '#334155' : '#E2E8F0'),
+                backgroundColor: isDark ? '#0F172A' : '#FAFCFF',
+                borderWidth: isExceeded ? 1.5 : 1
+            }]}>
                 <TextInput
-                    style={[styles.baseInput, { color: isDark ? '#F8FAFC' : '#1E293B' }, Platform.OS === 'web' && { outlineStyle: 'none' } as any]}
+                    style={[styles.sourceInputText, { color: isDark ? '#F8FAFC' : '#1E293B' }]}
+                    value={value}
+                    onChangeText={setter}
+                    keyboardType="numeric"
                     placeholder="0"
                     placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
-                    keyboardType="numeric"
-                    value={value}
-                    onChangeText={onChange}
-                    onFocus={() => {
-                        setIsFocused(true);
-                        onFocus?.();
-                    }}
+                    onFocus={onFocus}
                     onBlur={() => {
-                        setIsFocused(false);
                         if (isExceeded) {
-                             if (Platform.OS === 'web') alert(`Warning: ${label} usage exceeds available stock (${avail.toFixed(1)}L)!`);
-                             else Alert.alert('Warning', `${label} usage exceeds available stock (${avail.toFixed(1)}L)!`);
+                             if (Platform.OS === 'web') alert(`Warning: ${label} usage exceeds available stock!`);
+                             else Alert.alert('Warning', `${label} usage exceeds available stock!`);
                         }
                     }}
                 />
             </View>
+            <ThemedText style={[styles.sourceAvailText, { color: isExceeded ? '#EF4444' : '#64748B' }]}>
+                {isExceeded ? 'Exceeded!' : `Left: ${Math.max(0, avail - (parseFloat(value) || 0)).toFixed(1)}L`}
+            </ThemedText>
         </View>
     );
 });
@@ -427,6 +527,7 @@ const YieldInputRow = React.memo(({ label, value, onChange, color, isDark, place
                     placeholder={placeholder}
                     placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
                     keyboardType={isText ? 'default' : 'numeric'}
+                    editable={!isText}
                     value={value}
                     onChangeText={onChange}
                     onFocus={() => {
@@ -474,6 +575,22 @@ const styles = StyleSheet.create({
 
     /* Inventory Grid */
     inventoryGrid: { flexDirection: 'row', gap: 8, paddingHorizontal: PAGE_PADDING },
+    wholeMilkContainer: {
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        marginBottom: 8,
+    },
+    usageInputGrid: { 
+        flexDirection: 'row', 
+        gap: 6, 
+        marginTop: 12,
+        justifyContent: 'space-between'
+    },
+    secondaryInventoryRow: {
+        flexDirection: 'row',
+        gap: 8,
+    },
     invCard: {
         flex: 1,
         borderRadius: 14,
@@ -481,11 +598,13 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         alignItems: 'flex-start',
     },
-    invHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-    invDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
-    invLabel: { fontSize: 12, fontWeight: '500', color: '#64748B', flexShrink: 1 },
-    invValue: { fontSize: 18, fontWeight: '800', letterSpacing: -0.5 },
+    invHeader: { flexDirection: 'row', alignItems: 'center' },
+    invDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
+    invLabel: { fontSize: 13, fontWeight: '700', color: '#64748B', flexShrink: 1 },
+    invValue: { fontSize: 18, fontWeight: '800', letterSpacing: -0.5, marginTop: 4 },
+    invValueMain: { fontSize: 18, fontWeight: '900', letterSpacing: -0.5 },
     invUnit: { fontSize: 12, fontWeight: '600', color: '#94A3B8' },
+    invSubValue: { fontSize: 10, fontWeight: '700', color: '#64748B', marginTop: 4 },
 
     /* Product Selection (Box Container) */
     productGridContainer: { 
@@ -559,6 +678,15 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         justifyContent: 'center'
     },
+
+    /* Source Breakdown Usage Grid */
+    sourceUsageGrid: { flexDirection: 'row', gap: 6, marginBottom: 12 },
+    usageDivider: { height: 1, backgroundColor: '#E2E8F0', marginVertical: 16, opacity: 0.5 },
+    sourceUsageItem: { flex: 1, alignItems: 'center' },
+    sourceAvailText: { fontSize: 9.5, fontWeight: '700', marginTop: 4, color: '#64748B' },
+    sourceLabelText: { fontSize: 12, fontWeight: '800', marginBottom: 6, color: '#1E293B' },
+    sourceInputContainer: { height: 42, width: '100%', borderRadius: 8, borderWidth: 1, justifyContent: 'center', paddingHorizontal: 6 },
+    sourceInputText: { fontSize: 15, fontWeight: '700', padding: 0, textAlign: 'center', textAlignVertical: 'center', ...Platform.select({ web: { outlineStyle: 'none' } }) as any },
 
     sectionDivider: { height: 1.5, marginVertical: 10 },
     

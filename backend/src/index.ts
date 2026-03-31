@@ -348,9 +348,17 @@ app.get('/api/production/milk-summary', async (req, res) => {
 
     const usedWholeInProducts = await ProductProduction.aggregate([
       { $match: { userId: matchUserId } },
-      { $group: { _id: null, total: { $sum: '$milkUsed.wholeMilk' } } }
+      { $group: { 
+          _id: null, 
+          total: { $sum: '$milkUsed.wholeMilk' },
+          cow: { $sum: '$sourceWholeUsed.cow' },
+          buff: { $sum: '$sourceWholeUsed.buff' },
+          goat: { $sum: '$sourceWholeUsed.goat' },
+          other: { $sum: '$sourceWholeUsed.other' },
+      } }
     ]);
-    const totalWholeUsed = usedWholeInProducts.length > 0 ? usedWholeInProducts[0].total : 0;
+    const wholeUsedSummary = usedWholeInProducts[0] || { total: 0, cow: 0, buff: 0, goat: 0, other: 0 };
+    const totalWholeUsed = wholeUsedSummary.total;
 
     // Calculate before today for Opening Balance
     const startOfToday = new Date();
@@ -373,6 +381,26 @@ app.get('/api/production/milk-summary', async (req, res) => {
       { $group: { _id: null, total: { $sum: '$milkUsed.wholeMilk' } } }
     ]);
     const totalWholeUsedBeforeToday = wholeUsedBeforeToday.length > 0 ? wholeUsedBeforeToday[0].total : 0;
+
+    // Calculate today's collections and used
+    const collectedTodayAggr = await MilkEntry.aggregate([
+      { $match: { userId: matchUserId, date: { $gte: startOfToday } } },
+      { $group: { _id: null, total: { $sum: '$quantity' } } },
+    ]);
+    const todayCollected = collectedTodayAggr.length > 0 ? collectedTodayAggr[0].total : 0;
+
+    const separatedTodayAggr = await MilkProduction.aggregate([
+      { $match: { userId: matchUserId, date: { $gte: startOfToday } } },
+      { $group: { _id: null, total: { $sum: '$separationMilk' } } },
+    ]);
+    const todaySeparated = separatedTodayAggr.length > 0 ? separatedTodayAggr[0].total : 0;
+
+    const wholeUsedTodayAggr = await ProductProduction.aggregate([
+      { $match: { userId: matchUserId, date: { $gte: startOfToday } } },
+      { $group: { _id: null, total: { $sum: '$milkUsed.wholeMilk' } } }
+    ]);
+    const todayWholeUsed = wholeUsedTodayAggr.length > 0 ? wholeUsedTodayAggr[0].total : 0;
+    const todayUsed = todaySeparated + todayWholeUsed;
 
     const openingBalance = Math.max(0, totalCollectedBeforeToday - totalSeparatedBeforeToday - totalWholeUsedBeforeToday);
     const closingBalance = Math.max(0, totalCollected - totalSeparated - totalWholeUsed);
@@ -402,11 +430,13 @@ app.get('/api/production/milk-summary', async (req, res) => {
     const separatedMap = sourceProduced[0] || { totalCow: 0, totalBuffalo: 0, totalGoat: 0, totalOther: 0 };
 
     const sourceAvailable = {
-      Cow: Math.max(0, sourceTotals.Cow - separatedMap.totalCow),
-      Buffalo: Math.max(0, sourceTotals.Buffalo - separatedMap.totalBuffalo),
-      Goat: Math.max(0, sourceTotals.Goat - separatedMap.totalGoat),
-      Other: Math.max(0, sourceTotals.Other - separatedMap.totalOther),
+      Cow: Math.max(0, sourceTotals.Cow - separatedMap.totalCow - wholeUsedSummary.cow),
+      Buffalo: Math.max(0, sourceTotals.Buffalo - separatedMap.totalBuffalo - wholeUsedSummary.buff),
+      Goat: Math.max(0, sourceTotals.Goat - separatedMap.totalGoat - wholeUsedSummary.goat),
+      Other: Math.max(0, sourceTotals.Other - separatedMap.totalOther - wholeUsedSummary.other),
     };
+
+    const availableMilk = Math.max(0, totalCollected - totalSeparated - totalWholeUsed);
 
     const [lastMilkEntry, lastSeparation, lastProduct] = await Promise.all([
       MilkEntry.findOne({ userId: matchUserId as any }).sort({ date: -1 }).select('date'),
@@ -423,12 +453,14 @@ app.get('/api/production/milk-summary', async (req, res) => {
     const lastActiveDate = dates.length > 0 ? new Date(Math.max(...dates)) : null;
 
     return res.status(200).json({
-      availableMilk: totalCollected - totalSeparated - totalWholeUsed,
+      availableMilk,
       openingBalance,
       closingBalance,
       closingBalanceDate: lastActiveDate,
       totalCollected,
       totalUsed: totalSeparated + totalWholeUsed,
+      todayCollected,
+      todayUsed,
       sourceTotals,
       sourceAvailable
     });
@@ -518,19 +550,53 @@ app.get('/api/production/inventory', async (req, res) => {
           usedWhole: { $sum: '$milkUsed.wholeMilk' },
           usedSkim: { $sum: '$milkUsed.skimMilk' },
           usedCream: { $sum: '$milkUsed.creamMilk' },
+          cow: { $sum: '$sourceWholeUsed.cow' },
+          buff: { $sum: '$sourceWholeUsed.buff' },
+          goat: { $sum: '$sourceWholeUsed.goat' },
+          other: { $sum: '$sourceWholeUsed.other' },
         },
       },
     ]);
 
-    const prod = production[0] || { totalSeparated: 0, totalSkim: 0, totalCream: 0 };
-    const use = used[0] || { usedWhole: 0, usedSkim: 0, usedCream: 0 };
+    const sourceCounts = await MilkEntry.aggregate([
+      { $match: { userId: matchUserId } },
+      { $group: { _id: '$source', total: { $sum: '$quantity' } } },
+    ]);
+    const sourceTotals: Record<string, number> = { Cow: 0, Buffalo: 0, Goat: 0, Other: 0 };
+    sourceCounts.forEach((s: any) => {
+      if (s._id in sourceTotals) sourceTotals[s._id] = s.total;
+      else sourceTotals.Other += s.total;
+    });
 
-    const wholeMilk = totalCollected - prod.totalSeparated - use.usedWhole;
+    const sourceProduced = await MilkProduction.aggregate([
+      { $match: { userId: matchUserId } },
+      { $group: {
+          _id: null,
+          totalCow: { $sum: '$sourceSeparation.cow' },
+          totalBuffalo: { $sum: '$sourceSeparation.buffalo' },
+          totalGoat: { $sum: '$sourceSeparation.goat' },
+          totalOther: { $sum: '$sourceSeparation.other' },
+      }}
+    ]);
+    const separatedMap = sourceProduced[0] || { totalCow: 0, totalBuffalo: 0, totalGoat: 0, totalOther: 0 };
+
+    const prod = production[0] || { totalSeparated: 0, totalSkim: 0, totalCream: 0 };
+    const use = used[0] || { usedWhole: 0, usedSkim: 0, usedCream: 0, cow: 0, buff: 0, goat: 0, other: 0 };
+
+    const wholeMilk = Math.max(0, totalCollected - prod.totalSeparated - use.usedWhole);
+    
+    const sourceAvailable = {
+      Cow: Math.max(0, sourceTotals.Cow - separatedMap.totalCow - use.cow),
+      Buffalo: Math.max(0, sourceTotals.Buffalo - separatedMap.totalBuffalo - use.buff),
+      Goat: Math.max(0, sourceTotals.Goat - separatedMap.totalGoat - use.goat),
+      Other: Math.max(0, sourceTotals.Other - separatedMap.totalOther - use.other),
+    };
 
     return res.status(200).json({
       wholeMilk: wholeMilk,
       skimMilk: prod.totalSkim - use.usedSkim,
       creamMilk: prod.totalCream - use.usedCream,
+      sourceAvailable
     });
   } catch (error: any) {
     console.error('Production Inventory Error:', error);
@@ -541,7 +607,7 @@ app.get('/api/production/inventory', async (req, res) => {
 app.post('/api/production/make-product', async (req, res) => {
   try {
     await connectToDatabase();
-    const { userId, date, productName, quantityProduced, unit, milkUsed } = req.body ?? {};
+    const { userId, date, productName, quantityProduced, unit, milkUsed, sourceWholeUsed } = req.body ?? {};
 
     if (!userId || !date || !productName || quantityProduced === undefined || !milkUsed) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -554,6 +620,7 @@ app.post('/api/production/make-product', async (req, res) => {
       quantityProduced,
       unit: unit || 'kg',
       milkUsed,
+      sourceWholeUsed: sourceWholeUsed || { cow: 0, buff: 0, goat: 0, other: 0 }
     });
 
     await newProduct.save();

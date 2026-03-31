@@ -137,9 +137,10 @@ export default function ReportProductionScreen() {
       csv = [header, ...rows].map(r => r.join(',')).join('\n');
     } else {
       const header = ['Date', 'Separated (L)', 'Skim Produced (L)', 'Cream Produced (L)', 'Loss'];
-      const rows = filteredSeparation.map(e =>
-        [formatDate(e.date), e.separationMilk.toString(), e.skimMilk.toString(), e.creamMilk.toString(), e.loss.toString()]
-      );
+      const rows = filteredSeparation.map(e => {
+        const loss = (e.separationMilk || 0) - ((e.skimMilk || 0) + (e.creamMilk || 0));
+        return [formatDate(e.date), e.separationMilk.toString(), e.skimMilk.toString(), e.creamMilk.toString(), loss.toFixed(1)];
+      });
       csv = [header, ...rows].map(r => r.join(',')).join('\n');
     }
 
@@ -274,15 +275,18 @@ export default function ReportProductionScreen() {
                     <ThemedText style={styles.cell}>{e.milkUsed.skimMilk} L</ThemedText>
                     <ThemedText style={styles.cell}>{e.milkUsed.creamMilk} L</ThemedText>
                   </View>
-                )) : filteredSeparation.map((e, idx) => (
-                  <View key={e._id} style={[styles.tableRow, { backgroundColor: idx % 2 === 0 ? theme.background : 'rgba(0,0,0,0.02)' }]}>
-                    <ThemedText style={styles.cell}>{formatDate(e.date)}</ThemedText>
-                    <ThemedText style={[styles.cell, { fontWeight: '800' }]}>{e.separationMilk} L</ThemedText>
-                    <ThemedText style={styles.cell}>{e.skimMilk} L</ThemedText>
-                    <ThemedText style={styles.cell}>{e.creamMilk} L</ThemedText>
-                    <ThemedText style={[styles.cell, { color: theme.error }]}>{e.loss} L</ThemedText>
-                  </View>
-                ))}
+                )) : filteredSeparation.map((e, idx) => {
+                  const loss = (e.separationMilk || 0) - ((e.skimMilk || 0) + (e.creamMilk || 0));
+                  return (
+                    <View key={e._id} style={[styles.tableRow, { backgroundColor: idx % 2 === 0 ? theme.background : 'rgba(0,0,0,0.02)' }]}>
+                      <ThemedText style={styles.cell}>{formatDate(e.date)}</ThemedText>
+                      <ThemedText style={[styles.cell, { fontWeight: '800' }]}>{e.separationMilk} L</ThemedText>
+                      <ThemedText style={styles.cell}>{e.skimMilk} L</ThemedText>
+                      <ThemedText style={styles.cell}>{e.creamMilk} L</ThemedText>
+                      <ThemedText style={[styles.cell, { color: theme.error }]}>{loss.toFixed(1)} L</ThemedText>
+                    </View>
+                  );
+                })}
               </View>
             </ScrollView>
           )}

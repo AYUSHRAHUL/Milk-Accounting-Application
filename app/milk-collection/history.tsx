@@ -102,6 +102,7 @@ export default function MilkCollectionHistoryScreen() {
     };
 
     const formatDate = (dateString: string) => {
+        if (!dateString) return '-';
         return new Date(dateString).toLocaleDateString('en-GB', {
             day: '2-digit', month: '2-digit', year: 'numeric'
         }).replace(/\//g, '-');
@@ -162,8 +163,8 @@ export default function MilkCollectionHistoryScreen() {
             ts: (item.ts || '').toString(),
             costPerLiter: (item.costPerLiter || 0).toString(),
             mbrt: item.mbrt || '',
-            mbrtHours: item.mbrtTime ? item.mbrtTime.split(':')[0] : '',
-            mbrtMinutes: item.mbrtTime ? item.mbrtTime.split(':')[1] : '',
+            mbrtHours: item.mbrtTime ? item.mbrtTime.split(':')[0] || '' : '',
+            mbrtMinutes: item.mbrtTime ? item.mbrtTime.split(':')[1] || '' : '',
             cob: item.cob || ''
         });
         setIsEditModalVisible(true);
@@ -233,7 +234,7 @@ export default function MilkCollectionHistoryScreen() {
             costPerLiter: parseFloat(editForm.costPerLiter),
             totalCost: parseFloat(editForm.quantity) * parseFloat(editForm.costPerLiter),
             mbrt: editForm.mbrt,
-            mbrtTime: (editForm.mbrtHours || editForm.mbrtMinutes) ? `${editForm.mbrtHours.padStart(2, '0')}:${editForm.mbrtMinutes.padStart(2, '0')}` : undefined,
+            mbrtTime: (editForm.mbrtHours || editForm.mbrtMinutes) ? `${(editForm.mbrtHours || '0').toString().padStart(2, '0')}:${(editForm.mbrtMinutes || '0').toString().padStart(2, '0')}` : undefined,
             cob: editForm.cob
         };
 

@@ -11,6 +11,12 @@ export interface IProductProduction extends Document {
     skimMilk: number;
     creamMilk: number;
   };
+  sourceWholeUsed: {
+    cow: number;
+    buff: number;
+    goat: number;
+    other: number;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +32,12 @@ const ProductProductionSchema: Schema = new Schema(
       wholeMilk: { type: Number, default: 0 },
       skimMilk: { type: Number, default: 0 },
       creamMilk: { type: Number, default: 0 },
+    },
+    sourceWholeUsed: {
+      cow: { type: Number, default: 0 },
+      buff: { type: Number, default: 0 },
+      goat: { type: Number, default: 0 },
+      other: { type: Number, default: 0 },
     },
   },
   { timestamps: true }

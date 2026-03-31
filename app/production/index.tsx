@@ -51,6 +51,8 @@ export default function MilkProductionScreen() {
 
     // Stock Tracking
     const [availableMilk, setAvailableMilk] = useState<number | null>(null);
+    const [todayCollectedMilk, setTodayCollectedMilk] = useState<number>(0);
+    const [todayUsedMilk, setTodayUsedMilk] = useState<number>(0);
     const [totalCollectedMilk, setTotalCollectedMilk] = useState<number>(0);
     const [sourceTotals, setSourceTotals] = useState({ Cow: 0, Buffalo: 0, Goat: 0, Other: 0 });
     const [sourceAvailable, setSourceAvailable] = useState({ Cow: 0, Buffalo: 0, Goat: 0, Other: 0 });
@@ -78,18 +80,24 @@ export default function MilkProductionScreen() {
                 if (res.ok) {
                     const data = await res.json();
                     setAvailableMilk(data.availableMilk);
+                    setTodayCollectedMilk(data.todayCollected || 0);
+                    setTodayUsedMilk(data.todayUsed || 0);
                     setTotalCollectedMilk(data.totalCollected || 0);
                     setSourceTotals(data.sourceTotals || { Cow: 0, Buffalo: 0, Goat: 0, Other: 0 });
                     setSourceAvailable(data.sourceAvailable || { Cow: 0, Buffalo: 0, Goat: 0, Other: 0 });
                     setTotalUsedMilk(data.totalUsed || 0);
                 } else {
                     setAvailableMilk(0);
+                    setTodayCollectedMilk(0);
+                    setTodayUsedMilk(0);
                     setTotalCollectedMilk(0);
                     setTotalUsedMilk(0);
                 }
             } catch (err) {
                 console.error('Failed to fetch milk summary', err);
                 setAvailableMilk(0);
+                setTodayCollectedMilk(0);
+                setTodayUsedMilk(0);
                 setTotalCollectedMilk(0);
                 setTotalUsedMilk(0);
             } finally {
@@ -100,7 +108,7 @@ export default function MilkProductionScreen() {
     }, [user?.id]);
 
     // Derived values
-    const totalAvailable = availableMilk || 0;
+    const totalAvailable = sourceAvailable.Cow + sourceAvailable.Buffalo + sourceAvailable.Goat + sourceAvailable.Other;
     
     // Total separation is the sum of source-wise inputs
     const cSep = parseFloat(cowSep) || 0;
@@ -248,7 +256,7 @@ export default function MilkProductionScreen() {
                                 <View style={styles.bannerContent}>
                                     <View style={styles.bannerTop}>
                                         <Ionicons name="water" size={16} color="rgba(255,255,255,0.85)" />
-                                        <ThemedText style={styles.bannerLabel}>Today's Stock</ThemedText>
+                                        <ThemedText style={styles.bannerLabel}>Current Milk Stock</ThemedText>
                                     </View>
 
                                     {isCheckingStock ? (
@@ -256,13 +264,18 @@ export default function MilkProductionScreen() {
                                     ) : (
                                         <View style={styles.bannerStatsRow}>
                                             <View style={styles.bannerStatItem}>
-                                                <ThemedText style={[styles.bannerStatValue, { fontSize: 28, color: '#fff' }]}>{totalAvailable.toFixed(1)} ltr</ThemedText>
-                                                <ThemedText style={styles.bannerStatLabel}>Available</ThemedText>
+                                                <ThemedText style={[styles.bannerStatValue, { fontSize: 22, color: '#fff' }]}>{totalCollectedMilk.toFixed(1)} L</ThemedText>
+                                                <ThemedText style={styles.bannerStatLabel}>Total Received</ThemedText>
                                             </View>
                                             <View style={styles.bannerDividerCompact} />
                                             <View style={styles.bannerStatItem}>
-                                                <ThemedText style={styles.bannerStatValue}>{totalUsedMilk.toFixed(1)}</ThemedText>
-                                                <ThemedText style={styles.bannerStatLabel}>Used</ThemedText>
+                                                <ThemedText style={[styles.bannerStatValue, { fontSize: 22, color: '#fff' }]}>{totalAvailable.toFixed(1)} L</ThemedText>
+                                                <ThemedText style={styles.bannerStatLabel}>Available Milk</ThemedText>
+                                            </View>
+                                            <View style={styles.bannerDividerCompact} />
+                                            <View style={styles.bannerStatItem}>
+                                                <ThemedText style={[styles.bannerStatValue, { fontSize: 22, color: '#fff' }]}>{totalUsedMilk.toFixed(1)} L</ThemedText>
+                                                <ThemedText style={styles.bannerStatLabel}>Total Used</ThemedText>
                                             </View>
                                         </View>
                                     )}
