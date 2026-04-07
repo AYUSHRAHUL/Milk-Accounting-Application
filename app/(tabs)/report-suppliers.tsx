@@ -36,7 +36,6 @@ interface SupplierRow {
   createdAt: string;
 }
 
-type ActiveFilter = 'All' | 'Active' | 'Inactive';
 type AnimalFilter = 'All' | 'Cow' | 'Buffalo' | 'Goat' | 'Other';
 
 export default function ReportSuppliersScreen() {
@@ -46,7 +45,6 @@ export default function ReportSuppliersScreen() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [entries, setEntries] = useState<SupplierRow[]>([]);
-  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('All');
   const [animalFilter, setAnimalFilter] = useState<AnimalFilter>('All');
   const [exportModalVisible, setExportModal] = useState(false);
 
@@ -79,20 +77,14 @@ export default function ReportSuppliersScreen() {
 
   const filtered = useMemo(() =>
     entries.filter((e) => {
-      const activeOk =
-        activeFilter === 'All' ||
-        (activeFilter === 'Active' && e.isActive) ||
-        (activeFilter === 'Inactive' && !e.isActive);
       const animalOk =
         animalFilter === 'All' || (e.animalType || []).includes(animalFilter);
-      return activeOk && animalOk;
+      return animalOk;
     }),
-    [entries, activeFilter, animalFilter]);
+    [entries, animalFilter]);
 
   // ── Summary stats ────────────────────────────────────────
   const totalSuppliers = filtered.length;
-  const activeCount = filtered.filter((e) => e.isActive).length;
-  const inactiveCount = filtered.filter((e) => !e.isActive).length;
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
@@ -157,16 +149,6 @@ export default function ReportSuppliersScreen() {
             <ThemedText style={[styles.statValue, { color: PURPLE }]}>{totalSuppliers}</ThemedText>
             <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total</ThemedText>
           </View>
-          <View style={[styles.statCard, { backgroundColor: theme.successMuted }]}>
-            <Ionicons name="checkmark-circle-outline" size={18} color={theme.success} style={{ marginBottom: 4 }} />
-            <ThemedText style={[styles.statValue, { color: theme.success }]}>{activeCount}</ThemedText>
-            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Active</ThemedText>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: theme.errorMuted }]}>
-            <Ionicons name="close-circle-outline" size={18} color={theme.error} style={{ marginBottom: 4 }} />
-            <ThemedText style={[styles.statValue, { color: theme.error }]}>{inactiveCount}</ThemedText>
-            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Inactive</ThemedText>
-          </View>
         </View>
 
         {/* ── Action Buttons ── */}
@@ -195,39 +177,6 @@ export default function ReportSuppliersScreen() {
           <View style={styles.filtersTitleRow}>
             <Ionicons name="filter" size={15} color={theme.textSecondary} />
             <ThemedText style={[styles.filtersTitle, { color: theme.textSecondary }]}>Filters</ThemedText>
-          </View>
-
-          {/* Status */}
-          <View style={styles.filterGroup}>
-            <ThemedText style={[styles.filterLabel, { color: theme.textSecondary }]}>Status</ThemedText>
-            <View style={styles.pillsRow}>
-              {(['All', 'Active', 'Inactive'] as ActiveFilter[]).map((val) => {
-                const active = activeFilter === val;
-                const pillColor =
-                  val === 'Active' ? theme.success :
-                    val === 'Inactive' ? theme.error : PURPLE;
-                const pillBg =
-                  val === 'Active' ? theme.successMuted :
-                    val === 'Inactive' ? theme.errorMuted : PURPLE_BG;
-                return (
-                  <TouchableOpacity
-                    key={val}
-                    onPress={() => setActiveFilter(val)}
-                    style={[
-                      styles.pill,
-                      {
-                        backgroundColor: active ? pillBg : theme.surfaceMuted,
-                        borderColor: active ? pillColor : theme.borderMuted,
-                      },
-                    ]}
-                  >
-                    <ThemedText style={[styles.pillText, { color: active ? pillColor : theme.text }]}>
-                      {val === 'Active' ? '✅ ' : val === 'Inactive' ? '⛔ ' : ''}{val}
-                    </ThemedText>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
           </View>
 
           {/* Animal Type */}

@@ -211,55 +211,45 @@ export default function DashboardScreen() {
         <DashboardBanner />
 
         {/* KPI Section */}
-        <View style={styles.kpiSection}>
-          <View style={styles.kpiCardRow}>
-            {/* Opening Balance Card */}
-            <View style={[styles.kpiCardMinimal]}>
-              <View style={styles.kpiAccentTopOpening} />
-              <View style={styles.kpiCardContent}>
-                <Text style={styles.kpiLabelMinimal}>Opening Bal. ({todayStr})</Text>
-                <Text style={styles.kpiValueMinimal}>
-                  {openingBalance?.toFixed(1) || '0.0'}L
+        <View style={[styles.grid, { marginBottom: 16 }]}>
+          {/* Opening Balance Card */}
+          <View style={[styles.card, { height: 'auto', paddingVertical: 20 }]}>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              OPENING BAL. ({todayStr})
+            </Text>
+            <Text style={{ fontSize: 24, fontWeight: '800', color: '#111827', marginTop: 8 }}>
+              {openingBalance?.toFixed(1) || '0.0'}L
+            </Text>
+            {sourceOpeningBalance && (
+              <View style={{ marginTop: 12, alignItems: 'center' }}>
+                <Text style={{ fontSize: 10, color: '#6B7280', fontWeight: '600' }}>
+                  C: {sourceOpeningBalance.Cow?.toFixed(0)}L  •  B: {sourceOpeningBalance.Buffalo?.toFixed(0)}L
                 </Text>
-                
-                {sourceOpeningBalance && (
-                  <View style={styles.kpiBreakdownMinimal}>
-                    <View style={styles.kpiBreakdownRow}>
-                      <Text style={styles.kpiBreakdownText}>Cow: <Text style={styles.kpiBreakdownBold}>{sourceOpeningBalance.Cow?.toFixed(1)}L</Text></Text>
-                      <Text style={styles.kpiBreakdownText}>Buff: <Text style={styles.kpiBreakdownBold}>{sourceOpeningBalance.Buffalo?.toFixed(1)}L</Text></Text>
-                    </View>
-                    <View style={styles.kpiBreakdownRow}>
-                      <Text style={styles.kpiBreakdownText}>Goat: <Text style={styles.kpiBreakdownBold}>{sourceOpeningBalance.Goat?.toFixed(1)}L</Text></Text>
-                      <Text style={styles.kpiBreakdownText}>Oth: <Text style={styles.kpiBreakdownBold}>{sourceOpeningBalance.Other?.toFixed(1)}L</Text></Text>
-                    </View>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Closing Balance Card */}
-            <View style={[styles.kpiCardMinimal]}>
-              <View style={styles.kpiAccentTopClosing} />
-              <View style={styles.kpiCardContent}>
-                <Text style={styles.kpiLabelMinimal}>Closing Bal. ({cbDateStr})</Text>
-                <Text style={styles.kpiValueMinimal}>
-                  {closingBalance?.toFixed(1) || '0.0'}L
+                <Text style={{ fontSize: 10, color: '#6B7280', fontWeight: '600' }}>
+                  G: {sourceOpeningBalance.Goat?.toFixed(0)}L  •  O: {sourceOpeningBalance.Other?.toFixed(0)}L
                 </Text>
-
-                {sourceClosingBalance && (
-                  <View style={styles.kpiBreakdownMinimal}>
-                    <View style={styles.kpiBreakdownRow}>
-                      <Text style={styles.kpiBreakdownText}>Cow: <Text style={styles.kpiBreakdownBold}>{sourceClosingBalance.Cow?.toFixed(1)}L</Text></Text>
-                      <Text style={styles.kpiBreakdownText}>Buff: <Text style={styles.kpiBreakdownBold}>{sourceClosingBalance.Buffalo?.toFixed(1)}L</Text></Text>
-                    </View>
-                    <View style={styles.kpiBreakdownRow}>
-                      <Text style={styles.kpiBreakdownText}>Goat: <Text style={styles.kpiBreakdownBold}>{sourceClosingBalance.Goat?.toFixed(1)}L</Text></Text>
-                      <Text style={styles.kpiBreakdownText}>Oth: <Text style={styles.kpiBreakdownBold}>{sourceClosingBalance.Other?.toFixed(1)}L</Text></Text>
-                    </View>
-                  </View>
-                )}
               </View>
-            </View>
+            )}
+          </View>
+
+          {/* Closing Balance Card */}
+          <View style={[styles.card, { height: 'auto', paddingVertical: 20 }]}>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              CLOSING BAL. ({cbDateStr})
+            </Text>
+            <Text style={{ fontSize: 24, fontWeight: '800', color: '#111827', marginTop: 8 }}>
+              {closingBalance?.toFixed(1) || '0.0'}L
+            </Text>
+            {sourceClosingBalance && (
+              <View style={{ marginTop: 12, alignItems: 'center' }}>
+                <Text style={{ fontSize: 10, color: '#6B7280', fontWeight: '600' }}>
+                  C: {sourceClosingBalance.Cow?.toFixed(0)}L  •  B: {sourceClosingBalance.Buffalo?.toFixed(0)}L
+                </Text>
+                <Text style={{ fontSize: 10, color: '#6B7280', fontWeight: '600' }}>
+                  G: {sourceClosingBalance.Goat?.toFixed(0)}L  •  O: {sourceClosingBalance.Other?.toFixed(0)}L
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -451,66 +441,63 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   // Minimal KPI Styles
-  kpiCardMinimal: {
+  minimalKpiCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
+    borderRadius: 20,
+    padding: 16,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
-    minHeight: 100,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  kpiAccentTopOpening: {
-    height: 4,
-    backgroundColor: '#059669',
-  },
-  kpiAccentTopClosing: {
-    height: 4,
-    backgroundColor: '#10B981',
-  },
-  kpiCardContent: {
-    padding: 8,
+  minimalKpiHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 8,
   },
-  kpiLabelMinimal: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#64748B',
+  minimalKpiIcon: {
+    marginRight: 6,
+  },
+  minimalKpiLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6B7280',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 4,
   },
-  kpiValueMinimal: {
-    fontSize: 22,
+  minimalKpiDate: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    marginLeft: 'auto',
+    fontWeight: '500',
+  },
+  minimalKpiValue: {
+    fontSize: 26,
     fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 10,
+    color: '#111827',
+    marginBottom: 12,
   },
-  kpiBreakdownMinimal: {
-    width: '100%',
+  minimalKpiBreakdown: {
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    paddingTop: 8,
-    gap: 4,
+    borderTopColor: '#F3F4F6',
+    gap: 6,
   },
-  kpiBreakdownRow: {
+  minimalKpiBreakdownRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
-    paddingHorizontal: 4,
   },
-  kpiBreakdownText: {
-    fontSize: 11,
-    color: '#64748B',
+  minimalKpiBreakdownText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
   },
-  kpiBreakdownBold: {
+  minimalKpiBreakdownBold: {
+    color: '#374151',
     fontWeight: '700',
-    color: '#1E293B',
   },
 });

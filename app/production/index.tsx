@@ -121,13 +121,14 @@ export default function MilkProductionScreen() {
     
     const wholeMilk = Math.max(0, totalAvailable - sepQty);
     const skimQty = parseFloat(skimMilk) || 0;
-    const creamMilk = parseFloat(creamMilkInput) || 0;
+    const creamQty = parseFloat(creamMilkInput) || 0;
     const mixedQty = parseFloat(mixedMilk) || 0;
-    const isDivisionExceeded = (skimQty + creamMilk + mixedQty) > sepQty;
+    const isDivisionExceeded = (skimQty + creamQty + mixedQty) > sepQty;
 
     const sepPercent = totalAvailable > 0 ? Math.min((sepQty / totalAvailable) * 100, 100) : 0;
     const skimPercent = sepQty > 0 ? Math.min((skimQty / sepQty) * 100, 100) : 0;
-    const creamPercent = sepQty > 0 ? Math.min((creamMilk / sepQty) * 100, 100) : 0;
+    const creamPercent = sepQty > 0 ? Math.min((creamQty / sepQty) * 100, 100) : 0;
+    const mixedPercent = sepQty > 0 ? Math.min((mixedQty / sepQty) * 100, 100) : 0;
 
     const handleSave = async () => {
         if (!date || sepQty === 0 || skimMilk === '' || creamMilkInput === '' || mixedMilk === '') {
@@ -176,7 +177,7 @@ export default function MilkProductionScreen() {
                     },
                     wholeMilk,
                     skimMilk: skimQty,
-                    creamMilk,
+                    creamMilk: creamQty,
                     mixedMilk: mixedQty,
                 }),
             });
@@ -409,7 +410,6 @@ export default function MilkProductionScreen() {
                                 </View>
                             )}
 
-                            {/* Step 2 */}
                             <View style={[
                                 styles.section, 
                                 isLargeScreen && { flex: 1.2 },
@@ -420,118 +420,44 @@ export default function MilkProductionScreen() {
                                         <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
                                             <ThemedText style={[styles.sectionTitleCompact, { color: isDark ? '#F8FAFC' : '#111827', marginRight: 6 }]}>Division</ThemedText>
                                             <ThemedText style={[styles.stepSubtitleCompact, { color: isDark ? '#64748B' : '#9CA3AF', marginTop: 0 }]}>
-                                                (Allocate skim & cream)
+                                                (Allocate outputs)
                                             </ThemedText>
                                         </View>
-                                        <ThemedText style={[styles.infoChipTextCompact, { color: isDark ? '#60A5FA' : '#3B82F6', marginLeft: 8 }]}>
+                                        <ThemedText style={[styles.infoChipTextCompact, { color: isDivisionExceeded ? '#EF4444' : (isDark ? '#60A5FA' : '#3B82F6') }]}>
                                             Total: {sepQty.toFixed(3)} L
                                         </ThemedText>
                                     </View>
                                 </View>
 
-
                                 <View style={styles.resultGridCompact}>
-                                    <TouchableOpacity 
-                                        activeOpacity={0.8}
-                                        style={[styles.resultCardCompact, { 
-                                            backgroundColor: isDark ? '#064E3B' : '#F0FDF4', 
-                                            borderColor: isDivisionExceeded ? '#EF4444' : inputBorderColor('mixed'),
-                                            borderWidth: isDivisionExceeded ? 2 : 1
-                                        }]}
-                                        onPress={() => setActiveFocused('mixed')}
-                                    >
-                                        <ThemedText style={[styles.resultCardTagCompact, { color: isDark ? '#94A3B8' : '#64748B' }]}>MIXED</ThemedText>
-                                        <View style={[styles.innerInputBoxCompact, { borderColor: isDivisionExceeded ? '#EF4444' : (isDark ? '#16653440' : '#86EFAC') }]}>
-                                             <TextInput
-                                                 style={[styles.resultCardValueCompact, { color: isDark ? '#34D399' : '#16A34A', flex: 1 }]}
-                                                 value={mixedMilk}
-                                                 onChangeText={setMixedMilk}
-                                                 keyboardType="numeric"
-                                                 placeholder="0.00"
-                                                 placeholderTextColor={isDark ? '#064E3B' : '#86EFAC'}
-                                                  onFocus={() => {
-                                                    setActiveFocused('mixed');
-                                                    scrollRef.current?.scrollToEnd({ animated: true });
-                                                }}
-                                                 onBlur={() => {
-                                                     setActiveFocused(null);
-                                                     if (isDivisionExceeded) {
-                                                         if (Platform.OS === 'web') alert('Warning: Inputs exceed separated milk!');
-                                                         else Alert.alert('Warning', 'Inputs exceed separated milk!');
-                                                     }
-                                                 }}
-                                             />
-                                             <ThemedText style={[styles.inputUnitCompact, { color: isDark ? '#34D399' : '#16A34A', fontWeight: '800' }]}>L</ThemedText>
-                                         </View>
-                                    </TouchableOpacity>
-                                    <View style={{ width: 6 }} />
-                                    <TouchableOpacity 
-                                        activeOpacity={0.8}
-                                        style={[styles.resultCardCompact, { 
-                                            backgroundColor: isDark ? '#2D1505' : '#FFFBEB', 
-                                            borderColor: isDivisionExceeded ? '#EF4444' : inputBorderColor('cream'),
-                                            borderWidth: isDivisionExceeded ? 2 : 1
-                                        }]}
-                                        onPress={() => setActiveFocused('cream')}
-                                    >
-                                        <ThemedText style={[styles.resultCardTagCompact, { color: isDark ? '#94A3B8' : '#64748B' }]}>CREAM</ThemedText>
-                                        <View style={[styles.innerInputBoxCompact, { borderColor: isDivisionExceeded ? '#EF4444' : (isDark ? '#D9770640' : '#FDE68A') }]}>
-                                             <TextInput
-                                                 style={[styles.resultCardValueCompact, { color: isDark ? '#FBBF24' : '#D97706', flex: 1 }]}
-                                                 value={creamMilkInput}
-                                                 onChangeText={setCreamMilkInput}
-                                                 keyboardType="numeric"
-                                                 placeholder="0.00"
-                                                 placeholderTextColor={isDark ? '#452109' : '#FDE68A'}
-                                                  onFocus={() => {
-                                                    setActiveFocused('cream');
-                                                    scrollRef.current?.scrollToEnd({ animated: true });
-                                                }}
-                                                 onBlur={() => {
-                                                     setActiveFocused(null);
-                                                     if (isDivisionExceeded) {
-                                                         if (Platform.OS === 'web') alert('Warning: Inputs exceed separated milk!');
-                                                         else Alert.alert('Warning', 'Inputs exceed separated milk!');
-                                                     }
-                                                 }}
-                                             />
-                                             <ThemedText style={[styles.inputUnitCompact, { color: isDark ? '#FBBF24' : '#D97706', fontWeight: '800' }]}>L</ThemedText>
-                                         </View>
-                                    </TouchableOpacity>
-                                    <View style={{ width: 6 }} />
-                                    <TouchableOpacity 
-                                        activeOpacity={0.8}
-                                        style={[styles.resultCardCompact, { 
-                                            backgroundColor: isDark ? '#0C1A2E' : '#EFF6FF', 
-                                            borderColor: isDivisionExceeded ? '#EF4444' : inputBorderColor('skim'),
-                                            borderWidth: isDivisionExceeded ? 2 : 1
-                                        }]}
-                                        onPress={() => setActiveFocused('skim')}
-                                    >
-                                        <ThemedText style={[styles.resultCardTagCompact, { color: isDark ? '#94A3B8' : '#64748B' }]}>SKIM</ThemedText>
-                                        <View style={[styles.innerInputBoxCompact, { borderColor: isDivisionExceeded ? '#EF4444' : (isDark ? '#1D4ED840' : '#BFDBFE') }]}>
-                                             <TextInput
-                                                 style={[styles.resultCardValueCompact, { color: isDark ? '#60A5FA' : '#1D4ED8', flex: 1 }]}
-                                                 value={skimMilk}
-                                                 onChangeText={setSkimMilk}
-                                                 keyboardType="numeric"
-                                                 placeholder="0.00"
-                                                 placeholderTextColor={isDark ? '#1E3A5F' : '#BFDBFE'}
-                                                  onFocus={() => {
-                                                    setActiveFocused('skim');
-                                                    scrollRef.current?.scrollToEnd({ animated: true });
-                                                }}
-                                                 onBlur={() => {
-                                                     setActiveFocused(null);
-                                                     if (isDivisionExceeded) {
-                                                         if (Platform.OS === 'web') alert('Warning: Inputs exceed separated milk!');
-                                                         else Alert.alert('Warning', 'Inputs exceed separated milk!');
-                                                     }
-                                                 }}
-                                             />
-                                             <ThemedText style={[styles.inputUnitCompact, { color: isDark ? '#60A5FA' : '#1D4ED8', fontWeight: '800' }]}>L</ThemedText>
-                                         </View>
-                                    </TouchableOpacity>
+                                    {[
+                                        { label: 'Mixed', value: mixedMilk, setter: setMixedMilk, color: '#16A34A', key: 'mixed' },
+                                        { label: 'Cream', value: creamMilkInput, setter: setCreamMilkInput, color: '#F59E0B', key: 'cream' },
+                                        { label: 'Skim', value: skimMilk, setter: setSkimMilk, color: '#3B82F6', key: 'skim' },
+                                    ].map((item) => (
+                                        <View key={item.key} style={styles.sourceSepItem}>
+                                            <ThemedText style={[styles.sourceBoxTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>{item.label}</ThemedText>
+                                            <View style={[styles.sourceInputBox, { 
+                                                borderColor: isDivisionExceeded ? '#EF4444' : (activeFocused === item.key ? item.color : (isDark ? '#2D3748' : '#E5E7EB')),
+                                                backgroundColor: isDark ? '#0F172A' : '#F8FAFC',
+                                                borderWidth: activeFocused === item.key || isDivisionExceeded ? 2 : 1
+                                            }]}>
+                                                <TextInput
+                                                    style={[styles.sourceInputText, { color: isDark ? '#F8FAFC' : '#111827' }]}
+                                                    value={item.value}
+                                                    onChangeText={item.setter}
+                                                    keyboardType="numeric"
+                                                    placeholder="0.00"
+                                                    placeholderTextColor={isDark ? '#4B5563' : '#9CA3AF'}
+                                                    onFocus={() => {
+                                                        setActiveFocused(item.key);
+                                                        scrollRef.current?.scrollToEnd({ animated: true });
+                                                    }}
+                                                    onBlur={() => setActiveFocused(null)}
+                                                />
+                                            </View>
+                                        </View>
+                                    ))}
                                 </View>
                             </View>
                         </View>
@@ -549,7 +475,7 @@ export default function MilkProductionScreen() {
                                         { label: 'Avail', value: `${totalAvailable.toFixed(3)}L`, color: '#22C55E' },
                                         { label: 'Left', value: `${wholeMilk.toFixed(3)}L`, color: '#16A34A' },
                                         { label: 'Skim', value: `${(inventory.skimMilk + skimQty).toFixed(3)}L`, color: '#60A5FA' },
-                                        { label: 'Cream', value: `${(inventory.creamMilk + creamMilk).toFixed(3)}L`, color: '#F59E0B' },
+                                        { label: 'Cream', value: `${(inventory.creamMilk + creamQty).toFixed(3)}L`, color: '#F59E0B' },
                                         { label: 'Mixed', value: `${(inventory.mixedMilk + mixedQty).toFixed(3)}L`, color: '#10B981' },
                                     ].map((item, idx) => (
                                         <View key={idx} style={styles.summaryStripItemCompact}>
@@ -834,40 +760,7 @@ const styles = StyleSheet.create({
     resultTagCompact: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase' },
     resultBigValueCompact: { fontSize: 16, fontWeight: '800' },
     
-    resultGridCompact: { flexDirection: 'row' },
-    resultCardCompact: {
-        flex: 1,
-        borderRadius: 14,
-        paddingHorizontal: 12,
-        paddingVertical: 12,
-        borderWidth: 1.5,
-        flexDirection: 'column',
-        minHeight: 70,
-        overflow: 'hidden',
-        alignItems: 'stretch',
-        ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as any
-    },
-    resultCardTagCompact: { fontSize: 10, fontWeight: '800', marginBottom: 4 }, // Increased margin
-    resultCardValueCompact: { 
-        fontSize: 18, 
-        fontWeight: '800',
-        height: 38,
-        padding: 0,
-        textAlignVertical: 'center',
-        flex: 1,
-        ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as any 
-    },
-    innerInputBoxCompact: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.5)',
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        borderWidth: 1,
-        height: 42,
-        width: '100%',
-        alignSelf: 'stretch',
-    },
+    resultGridCompact: { flexDirection: 'row', gap: 8 },
 
     // ── Summary Strip (Compact)
     summaryStripCompact: {

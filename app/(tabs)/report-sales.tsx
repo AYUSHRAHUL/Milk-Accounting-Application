@@ -32,7 +32,6 @@ interface SaleEntryRow {
 }
 
 type ProductFilter = string;
-type PaymentFilter = 'All' | 'Cash' | 'UPI' | 'Credit';
 
 // Payment mode → color mapping
 const PAYMENT_COLORS: Record<string, { bg: string; text: string }> = {
@@ -49,7 +48,6 @@ export default function ReportSalesScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [entries, setEntries] = useState<SaleEntryRow[]>([]);
   const [productFilter, setProductFilter] = useState<ProductFilter>('All');
-  const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('All');
   const [exportModalVisible, setExportModalVisible] = useState(false);
 
   const fetchEntries = useCallback(async () => {
@@ -85,10 +83,9 @@ export default function ReportSalesScreen() {
   const filtered = useMemo(() => {
     return entries.filter((e) => {
       const productOk = productFilter === 'All' || e.productType === productFilter;
-      const paymentOk = paymentFilter === 'All' || e.paymentMode === paymentFilter;
-      return productOk && paymentOk;
+      return productOk;
     });
-  }, [entries, productFilter, paymentFilter]);
+  }, [entries, productFilter]);
 
   const availableProducts = useMemo(() => {
     const defaultProducts = [
@@ -260,37 +257,6 @@ export default function ReportSalesScreen() {
             </ScrollView>
           </View>
 
-          {/* Payment Mode */}
-          <View style={[styles.filterGroup, { marginBottom: 0 }]}>
-            <ThemedText style={[styles.filterLabel, { color: theme.textSecondary }]}>Payment Mode</ThemedText>
-            <View style={styles.pillsRow}>
-              {(['All', 'Cash', 'UPI', 'Credit'] as PaymentFilter[]).map((val) => {
-                const active = paymentFilter === val;
-                const color = val !== 'All' ? PAYMENT_COLORS[val]?.text : theme.success;
-                return (
-                  <TouchableOpacity
-                    key={val}
-                    onPress={() => setPaymentFilter(val)}
-                    style={[
-                      styles.pill,
-                      {
-                        backgroundColor: active
-                          ? (val !== 'All' ? PAYMENT_COLORS[val]?.bg : theme.successMuted)
-                          : theme.surfaceMuted,
-                        borderColor: active
-                          ? (val !== 'All' ? color : theme.success)
-                          : theme.borderMuted,
-                      },
-                    ]}
-                  >
-                    <ThemedText style={[styles.pillText, { color: active ? (val !== 'All' ? color : theme.success) : theme.text }]}>
-                      {val === 'Cash' ? '💵 ' : val === 'UPI' ? '📱 ' : val === 'Credit' ? '💳 ' : ''}{val}
-                    </ThemedText>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
         </Card>
 
         {/* ── Data Table ── */}
