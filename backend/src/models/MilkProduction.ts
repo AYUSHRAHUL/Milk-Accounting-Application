@@ -14,6 +14,7 @@ export interface IMilkProduction extends Document {
   wholeMilk: number;
   skimMilk: number;
   creamMilk: number;
+  mixedMilk: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,6 +34,7 @@ const MilkProductionSchema: Schema = new Schema(
     wholeMilk: { type: Number, required: true },
     skimMilk: { type: Number, required: true },
     creamMilk: { type: Number, required: true },
+    mixedMilk: { type: Number, required: true, default: 0 },
   },
   { timestamps: true }
 );

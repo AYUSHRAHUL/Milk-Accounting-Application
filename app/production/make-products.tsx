@@ -1,10 +1,10 @@
 import { ThemedText } from '@/components/themed-text';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useFocusEffect } from 'expo-router';
-import { DatePicker } from '@/components/ui/DatePicker';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -23,19 +23,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 /* ── CONFIG ── */
 const PRODUCT_LIST = [
-    { name: 'Paneer', color: '#10B981', icon: '🧀' },
-    { name: 'Ghee', color: '#F59E0B', icon: '🫙' },
-    { name: 'Butter', color: '#FCD34D', icon: '🧈' },
-    { name: 'Curd', color: '#3B82F6', icon: '🥛' },
-    { name: 'Khoa', color: '#8B5CF6', icon: '🍮' },
-    { name: 'Fl. milk', color: '#EC4899', icon: '🧃' },
-    { name: 'Icecream', color: '#F472B6', icon: '🍨' },
-    { name: 'Yoghurt', color: '#A78BFA', icon: '🍧' },
-    { name: 'Srikhand', color: '#FDE047', icon: '🥣' },
-    { name: 'Rasgolla', color: '#9CA3AF', icon: '⚪' },
-    { name: 'Gulabjamun', color: '#78350F', icon: '🧆' },
-    { name: 'Rabbari', color: '#FBBF24', icon: '🥘' },
-    { name: 'Other', color: '#64748B', icon: '📦' },
+    { name: 'Paneer', color: '#10B981', icon: '🧀', idealUnit: 'kg' },
+    { name: 'Ghee', color: '#F59E0B', icon: '🫙', idealUnit: 'ltr' },
+    { name: 'Butter', color: '#FCD34D', icon: '🧈', idealUnit: 'kg' },
+    { name: 'Curd', color: '#3B82F6', icon: '🥛', idealUnit: 'kg' },
+    { name: 'Khoa', color: '#8B5CF6', icon: '🍮', idealUnit: 'kg' },
+    { name: 'Fl. milk', color: '#EC4899', icon: '🧃', idealUnit: 'ltr' },
+    { name: 'ST Milk', color: '#2563EB', icon: '🥛', idealUnit: 'ltr' },
+    { name: 'TD MILK', color: '#0EA5E9', icon: '🥛', idealUnit: 'ltr' },
+    { name: 'DTD MIlk', color: '#38BDF8', icon: '🥛', idealUnit: 'ltr' },
+    { name: 'Icecream', color: '#F472B6', icon: '🍨', idealUnit: 'ltr' },
+    { name: 'Yoghurt', color: '#A78BFA', icon: '🍧', idealUnit: 'kg' },
+    { name: 'Srikhand', color: '#FDE047', icon: '🥣', idealUnit: 'kg' },
+    { name: 'Rasgolla', color: '#9CA3AF', icon: '⚪', idealUnit: 'units' },
+    { name: 'Gulabjamun', color: '#78350F', icon: '🧆', idealUnit: 'units' },
+    { name: 'Rabbari', color: '#FBBF24', icon: '🥘', idealUnit: 'kg' },
+    { name: 'Other', color: '#64748B', icon: '📦', idealUnit: 'kg' },
 ];
 
 const PAGE_PADDING = 24;
@@ -51,10 +54,11 @@ export default function MakeProductsScreen() {
     const scrollRef = useRef<ScrollView>(null);
 
     // Form State
-    const [inventory, setInventory] = useState({ 
-        wholeMilk: 0, 
-        skimMilk: 0, 
+    const [inventory, setInventory] = useState({
+        mixedMilk: 0,
+        skimMilk: 0,
         creamMilk: 0,
+        sepMixed: 0,
         sourceAvailable: { Cow: 0, Buffalo: 0, Goat: 0, Other: 0 }
     });
     const [date, setDate] = useState(() => {
@@ -84,6 +88,10 @@ export default function MakeProductsScreen() {
     const [useOther, setUseOther] = useState('');
     const [useSkim, setUseSkim] = useState('');
     const [useCream, setUseCream] = useState('');
+    const [useMixed, setUseMixed] = useState('');
+    const [useSkimPowder, setUseSkimPowder] = useState('');
+    const [useSugar, setUseSugar] = useState('');
+    const [useStabilizer, setUseStabilizer] = useState('');
     const [showAllProducts, setShowAllProducts] = useState(false);
 
     const fetchInventory = useCallback(async () => {
@@ -94,9 +102,10 @@ export default function MakeProductsScreen() {
             if (res.ok) {
                 const data = await res.json();
                 setInventory({
-                    wholeMilk: data.wholeMilk || 0,
+                    mixedMilk: data.wholeMilk || 0,
                     skimMilk: data.skimMilk || 0,
                     creamMilk: data.creamMilk || 0,
+                    sepMixed: data.mixedMilk || 0,
                     sourceAvailable: data.sourceAvailable || { Cow: 0, Buffalo: 0, Goat: 0, Other: 0 }
                 });
             }
@@ -111,6 +120,54 @@ export default function MakeProductsScreen() {
         fetchInventory();
     }, [fetchInventory]);
 
+    // Auto-update unit based on selected product
+    useEffect(() => {
+        const prod = PRODUCT_LIST.find(p => p.name === selectedProduct);
+        if (prod?.idealUnit) {
+            setUnit(prod.idealUnit);
+        }
+    }, [selectedProduct]);
+
+    // Live Balance Alerts (Real-time check)
+    useEffect(() => {
+        const cVal = parseFloat(useCow) || 0;
+        const bVal = parseFloat(useBuff) || 0;
+        const gVal = parseFloat(useGoat) || 0;
+        const oVal = parseFloat(useOther) || 0;
+        const sVal = parseFloat(useSkim) || 0;
+        const rVal = parseFloat(useCream) || 0;
+        const mVal = parseFloat(useMixed) || 0;
+
+        if (cVal > (inventory.sourceAvailable.Cow || 0) + 0.001) {
+            Alert.alert('Low Balance', `Cow Milk balance is only ${inventory.sourceAvailable.Cow.toFixed(3)}L`);
+            setUseCow((inventory.sourceAvailable.Cow || 0).toString());
+        }
+        if (bVal > (inventory.sourceAvailable.Buffalo || 0) + 0.001) {
+            Alert.alert('Low Balance', `Buffalo Milk balance is only ${inventory.sourceAvailable.Buffalo.toFixed(3)}L`);
+            setUseBuff((inventory.sourceAvailable.Buffalo || 0).toString());
+        }
+        if (gVal > (inventory.sourceAvailable.Goat || 0) + 0.001) {
+            Alert.alert('Low Balance', `Goat Milk balance is only ${inventory.sourceAvailable.Goat.toFixed(3)}L`);
+            setUseGoat((inventory.sourceAvailable.Goat || 0).toString());
+        }
+        if (oVal > (inventory.sourceAvailable.Other || 0) + 0.001) {
+            Alert.alert('Low Balance', `Other Milk balance is only ${inventory.sourceAvailable.Other.toFixed(3)}L`);
+            setUseOther((inventory.sourceAvailable.Other || 0).toString());
+        }
+        if (sVal > (inventory.skimMilk || 0) + 0.001) {
+            Alert.alert('Low Balance', `Skim Milk balance is only ${inventory.skimMilk.toFixed(3)}L`);
+            setUseSkim((inventory.skimMilk || 0).toString());
+        }
+        if (rVal > (inventory.creamMilk || 0) + 0.001) {
+            Alert.alert('Low Balance', `Cream balance is only ${inventory.creamMilk.toFixed(3)}L`);
+            setUseCream((inventory.creamMilk || 0).toString());
+        }
+        if (mVal > (inventory.sepMixed || 0) + 0.001) {
+            Alert.alert('Low Balance', `Mixed Milk balance is only ${inventory.sepMixed.toFixed(3)}L`);
+            setUseMixed((inventory.sepMixed || 0).toString());
+        }
+    }, [useCow, useBuff, useGoat, useOther, useSkim, useCream, useMixed, inventory]);
+
     const handleProduce = async () => {
         if (!user?.id) return;
         const cUsed = parseFloat(useCow) || 0;
@@ -119,30 +176,37 @@ export default function MakeProductsScreen() {
         const oUsed = parseFloat(useOther) || 0;
         const skimUsed = parseFloat(useSkim) || 0;
         const creamUsed = parseFloat(useCream) || 0;
-        const wholeUsed = cUsed + bUsed + gUsed + oUsed;
+        const sepMixedUsed = parseFloat(useMixed) || 0;
+        const sPowder = parseFloat(useSkimPowder) || 0;
+        const sSugar = parseFloat(useSugar) || 0;
+        const sStab = parseFloat(useStabilizer) || 0;
+        const mixedRawUsed = cUsed + bUsed + gUsed + oUsed;
 
-        if (!qtyProduced || (wholeUsed === 0 && skimUsed === 0 && creamUsed === 0)) {
+        if (!qtyProduced || (mixedRawUsed === 0 && skimUsed === 0 && creamUsed === 0 && sepMixedUsed === 0 && sPowder === 0)) {
             Alert.alert('Missing Information', 'Please provide the quantity produced and the milk used.');
             return;
         }
 
-        if (cUsed > inventory.sourceAvailable.Cow + 0.01) {
-            Alert.alert('Low Balance', `Cow Milk balance is ${inventory.sourceAvailable.Cow.toFixed(1)}L`); return;
+        if (cUsed > (inventory.sourceAvailable.Cow || 0) + 0.01) {
+            Alert.alert('Low Balance', `Cow Milk balance is ${inventory.sourceAvailable.Cow.toFixed(3)}L`); return;
         }
-        if (bUsed > inventory.sourceAvailable.Buffalo + 0.01) {
-            Alert.alert('Low Balance', `Buffalo Milk balance is ${inventory.sourceAvailable.Buffalo.toFixed(1)}L`); return;
+        if (bUsed > (inventory.sourceAvailable.Buffalo || 0) + 0.01) {
+            Alert.alert('Low Balance', `Buffalo Milk balance is ${inventory.sourceAvailable.Buffalo.toFixed(3)}L`); return;
         }
-        if (gUsed > inventory.sourceAvailable.Goat + 0.01) {
-            Alert.alert('Low Balance', `Goat Milk balance is ${inventory.sourceAvailable.Goat.toFixed(1)}L`); return;
+        if (gUsed > (inventory.sourceAvailable.Goat || 0) + 0.01) {
+            Alert.alert('Low Balance', `Goat Milk balance is ${inventory.sourceAvailable.Goat.toFixed(3)}L`); return;
         }
-        if (oUsed > inventory.sourceAvailable.Other + 0.01) {
-            Alert.alert('Low Balance', `Other Milk balance is ${inventory.sourceAvailable.Other.toFixed(1)}L`); return;
+        if (oUsed > (inventory.sourceAvailable.Other || 0) + 0.01) {
+            Alert.alert('Low Balance', `Other Milk balance is ${inventory.sourceAvailable.Other.toFixed(3)}L`); return;
         }
         if (skimUsed > inventory.skimMilk + 0.01) {
-            Alert.alert('Low Balance', `Skim Milk balance is ${inventory.skimMilk.toFixed(1)}L`); return;
+            Alert.alert('Low Balance', `Skim Milk balance is ${inventory.skimMilk.toFixed(3)}L`); return;
         }
         if (creamUsed > inventory.creamMilk + 0.01) {
-            Alert.alert('Low Balance', `Cream Milk balance is ${inventory.creamMilk.toFixed(1)}L`); return;
+            Alert.alert('Low Balance', `Cream Milk balance is ${inventory.creamMilk.toFixed(3)}L`); return;
+        }
+        if (sepMixedUsed > inventory.sepMixed + 0.01) {
+            Alert.alert('Low Balance', `Mixed Milk balance is ${inventory.sepMixed.toFixed(3)}L`); return;
         }
 
         const [dd, mm, yyyy] = date.split('-').map(Number);
@@ -159,15 +223,23 @@ export default function MakeProductsScreen() {
                     productName: selectedProduct,
                     quantityProduced: parseFloat(qtyProduced),
                     unit,
-                    milkUsed: { wholeMilk: wholeUsed, skimMilk: skimUsed, creamMilk: creamUsed },
+                    milkUsed: { 
+                        wholeMilk: mixedRawUsed, 
+                        skimMilk: skimUsed, 
+                        creamMilk: creamUsed, 
+                        mixedMilk: sepMixedUsed,
+                        smPowder: sPowder,
+                        sugar: sSugar,
+                        stabilizer: sStab
+                    },
                     sourceWholeUsed: { cow: cUsed, buff: bUsed, goat: gUsed, other: oUsed }
                 })
             });
 
             if (res.ok) {
-                setShowSuccess(true);
                 setQtyProduced(''); setUseCow(''); setUseBuff(''); setUseGoat(''); setUseOther('');
-                setUseSkim(''); setUseCream('');
+                setUseSkim(''); setUseCream(''); setUseMixed('');
+                setUseSkimPowder(''); setUseSugar(''); setUseStabilizer('');
                 fetchInventory();
             }
         } catch (error) {
@@ -188,6 +260,7 @@ export default function MakeProductsScreen() {
 
     const totalSkimUsed = useMemo(() => parseFloat(useSkim) || 0, [useSkim]);
     const totalCreamUsed = useMemo(() => parseFloat(useCream) || 0, [useCream]);
+    const totalMixedUsed = useMemo(() => parseFloat(useMixed) || 0, [useMixed]);
 
     // Total Available Milk (Live Remaining)
     const totalAvailableMilk = useMemo(() => {
@@ -201,6 +274,7 @@ export default function MakeProductsScreen() {
     // Live remaining for Skim & Cream
     const skimLeft = useMemo(() => Math.max(0, inventory.skimMilk - totalSkimUsed), [inventory.skimMilk, totalSkimUsed]);
     const creamLeft = useMemo(() => Math.max(0, inventory.creamMilk - totalCreamUsed), [inventory.creamMilk, totalCreamUsed]);
+    const mixedLeft = useMemo(() => Math.max(0, inventory.sepMixed - totalMixedUsed), [inventory.sepMixed, totalMixedUsed]);
 
     return (
         <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#0F172A' : '#FFFFFF' }]}>
@@ -217,7 +291,7 @@ export default function MakeProductsScreen() {
                     </TouchableOpacity>
                     <View style={styles.headerCenter}>
                         <ThemedText style={styles.headerTitle}>Make Products</ThemedText>
-                        <ThemedText style={styles.headerSubtitle}>Production Data Entry</ThemedText>
+                        <ThemedText style={styles.headerSubtitle}>Separation Data Entry</ThemedText>
                     </View>
                     <View style={{ width: 44 }} />
                 </View>
@@ -233,172 +307,281 @@ export default function MakeProductsScreen() {
                         contentContainerStyle={styles.scrollContent}
                         keyboardShouldPersistTaps="handled"
                     >
-                    {/* ── INVENTORY OVERVIEW ── */}
-                    <View style={styles.sectionHeader}>
-                        <ThemedText style={styles.sectionTitle}>Raw Materials Available</ThemedText>
-                    </View>
-                    <View style={{ paddingHorizontal: PAGE_PADDING }}>
-                        {/* Whole Milk Main Section */}
-                        <View style={[styles.wholeMilkContainer, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? '#334155' : '#E2E8F0' }]}>
-                            <View style={styles.invHeader}>
-                                <View style={[styles.invDot, { backgroundColor: '#22C55E' }]} />
-                                <ThemedText style={styles.invLabel}>Available Milk</ThemedText>
-                                <View style={{ flex: 1 }} />
-                                <ThemedText style={[styles.invValueMain, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>
-                                    {isFetchingInventory ? '--' : totalAvailableMilk.toFixed(1)}<ThemedText style={styles.invUnit}> L</ThemedText>
-                                </ThemedText>
+                        {/* ── INVENTORY OVERVIEW ── */}
+                        <View style={styles.sectionHeader}>
+                            <ThemedText style={styles.sectionTitle}>Raw Materials Available</ThemedText>
+                        </View>
+                        <View style={{ paddingHorizontal: PAGE_PADDING }}>
+                            {/* Whole Milk Main Section */}
+                            <View style={[styles.wholeMilkContainer, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? '#334155' : '#E2E8F0' }]}>
+                                <View style={styles.invHeader}>
+                                    <View style={[styles.invDot, { backgroundColor: '#22C55E' }]} />
+                                    <ThemedText style={styles.invLabel}>Available Milk</ThemedText>
+                                    <View style={{ flex: 1 }} />
+                                    <ThemedText style={[styles.invValueMain, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>
+                                        {isFetchingInventory ? '--' : totalAvailableMilk.toFixed(3)}<ThemedText style={styles.invUnit}> L</ThemedText>
+                                    </ThemedText>
+                                </View>
+
+                                <View style={styles.sourceDisplayGrid}>
+                                    <View style={styles.sourceItem}>
+                                        <ThemedText style={styles.sourceLabel}>Cow</ThemedText>
+                                        <ThemedText style={[styles.sourceValue, { color: isDark ? '#CBD5E1' : '#475569' }]}>
+                                            {Math.max(0, (inventory.sourceAvailable.Cow || 0) - (parseFloat(useCow) || 0)).toFixed(3)}L
+                                        </ThemedText>
+                                    </View>
+                                    <View style={styles.sourceItem}>
+                                        <ThemedText style={styles.sourceLabel}>Buffalo</ThemedText>
+                                        <ThemedText style={[styles.sourceValue, { color: isDark ? '#CBD5E1' : '#475569' }]}>
+                                            {Math.max(0, (inventory.sourceAvailable.Buffalo || 0) - (parseFloat(useBuff) || 0)).toFixed(3)}L
+                                        </ThemedText>
+                                    </View>
+                                    <View style={styles.sourceItem}>
+                                        <ThemedText style={styles.sourceLabel}>Goat</ThemedText>
+                                        <ThemedText style={[styles.sourceValue, { color: isDark ? '#CBD5E1' : '#475569' }]}>
+                                            {Math.max(0, (inventory.sourceAvailable.Goat || 0) - (parseFloat(useGoat) || 0)).toFixed(3)}L
+                                        </ThemedText>
+                                    </View>
+                                    <View style={styles.sourceItem}>
+                                        <ThemedText style={styles.sourceLabel}>Other</ThemedText>
+                                        <ThemedText style={[styles.sourceValue, { color: isDark ? '#CBD5E1' : '#475569' }]}>
+                                            {Math.max(0, (inventory.sourceAvailable.Other || 0) - (parseFloat(useOther) || 0)).toFixed(3)}L
+                                        </ThemedText>
+                                    </View>
+                                </View>
                             </View>
 
-                            <View style={styles.usageInputGrid}>
-                                <UsageInputBox label="Cow" value={useCow} setter={setUseCow} avail={inventory.sourceAvailable.Cow} isDark={isDark} />
-                                <UsageInputBox label="Buff." value={useBuff} setter={setUseBuff} avail={inventory.sourceAvailable.Buffalo} isDark={isDark} />
-                                <UsageInputBox label="Goat" value={useGoat} setter={setUseGoat} avail={inventory.sourceAvailable.Goat} isDark={isDark} />
-                                <UsageInputBox label="Other" value={useOther} setter={setUseOther} avail={inventory.sourceAvailable.Other} isDark={isDark} />
+                            {/* Raw Material Ingredients (Stock vs Usage) */}
+                            <View style={styles.secondaryInventoryRow}>
+                                <InventoryCard
+                                    label="Mixed Milk"
+                                    value={mixedLeft}
+                                    color="#10B981"
+                                    isDark={isDark}
+                                    loading={isFetchingInventory}
+                                />
+                                <InventoryCard
+                                    label="Skim Milk"
+                                    value={skimLeft}
+                                    color="#3B82F6"
+                                    isDark={isDark}
+                                    loading={isFetchingInventory}
+                                />
+                                <InventoryCard
+                                    label="Cream"
+                                    value={creamLeft}
+                                    color="#F59E0B"
+                                    isDark={isDark}
+                                    loading={isFetchingInventory}
+                                />
                             </View>
                         </View>
 
-                        {/* Raw Material Ingredients (Stock vs Usage) */}
-                        <View style={styles.secondaryInventoryRow}>
-                            <InventoryCard 
-                                label="Skim Milk" 
-                                value={skimLeft} 
-                                color="#3B82F6" 
-                                isDark={isDark} 
-                                loading={isFetchingInventory} 
-                            />
-                            <InventoryCard 
-                                label="Cream" 
-                                value={creamLeft} 
-                                color="#F59E0B" 
-                                isDark={isDark} 
-                                loading={isFetchingInventory} 
+                        <View style={[styles.sectionHeader, { marginTop: 16 }]}>
+                            <ThemedText style={styles.sectionTitle}>Production Date</ThemedText>
+                        </View>
+                        <View style={{ paddingHorizontal: PAGE_PADDING, marginBottom: 8 }}>
+                            <DatePicker
+                                value={date}
+                                onChange={setDate}
+                                format="DD-MM-YYYY"
                             />
                         </View>
-                    </View>
 
-                    <View style={[styles.sectionHeader, { marginTop: 16 }]}>
-                        <ThemedText style={styles.sectionTitle}>Production Date</ThemedText>
-                    </View>
-                    <View style={{ paddingHorizontal: PAGE_PADDING, marginBottom: 8 }}>
-                        <DatePicker
-                            value={date}
-                            onChange={setDate}
-                            format="DD-MM-YYYY"
-                        />
-                    </View>
+                        {/* ── PRODUCT SELECTION TALL PILLS ── */}
+                        <View style={[styles.sectionHeader, { marginTop: 16 }]}>
+                            <ThemedText style={styles.sectionTitle}>Product to Produce</ThemedText>
+                        </View>
 
-                    {/* ── PRODUCT SELECTION TALL PILLS ── */}
-                    <View style={[styles.sectionHeader, { marginTop: 16 }]}>
-                        <ThemedText style={styles.sectionTitle}>Product to Produce</ThemedText>
-                    </View>
-                    
-                    {/* Box-type grid view for products */}
-                    <View style={styles.productGridContainer}>
-                        {(() => {
-                            const displayList = showAllProducts 
-                                ? [...PRODUCT_LIST, { name: 'Less', color: '#64748B', icon: '⬆️' }] 
-                                : [...PRODUCT_LIST.slice(0, 7), { name: 'More', color: '#64748B', icon: '➡️' }];
-                                
-                            return displayList.map((item) => {
-                                if (item.name === 'More' || item.name === 'Less') {
+                        {/* Box-type grid view for products */}
+                        <View style={styles.productGridContainer}>
+                            {(() => {
+                                const displayList = showAllProducts
+                                    ? [...PRODUCT_LIST, { name: 'Show Fewer', color: '#64748B', icon: '⬆️' }]
+                                    : [...PRODUCT_LIST.slice(0, 7), { name: 'Other...', color: '#64748B', icon: '➡️' }];
+
+                                return displayList.map((item) => {
+                                    if (item.name === 'Other...' || item.name === 'Show Fewer') {
+                                        return (
+                                            <TouchableOpacity
+                                                key={item.name}
+                                                onPress={() => setShowAllProducts(item.name === 'Other...')}
+                                                style={[
+                                                    styles.boxProductChip,
+                                                    { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? '#334155' : '#E2E8F0', justifyContent: 'center' }
+                                                ]}
+                                            >
+                                                <ThemedText style={{ fontSize: 14, marginBottom: 2 }}>{item.icon}</ThemedText>
+                                                <ThemedText style={[styles.boxProductName, { color: isDark ? '#F8FAFC' : '#334155' }]}>{item.name === 'Other...' ? 'Other...' : 'Show Fewer'}</ThemedText>
+                                            </TouchableOpacity>
+                                        );
+                                    }
+
+                                    const isSelected = selectedProduct === item.name;
                                     return (
                                         <TouchableOpacity
                                             key={item.name}
-                                            onPress={() => setShowAllProducts(item.name === 'More')}
+                                            onPress={() => setSelectedProduct(item.name)}
                                             style={[
                                                 styles.boxProductChip,
-                                                { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? '#334155' : '#E2E8F0', justifyContent: 'center' }
+                                                { backgroundColor: isSelected ? item.color : (isDark ? '#1E293B' : '#FFFFFF') },
+                                                { borderColor: isSelected ? item.color : (isDark ? '#334155' : '#E2E8F0') }
                                             ]}
                                         >
                                             <ThemedText style={{ fontSize: 14, marginBottom: 2 }}>{item.icon}</ThemedText>
-                                            <ThemedText style={[styles.boxProductName, { color: isDark ? '#F8FAFC' : '#334155' }]}>{item.name === 'More' ? 'More...' : 'Show Less'}</ThemedText>
+                                            <ThemedText style={[
+                                                styles.boxProductName,
+                                                { color: isSelected ? '#FFFFFF' : (isDark ? '#F8FAFC' : '#334155') }
+                                            ]}>
+                                                {item.name}
+                                            </ThemedText>
                                         </TouchableOpacity>
                                     );
-                                }
+                                });
+                            })()}
+                        </View>
 
-                                const isSelected = selectedProduct === item.name;
-                                return (
-                                    <TouchableOpacity
-                                        key={item.name}
-                                        onPress={() => setSelectedProduct(item.name)}
-                                        style={[
-                                            styles.boxProductChip,
-                                            { backgroundColor: isSelected ? item.color : (isDark ? '#1E293B' : '#FFFFFF') },
-                                            { borderColor: isSelected ? item.color : (isDark ? '#334155' : '#E2E8F0') }
-                                        ]}
-                                    >
-                                        <ThemedText style={{ fontSize: 14, marginBottom: 2 }}>{item.icon}</ThemedText>
-                                        <ThemedText style={[
-                                            styles.boxProductName,
-                                            { color: isSelected ? '#FFFFFF' : (isDark ? '#F8FAFC' : '#334155') }
-                                        ]}>
-                                            {item.name}
-                                        </ThemedText>
-                                    </TouchableOpacity>
-                                );
-                            });
-                        })()}
-                    </View>
 
-                        
                         {/* ── CONSUMPTION SECTION (Other Milks & Yield) ── */}
                         <View style={[styles.formCard, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: isDark ? '#334155' : '#E2E8F0' }]}>
-                            
+
                             {/* Milk Usage Section (Integrated) */}
-                            <ThemedText style={[styles.formSectionTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>Milk Usage</ThemedText>
-                            <View style={styles.yieldContainer}>
-                                <YieldInputRow 
-                                    label="Whole Milk" 
-                                    value={totalWholeUsed.toString()} 
-                                    color="#22C55E" 
-                                    isDark={isDark} 
-                                    placeholder="0"
-                                    flex={1}
-                                    isText={true} // Display as text/read-only info
-                                />
-                                <View style={{ width: 8 }} />
-                                <YieldInputRow 
-                                    label="Skim Milk" 
-                                    value={useSkim} 
-                                    onChange={setUseSkim} 
-                                    color="#3B82F6" 
-                                    isDark={isDark} 
+                            <ThemedText style={[styles.formSectionTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>Mixed Milk Usage</ThemedText>
+                            {/* Raw Sources usage */}
+                            <View style={[styles.yieldContainer, { marginBottom: 16 }]}>
+                                <YieldInputRow
+                                    label="Cow"
+                                    value={useCow}
+                                    onChange={setUseCow}
+                                    color="#22C55E"
+                                    isDark={isDark}
                                     placeholder="0"
                                     flex={1}
                                 />
-                                <View style={{ width: 8 }} />
-                                <YieldInputRow 
-                                    label="Cream" 
-                                    value={useCream} 
-                                    onChange={setUseCream} 
-                                    color="#F59E0B" 
-                                    isDark={isDark} 
+                                <View style={{ width: 6 }} />
+                                <YieldInputRow
+                                    label="Buffalo"
+                                    value={useBuff}
+                                    onChange={setUseBuff}
+                                    color="#22C55E"
+                                    isDark={isDark}
+                                    placeholder="0"
+                                    flex={1}
+                                />
+                                <View style={{ width: 6 }} />
+                                <YieldInputRow
+                                    label="Goat"
+                                    value={useGoat}
+                                    onChange={setUseGoat}
+                                    color="#22C55E"
+                                    isDark={isDark}
+                                    placeholder="0"
+                                    flex={1}
+                                />
+                                <View style={{ width: 6 }} />
+                                <YieldInputRow
+                                    label="Other"
+                                    value={useOther}
+                                    onChange={setUseOther}
+                                    color="#22C55E"
+                                    isDark={isDark}
                                     placeholder="0"
                                     flex={1}
                                 />
                             </View>
 
+                            {/* Processed usage */}
+                            <View style={styles.yieldContainer}>
+                                <YieldInputRow
+                                    label="Mixed Milk"
+                                    value={useMixed}
+                                    onChange={setUseMixed}
+                                    color="#10B981"
+                                    isDark={isDark}
+                                    placeholder="0"
+                                    flex={1}
+                                />
+                                <View style={{ width: 8 }} />
+                                <YieldInputRow
+                                    label="Skim Milk"
+                                    value={useSkim}
+                                    onChange={setUseSkim}
+                                    color="#3B82F6"
+                                    isDark={isDark}
+                                    placeholder="0"
+                                    flex={1}
+                                />
+                                <View style={{ width: 8 }} />
+                                <YieldInputRow
+                                    label="Cream"
+                                    value={useCream}
+                                    onChange={setUseCream}
+                                    color="#F59E0B"
+                                    isDark={isDark}
+                                    placeholder="0"
+                                    flex={1}
+                                />
+                            </View>
+
+                            {selectedProduct === 'Icecream' && (
+                                <>
+                                    <View style={[styles.sectionDivider, { backgroundColor: isDark ? '#334155' : '#F1F5F9', marginTop: 16 }]} />
+                                    <ThemedText style={[styles.formSectionTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>Ice Cream Addons</ThemedText>
+                                    <View style={styles.yieldContainer}>
+                                        <YieldInputRow
+                                            label="Skim Powder"
+                                            value={useSkimPowder}
+                                            onChange={setUseSkimPowder}
+                                            color="#60A5FA"
+                                            isDark={isDark}
+                                            placeholder="kg"
+                                            flex={1}
+                                        />
+                                        <View style={{ width: 8 }} />
+                                        <YieldInputRow
+                                            label="Sugar"
+                                            value={useSugar}
+                                            onChange={setUseSugar}
+                                            color="#FDE047"
+                                            isDark={isDark}
+                                            placeholder="kg"
+                                            flex={1}
+                                        />
+                                        <View style={{ width: 8 }} />
+                                        <YieldInputRow
+                                            label="Stabilizer"
+                                            value={useStabilizer}
+                                            onChange={setUseStabilizer}
+                                            color="#A78BFA"
+                                            isDark={isDark}
+                                            placeholder="kg"
+                                            flex={1}
+                                        />
+                                    </View>
+                                </>
+                            )}
+
                             <View style={[styles.sectionDivider, { backgroundColor: isDark ? '#334155' : '#F1F5F9', marginTop: 16 }]} />
                             <ThemedText style={[styles.formSectionTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>Production Yield</ThemedText>
-                            
+
                             <View style={styles.yieldContainer}>
-                                <YieldInputRow 
-                                    label="Quantity Produced" 
-                                    value={qtyProduced} 
-                                    onChange={setQtyProduced} 
-                                    color={currentProductColor} 
-                                    isDark={isDark} 
+                                <YieldInputRow
+                                    label="Quantity Produced"
+                                    value={qtyProduced}
+                                    onChange={setQtyProduced}
+                                    color={currentProductColor}
+                                    isDark={isDark}
                                     placeholder="0.00"
                                     flex={2.5}
                                     onFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
                                 />
                                 <View style={{ width: 12 }} />
-                                <YieldInputRow 
-                                    label="Unit" 
-                                    value={unit} 
-                                    onChange={setUnit} 
-                                    color={currentProductColor} 
-                                    isDark={isDark} 
+                                <YieldInputRow
+                                    label="Unit"
+                                    value={unit}
+                                    onChange={setUnit}
+                                    color={currentProductColor}
+                                    isDark={isDark}
                                     placeholder="kg"
                                     flex={1}
                                     isText
@@ -412,7 +595,7 @@ export default function MakeProductsScreen() {
                         <TouchableOpacity onPress={handleProduce} disabled={isLoading} style={styles.submitWrapper}>
                             <View style={[styles.submitButton, { backgroundColor: currentProductColor }]}>
                                 {isLoading ? <ActivityIndicator color="#FFF" /> : (
-                                    <ThemedText style={styles.buttonText}>Complete Production</ThemedText>
+                                    <ThemedText style={styles.buttonText}>Record Production</ThemedText>
                                 )}
                             </View>
                         </TouchableOpacity>
@@ -430,16 +613,16 @@ export default function MakeProductsScreen() {
                         </View>
                         <ThemedText style={[styles.successTitle, { color: isDark ? '#F8FAFC' : '#0F172A' }]}>Saved Successfully</ThemedText>
                         <ThemedText style={styles.successMessage}>Production entry has been recorded.</ThemedText>
-                        
-                        <TouchableOpacity 
+
+                        <TouchableOpacity
                             onPress={() => {
                                 setShowSuccess(false);
                                 router.replace('/(tabs)');
                             }}
                             style={[
-                                styles.okButton, 
-                                { 
-                                    backgroundColor: '#10B981', 
+                                styles.okButton,
+                                {
+                                    backgroundColor: '#10B981',
                                     marginTop: 16,
                                     ...Platform.select({
                                         web: { boxShadow: '0px 4px 5px rgba(16, 185, 129, 0.3)' } as any,
@@ -472,7 +655,7 @@ const InventoryCard = React.memo(({ label, value, color, isDark, loading, subVal
             <ThemedText style={styles.invLabel} numberOfLines={1}>{label}</ThemedText>
         </View>
         <ThemedText style={[styles.invValue, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>
-            {loading ? '--' : value.toFixed(1)}<ThemedText style={styles.invUnit}> L</ThemedText>
+            {loading ? '--' : value.toFixed(3)}<ThemedText style={styles.invUnit}> L</ThemedText>
         </ThemedText>
         {subValue && !loading && (
             <ThemedText style={styles.invSubValue}>{subValue}</ThemedText>
@@ -485,7 +668,7 @@ const UsageInputBox = React.memo(({ label, value, setter, avail, isDark, onFocus
     return (
         <View style={styles.sourceUsageItem}>
             <ThemedText style={[styles.sourceLabelText, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>{label}</ThemedText>
-            <View style={[styles.sourceInputContainer, { 
+            <View style={[styles.sourceInputContainer, {
                 borderColor: isExceeded ? '#EF4444' : (isDark ? '#334155' : '#E2E8F0'),
                 backgroundColor: isDark ? '#0F172A' : '#FAFCFF',
                 borderWidth: isExceeded ? 1.5 : 1
@@ -500,14 +683,14 @@ const UsageInputBox = React.memo(({ label, value, setter, avail, isDark, onFocus
                     onFocus={onFocus}
                     onBlur={() => {
                         if (isExceeded) {
-                             if (Platform.OS === 'web') alert(`Warning: ${label} usage exceeds available stock!`);
-                             else Alert.alert('Warning', `${label} usage exceeds available stock!`);
+                            if (Platform.OS === 'web') alert(`Warning: ${label} usage exceeds available stock!`);
+                            else Alert.alert('Warning', `${label} usage exceeds available stock!`);
                         }
                     }}
                 />
             </View>
             <ThemedText style={[styles.sourceAvailText, { color: isExceeded ? '#EF4444' : '#64748B' }]}>
-                {isExceeded ? 'Exceeded!' : `Left: ${Math.max(0, avail - (parseFloat(value) || 0)).toFixed(1)}L`}
+                {isExceeded ? 'Exceeded!' : `Left: ${Math.max(0, avail - (parseFloat(value) || 0)).toFixed(3)}L`}
             </ThemedText>
         </View>
     );
@@ -567,8 +750,8 @@ const styles = StyleSheet.create({
     },
     headerTitle: { fontSize: 17, fontWeight: '700' },
     headerSubtitle: { fontSize: 12, color: '#64748B', marginTop: 2 },
-    
-    scrollContent: { paddingVertical: 16, paddingBottom: 40 },
+
+    scrollContent: { paddingVertical: 8, paddingBottom: 32 },
 
     sectionHeader: { marginBottom: 12, paddingHorizontal: PAGE_PADDING },
     sectionTitle: { fontSize: 12, fontWeight: '700', color: '#647A90', textTransform: 'uppercase', letterSpacing: 0.5 },
@@ -577,13 +760,13 @@ const styles = StyleSheet.create({
     inventoryGrid: { flexDirection: 'row', gap: 8, paddingHorizontal: PAGE_PADDING },
     wholeMilkContainer: {
         borderRadius: 16,
-        padding: 16,
+        padding: 12,
         borderWidth: 1,
         marginBottom: 8,
     },
-    usageInputGrid: { 
-        flexDirection: 'row', 
-        gap: 6, 
+    usageInputGrid: {
+        flexDirection: 'row',
+        gap: 6,
         marginTop: 12,
         justifyContent: 'space-between'
     },
@@ -604,14 +787,37 @@ const styles = StyleSheet.create({
     invValue: { fontSize: 18, fontWeight: '800', letterSpacing: -0.5, marginTop: 4 },
     invValueMain: { fontSize: 18, fontWeight: '900', letterSpacing: -0.5 },
     invUnit: { fontSize: 12, fontWeight: '600', color: '#94A3B8' },
+    sourceDisplayGrid: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 8,
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(0,0,0,0.05)',
+    },
+    sourceItem: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    sourceLabel: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#94A3B8',
+        marginBottom: 0,
+        textTransform: 'uppercase',
+    },
+    sourceValue: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
     invSubValue: { fontSize: 10, fontWeight: '700', color: '#64748B', marginTop: 4 },
 
     /* Product Selection (Box Container) */
-    productGridContainer: { 
+    productGridContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        paddingHorizontal: PAGE_PADDING, 
-        gap: 6, 
+        paddingHorizontal: PAGE_PADDING,
+        gap: 6,
         paddingTop: 4,
         paddingBottom: 4
     },
@@ -625,8 +831,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         flexGrow: 1,
     },
-    boxProductName: { 
-        fontSize: 10, 
+    boxProductName: {
+        fontSize: 10,
         fontWeight: '600',
         letterSpacing: 0.1,
         textAlign: 'center',
@@ -641,25 +847,25 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
     },
     formSectionTitle: { fontSize: 13, fontWeight: '700', marginBottom: 12 },
-    
+
     verticalList: { gap: 0 },
     usageRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
     usageLabelGroup: { flexDirection: 'row', alignItems: 'center' },
     colorIndicator: { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
     usageLabelText: { fontSize: 13, fontWeight: '500' },
-    inputBox: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        width: 100, 
-        height: 42, 
-        borderWidth: 1, 
-        borderRadius: 10, 
-        paddingHorizontal: 14 
+    inputBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: 100,
+        height: 42,
+        borderWidth: 1,
+        borderRadius: 10,
+        paddingHorizontal: 14
     },
-    baseInput: { 
-        flex: 1, 
-        fontSize: 14, 
-        fontWeight: '600', 
+    baseInput: {
+        flex: 1,
+        fontSize: 14,
+        fontWeight: '600',
         height: '100%',
         padding: 0,
         textAlignVertical: 'center',
@@ -671,10 +877,10 @@ const styles = StyleSheet.create({
     usageCol: { flex: 1 },
     usageColHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
     usageColLabel: { fontSize: 11, fontWeight: '600', color: '#64748B' },
-    inputBoxCol: { 
-        height: 40, 
-        borderWidth: 1, 
-        borderRadius: 8, 
+    inputBoxCol: {
+        height: 40,
+        borderWidth: 1,
+        borderRadius: 8,
         paddingHorizontal: 12,
         justifyContent: 'center'
     },
@@ -689,21 +895,21 @@ const styles = StyleSheet.create({
     sourceInputText: { fontSize: 15, fontWeight: '700', padding: 0, textAlign: 'center', textAlignVertical: 'center', ...Platform.select({ web: { outlineStyle: 'none' } }) as any },
 
     sectionDivider: { height: 1.5, marginVertical: 10 },
-    
+
     yieldContainer: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 4 },
     yieldCol: { flexDirection: 'column' },
     yieldLabelText: { fontSize: 13, fontWeight: '500', color: '#64748B', marginBottom: 8 },
-    inputBoxYield: { 
-        height: 48, 
-        borderWidth: 1, 
-        borderRadius: 10, 
+    inputBoxYield: {
+        height: 48,
+        borderWidth: 1,
+        borderRadius: 10,
         paddingHorizontal: 14,
         justifyContent: 'center'
     },
-    baseInputYield: { 
-        flex: 1, 
-        fontSize: 15, 
-        fontWeight: '600', 
+    baseInputYield: {
+        flex: 1,
+        fontSize: 15,
+        fontWeight: '600',
         height: '100%',
         padding: 0,
         textAlignVertical: 'center',

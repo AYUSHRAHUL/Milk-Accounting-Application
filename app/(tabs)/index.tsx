@@ -2,8 +2,8 @@ import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -43,7 +43,8 @@ interface FeatureCard {
 const FEATURES: FeatureCard[] = [
   { title: 'Suppliers', id: 'suppliers', route: '/suppliers', image: SuppliersImage, icon: 'people', useTint: true },
   { title: 'Milk Collection', id: 'collection', route: '/milk-collection', image: MilkCollectionImage, icon: 'water', useTint: true },
-  { title: 'Production', id: 'production', route: '/production', image: null, icon: 'flask', useTint: true },
+  { title: 'Separation', id: 'production', route: '/production', image: null, icon: 'flask', useTint: true },
+  { title: 'Products', id: 'products', route: '/production/make-products', image: null, icon: 'cube', useTint: true },
   { title: 'Sales', id: 'sales', route: '/sales', image: SalesImage, icon: 'cash', useTint: true },
   { title: 'Reports', id: 'reports', route: '/reports', image: ReportsImage, icon: 'bar-chart', useTint: true },
   { title: 'History', id: 'history', route: '/milk-collection/history', image: HistoryImage, icon: 'list', useTint: true },
@@ -137,24 +138,31 @@ export default function DashboardScreen() {
   const [openingBalance, setOpeningBalance] = useState<number | null>(null);
   const [closingBalance, setClosingBalance] = useState<number | null>(null);
   const [closingBalanceDate, setClosingBalanceDate] = useState<string | null>(null);
+  const [sourceOpeningBalance, setSourceOpeningBalance] = useState<any>(null);
+  const [sourceClosingBalance, setSourceClosingBalance] = useState<any>(null);
 
-  useEffect(() => {
-    const fetchSummary = async () => {
-      if (!user?.id) return;
-      try {
-        const res = await apiFetch(`/api/production/milk-summary?userId=${user.id}`);
-        if (res.ok) {
-          const data = await res.json();
-          setOpeningBalance(data.openingBalance);
-          setClosingBalance(data.closingBalance);
-          setClosingBalanceDate(data.closingBalanceDate);
-        }
-      } catch (error) {
-        console.error('Dashboard Summary Error:', error);
+  const fetchSummary = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const res = await apiFetch(`/api/production/milk-summary?userId=${user.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setOpeningBalance(data.openingBalance);
+        setClosingBalance(data.closingBalance);
+        setClosingBalanceDate(data.closingBalanceDate);
+        setSourceOpeningBalance(data.sourceOpeningBalance);
+        setSourceClosingBalance(data.sourceAvailable);
       }
-    };
-    fetchSummary();
+    } catch (error) {
+      console.error('Dashboard Summary Error:', error);
+    }
   }, [user?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchSummary();
+    }, [fetchSummary])
+  );
 
   if (isAuthLoading) {
     return <SafeAreaView style={styles.safeArea}>
@@ -206,28 +214,50 @@ export default function DashboardScreen() {
         <View style={styles.kpiSection}>
           <View style={styles.kpiCardRow}>
             {/* Opening Balance Card */}
-            <View style={styles.kpiCardSide}>
-              <View style={[styles.kpiIconWrapper, { backgroundColor: '#EFF6FF' }]}>
-                <Ionicons name="sunny-outline" size={18} color="#3B82F6" />
-              </View>
-              <View style={styles.kpiContent}>
-                <Text style={styles.kpiLabel}>Opening Bal. ({todayStr})</Text>
-                <Text style={styles.kpiValue}>
-                  {openingBalance !== null ? `${openingBalance.toFixed(1)}L` : '--'}
+            <View style={[styles.kpiCardMinimal]}>
+              <View style={styles.kpiAccentTopOpening} />
+              <View style={styles.kpiCardContent}>
+                <Text style={styles.kpiLabelMinimal}>Opening Bal. ({todayStr})</Text>
+                <Text style={styles.kpiValueMinimal}>
+                  {openingBalance?.toFixed(1) || '0.0'}L
                 </Text>
+                
+                {sourceOpeningBalance && (
+                  <View style={styles.kpiBreakdownMinimal}>
+                    <View style={styles.kpiBreakdownRow}>
+                      <Text style={styles.kpiBreakdownText}>Cow: <Text style={styles.kpiBreakdownBold}>{sourceOpeningBalance.Cow?.toFixed(1)}L</Text></Text>
+                      <Text style={styles.kpiBreakdownText}>Buff: <Text style={styles.kpiBreakdownBold}>{sourceOpeningBalance.Buffalo?.toFixed(1)}L</Text></Text>
+                    </View>
+                    <View style={styles.kpiBreakdownRow}>
+                      <Text style={styles.kpiBreakdownText}>Goat: <Text style={styles.kpiBreakdownBold}>{sourceOpeningBalance.Goat?.toFixed(1)}L</Text></Text>
+                      <Text style={styles.kpiBreakdownText}>Oth: <Text style={styles.kpiBreakdownBold}>{sourceOpeningBalance.Other?.toFixed(1)}L</Text></Text>
+                    </View>
+                  </View>
+                )}
               </View>
             </View>
 
             {/* Closing Balance Card */}
-            <View style={styles.kpiCardSide}>
-              <View style={[styles.kpiIconWrapper, { backgroundColor: '#ECFDF5' }]}>
-                <Ionicons name="moon-outline" size={18} color="#10B981" />
-              </View>
-              <View style={styles.kpiContent}>
-                <Text style={styles.kpiLabel}>Closing Bal. ({cbDateStr})</Text>
-                <Text style={styles.kpiValue}>
-                  {closingBalance !== null ? `${closingBalance.toFixed(1)}L` : '--'}
+            <View style={[styles.kpiCardMinimal]}>
+              <View style={styles.kpiAccentTopClosing} />
+              <View style={styles.kpiCardContent}>
+                <Text style={styles.kpiLabelMinimal}>Closing Bal. ({cbDateStr})</Text>
+                <Text style={styles.kpiValueMinimal}>
+                  {closingBalance?.toFixed(1) || '0.0'}L
                 </Text>
+
+                {sourceClosingBalance && (
+                  <View style={styles.kpiBreakdownMinimal}>
+                    <View style={styles.kpiBreakdownRow}>
+                      <Text style={styles.kpiBreakdownText}>Cow: <Text style={styles.kpiBreakdownBold}>{sourceClosingBalance.Cow?.toFixed(1)}L</Text></Text>
+                      <Text style={styles.kpiBreakdownText}>Buff: <Text style={styles.kpiBreakdownBold}>{sourceClosingBalance.Buffalo?.toFixed(1)}L</Text></Text>
+                    </View>
+                    <View style={styles.kpiBreakdownRow}>
+                      <Text style={styles.kpiBreakdownText}>Goat: <Text style={styles.kpiBreakdownBold}>{sourceClosingBalance.Goat?.toFixed(1)}L</Text></Text>
+                      <Text style={styles.kpiBreakdownText}>Oth: <Text style={styles.kpiBreakdownBold}>{sourceClosingBalance.Other?.toFixed(1)}L</Text></Text>
+                    </View>
+                  </View>
+                )}
               </View>
             </View>
           </View>
@@ -239,8 +269,10 @@ export default function DashboardScreen() {
             <DashboardCard item={{ title: 'Admin Dashboard', id: 'admin', route: '/admin/dashboard', icon: 'shield-checkmark', useTint: true }} index={0} />
           )}
           {FEATURES.map((item, index) => {
-            let disabled = true;
-            if (!user?.modules) {
+            let disabled = false;
+            if (user?.role === 'admin') {
+              disabled = false;
+            } else if (!user?.modules) {
               // Backward compatibility if user.modules is missing: assume all enabled
               disabled = false;
             } else {
@@ -411,51 +443,74 @@ const styles = StyleSheet.create({
 
   // KPI Styles
   kpiSection: {
-    marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   kpiCardRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: 12,
   },
-  kpiCardSide: {
+  // Minimal KPI Styles
+  kpiCardMinimal: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderRadius: 14,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
-    elevation: 2,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    minHeight: 100,
   },
-  kpiIconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: '#ECFDF5',
-    justifyContent: 'center',
+  kpiAccentTopOpening: {
+    height: 4,
+    backgroundColor: '#059669',
+  },
+  kpiAccentTopClosing: {
+    height: 4,
+    backgroundColor: '#10B981',
+  },
+  kpiCardContent: {
+    padding: 8,
     alignItems: 'center',
-    marginRight: 8,
+    justifyContent: 'center',
   },
-  kpiContent: {
-    flex: 1,
-  },
-  kpiLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#6B7280',
+  kpiLabelMinimal: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748B',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginBottom: 4,
   },
-  kpiValue: {
-    fontSize: 16,
+  kpiValueMinimal: {
+    fontSize: 22,
     fontWeight: '800',
-    color: '#111827',
-    marginTop: 2,
+    color: '#0F172A',
+    marginBottom: 10,
+  },
+  kpiBreakdownMinimal: {
+    width: '100%',
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    paddingTop: 8,
+    gap: 4,
+  },
+  kpiBreakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 4,
+  },
+  kpiBreakdownText: {
+    fontSize: 11,
+    color: '#64748B',
+  },
+  kpiBreakdownBold: {
+    fontWeight: '700',
+    color: '#1E293B',
   },
 });

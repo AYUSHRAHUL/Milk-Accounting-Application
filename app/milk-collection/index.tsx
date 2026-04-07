@@ -30,6 +30,7 @@ const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 const MILK_SOURCES = ['Cow', 'Buffalo', 'Goat', 'Other'];
 const SHIFTS = ['Morning', 'Evening'];
 const MBRT_OPTIONS = ['Very good', 'Fair', 'Poor', 'very Poor'];
+const COB_OPTIONS = ['Negative', 'Positive'];
 
 // ─── Source Card ──────────────────────────────────────────────────
 function SourceCard({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
@@ -221,13 +222,16 @@ export default function MilkCollectionScreen() {
   useEffect(() => {
     const fatVal = parseFloat(fatType) || 0;
     const tempVal = parseFloat(temp) || 0;
+    const lrVal = parseFloat(lr) || 0;
 
     let correction = 0;
+    let calculatedClr = 0;
 
-    // 1. Get CLR from table (Correction Factor)
-    if (tempVal > 0) {
+    // 1. Get CLR from table (Correction Factor) + Add LR
+    if (tempVal > 0 && lrVal > 0) {
       correction = getCLRCorrection(tempVal, fatVal);
-      setClr(correction.toFixed(1));
+      calculatedClr = lrVal + correction;
+      setClr(calculatedClr.toFixed(1));
     } else {
       setClr('');
       setSnf('');
@@ -235,19 +239,26 @@ export default function MilkCollectionScreen() {
       return;
     }
 
-    // 2. Calculate SNF & TS using the CLR value (table correction)
-    // SNF = (CLR / 4) + (0.25 * Fat) + 0.44
-    const calculatedSnf = (correction / 4) + (0.25 * fatVal) + 0.44;
+    // 2. Calculate SNF & TS using the combined CLR value
+    // Formula: (CLR / 4) + (0.25 * Fat) + 0.44
+    const calculatedSnf = (calculatedClr / 4) + (0.25 * fatVal) + 0.44;
     setSnf(calculatedSnf.toFixed(3));
 
     // TS = SNF + Fat
     const calculatedTs = calculatedSnf + fatVal;
     setTs(calculatedTs.toFixed(3));
-  }, [fatType, temp]);
+  }, [fatType, temp, lr]);
 
   const handleSave = async () => {
     if (!supplier || !quantity || !costPerLiter || (source === 'Other' && !customSource) || !date || !time) {
       Alert.alert('Missing Fields', 'Please fill in all mandatory fields.');
+      return;
+    }
+
+    if (cob === 'Positive') {
+      const msg = 'Milk with Positive COB (Clot on Boiling) is disqualified and cannot be recorded.';
+      if (Platform.OS === 'web') alert(msg);
+      else Alert.alert('Quality Rejected', msg);
       return;
     }
 
@@ -673,18 +684,21 @@ export default function MilkCollectionScreen() {
 
               <View style={{ marginTop: 12 }}>
                 <Text style={styles.label}>COB (Clot on Boiling)</Text>
-                <TextInput
-                  style={inputStyle('cob')}
-                  placeholder="e.g. Negative"
-                  placeholderTextColor="#9CA3AF"
-                  value={cob}
-                  onChangeText={setCob}
-                  onFocus={() => {
-                    setFocusedField('cob');
-                    scrollRef.current?.scrollTo({ y: 550, animated: true });
-                  }}
-                  onBlur={() => setFocusedField(null)}
-                />
+                <View style={[styles.inlinePillRow, { marginTop: 4 }]}>
+                  {COB_OPTIONS.map((opt) => (
+                    <PillButton 
+                      key={opt} 
+                      label={opt} 
+                      selected={cob === opt} 
+                      onPress={() => setCob(opt)} 
+                    />
+                  ))}
+                </View>
+                {cob === 'Positive' && (
+                  <Text style={{ color: '#EF4444', fontSize: 11, marginTop: 4, fontWeight: '600' }}>
+                    Warning: Positive COB milk will not be recorded.
+                  </Text>
+                )}
               </View>
             </View>
 

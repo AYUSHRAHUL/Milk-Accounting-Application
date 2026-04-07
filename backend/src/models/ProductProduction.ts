@@ -10,6 +10,10 @@ export interface IProductProduction extends Document {
     wholeMilk: number;
     skimMilk: number;
     creamMilk: number;
+    mixedMilk: number;
+    smPowder?: number;
+    sugar?: number;
+    stabilizer?: number;
   };
   sourceWholeUsed: {
     cow: number;
@@ -32,6 +36,10 @@ const ProductProductionSchema: Schema = new Schema(
       wholeMilk: { type: Number, default: 0 },
       skimMilk: { type: Number, default: 0 },
       creamMilk: { type: Number, default: 0 },
+      mixedMilk: { type: Number, default: 0 },
+      smPowder: { type: Number, default: 0 },
+      sugar: { type: Number, default: 0 },
+      stabilizer: { type: Number, default: 0 },
     },
     sourceWholeUsed: {
       cow: { type: Number, default: 0 },

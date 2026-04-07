@@ -30,6 +30,11 @@ interface MilkEntryRow {
   quantity: number;
   costPerLiter: number;
   totalCost: number;
+  snf?: number;
+  clr?: number;
+  lr?: number;
+  temp?: number;
+  ts?: number;
   mbrt?: string;
   mbrtTime?: string;
   cob?: string;
@@ -67,6 +72,11 @@ export default function ReportMilkScreen() {
         quantity: item.quantity,
         costPerLiter: item.costPerLiter,
         totalCost: item.totalCost,
+        snf: item.snf,
+        clr: item.clr,
+        lr: item.lr,
+        temp: item.temp,
+        ts: item.ts,
         mbrt: item.mbrt,
         mbrtTime: item.mbrtTime,
         cob: item.cob,
@@ -123,7 +133,7 @@ export default function ReportMilkScreen() {
       Alert.alert('No data to export');
       return;
     }
-    const header = ['Date', 'Supplier', 'Shift', 'Source', 'Fat Type', 'Quantity (L)', 'Cost / Litre', 'Total Cost', 'MBRT Status', 'MBRT Time', 'COB'];
+    const header = ['Date', 'Supplier', 'Shift', 'Source', 'Fat Type', 'Quantity (L)', 'Cost / Litre', 'Total Cost', 'LR', 'Temperature', 'CLR', 'SNF', 'TS', 'MBRT Status', 'MBRT Time', 'COB'];
 
     // Helper to escape CSV fields
     const esc = (v: any) => {
@@ -143,6 +153,11 @@ export default function ReportMilkScreen() {
       esc(e.quantity),
       esc(e.costPerLiter),
       esc(e.totalCost),
+      esc(e.lr || 0),
+      esc(e.temp || 0),
+      esc(e.clr || 0),
+      esc(e.snf || 0),
+      esc(e.ts || 0),
       esc(e.mbrt || ''),
       esc(e.mbrtTime || ''),
       esc(e.cob || ''),
@@ -342,7 +357,7 @@ export default function ReportMilkScreen() {
               <View>
                 {/* Column headers */}
                 <View style={[styles.tableRow, { backgroundColor: theme.surfaceMuted }]}>
-                  {['Date', 'Supplier', 'Shift', 'Source', 'Fat Type', 'Qty (L)', '₹/L', 'Total', 'MBRT Status', 'MBRT Time', 'COB'].map((h) => (
+                  {['Date', 'Supplier', 'Shift', 'Source', 'Fat Type', 'Qty (L)', '₹/L', 'Total', 'LR', 'Temp', 'CLR', 'SNF', 'TS', 'MBRT Status', 'MBRT Time', 'COB'].map((h) => (
                     <ThemedText key={h} style={[styles.cell, styles.colHeader, { color: theme.text }]}>
                       {h}
                     </ThemedText>
@@ -386,6 +401,11 @@ export default function ReportMilkScreen() {
                       <ThemedText style={[styles.cell, { color: theme.error, fontWeight: '700' }]}>
                         {formatCurrency(entry.totalCost)}
                       </ThemedText>
+                      <ThemedText style={styles.cell}>{entry.lr || '0'}</ThemedText>
+                      <ThemedText style={styles.cell}>{entry.temp ? `${entry.temp}°C` : '0'}</ThemedText>
+                      <ThemedText style={styles.cell}>{entry.clr || '0'}</ThemedText>
+                      <ThemedText style={styles.cell}>{entry.snf || '0'}</ThemedText>
+                      <ThemedText style={styles.cell}>{entry.ts || '0'}</ThemedText>
                       <ThemedText style={styles.cell}>{entry.mbrt || 'N/A'}</ThemedText>
                       <ThemedText style={styles.cell}>{entry.mbrtTime || 'N/A'}</ThemedText>
                       <ThemedText style={styles.cell}>{entry.cob || 'N/A'}</ThemedText>

@@ -109,34 +109,48 @@ export default function MilkCollectionHistoryScreen() {
     };
 
     const handleDelete = (id: string) => {
-        Alert.alert(
-            "Delete Entry",
-            "Are you sure you want to delete this milk collection record?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            const response = await apiFetch(`/api/milk/collection/${id}?userId=${user?.id}`, { method: 'DELETE' });
-                            if (response.ok) {
-                                fetchHistory(); // Refresh
-                            } else {
-                                Alert.alert("Error", "Failed to delete record.");
-                            }
-                        } catch {
-                            Alert.alert("Error", "An unexpected error occurred.");
-                        }
-                    }
+        const confirmDelete = async () => {
+            try {
+                const response = await apiFetch(`/api/milk/collection/${id}?userId=${user?.id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    fetchHistory(); // Refresh
+                    if (Platform.OS === 'web') alert("Record deleted successfully.");
+                } else {
+                    if (Platform.OS === 'web') alert("Error: Failed to delete record.");
+                    else Alert.alert("Error", "Failed to delete record.");
                 }
-            ]
-        );
+            } catch (err) {
+                console.error("Delete Error:", err);
+                if (Platform.OS === 'web') alert("Error: An unexpected error occurred.");
+                else Alert.alert("Error", "An unexpected error occurred.");
+            }
+        };
+
+        if (Platform.OS === 'web') {
+            if (window.confirm("Are you sure you want to delete this milk collection record?")) {
+                confirmDelete();
+            }
+        } else {
+            Alert.alert(
+                "Delete Entry",
+                "Are you sure you want to delete this milk collection record?",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                        text: "Delete",
+                        style: "destructive",
+                        onPress: confirmDelete
+                    }
+                ]
+            );
+        }
     };
 
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
     const [editingItem, setEditingItem] = useState<MilkEntryData | null>(null);
     const [editForm, setEditForm] = useState({
+        source: '',
         quantity: '',
         fatType: '',
         snf: '',
@@ -154,6 +168,7 @@ export default function MilkCollectionHistoryScreen() {
     const openEditModal = (item: MilkEntryData) => {
         setEditingItem(item);
         setEditForm({
+            source: item.source || 'Cow',
             quantity: (item.quantity || 0).toString(),
             fatType: (item.fatType || '').toString(),
             snf: (item.snf || '').toString(),
@@ -181,14 +196,14 @@ export default function MilkCollectionHistoryScreen() {
         if (lr > 0 && temp > 0) {
             const correction = getCLRCorrection(temp, fat);
             const calculatedClr = lr + correction;
-            const calculatedSnf = calculatedClr / 4 + fat * 0.2 + 0.7;
+            const calculatedSnf = (calculatedClr / 4) + (0.25 * fat) + 0.44;
             const calculatedTs = fat + calculatedSnf;
 
             setEditForm(prev => ({
                 ...prev,
                 clr: calculatedClr.toFixed(1),
-                snf: calculatedSnf.toFixed(2),
-                ts: calculatedTs.toFixed(2)
+                snf: calculatedSnf.toFixed(3),
+                ts: calculatedTs.toFixed(3)
             }));
         }
     }, [editForm.fatType, editForm.temp, editForm.lr, isEditModalVisible]);
@@ -221,22 +236,26 @@ export default function MilkCollectionHistoryScreen() {
 
     const handleUpdate = async () => {
         if (!editingItem) return;
+        setIsUpdating(true);
 
         const updatedData = {
             userId: user?.id,
-            quantity: parseFloat(editForm.quantity),
+            source: editForm.source,
+            quantity: parseFloat(editForm.quantity) || 0,
             fatType: editForm.fatType,
             snf: parseFloat(editForm.snf) || 0,
             clr: parseFloat(editForm.clr) || 0,
             lr: parseFloat(editForm.lr) || 0,
             temp: parseFloat(editForm.temp) || 0,
             ts: parseFloat(editForm.ts) || 0,
-            costPerLiter: parseFloat(editForm.costPerLiter),
-            totalCost: parseFloat(editForm.quantity) * parseFloat(editForm.costPerLiter),
-            mbrt: editForm.mbrt,
+            costPerLiter: parseFloat(editForm.costPerLiter) || 0,
+            totalCost: (parseFloat(editForm.quantity) || 0) * (parseFloat(editForm.costPerLiter) || 0),
+            mbrt: editForm.mbrt || undefined,
             mbrtTime: (editForm.mbrtHours || editForm.mbrtMinutes) ? `${(editForm.mbrtHours || '0').toString().padStart(2, '0')}:${(editForm.mbrtMinutes || '0').toString().padStart(2, '0')}` : undefined,
-            cob: editForm.cob
+            cob: editForm.cob || undefined
         };
+
+        console.log("UPDATING RECORD:", editingItem._id, updatedData);
 
         try {
             const response = await apiFetch(`/api/milk/collection/${editingItem._id}`, {
@@ -246,14 +265,23 @@ export default function MilkCollectionHistoryScreen() {
             });
 
             if (response.ok) {
+                console.log("UPDATE SUCCESS");
                 setIsEditModalVisible(false);
                 fetchHistory(); // Refresh
-                Alert.alert("Success", "Record updated successfully.");
+                if (Platform.OS === 'web') alert("Success: Record updated successfully.");
+                else Alert.alert("Success", "Record updated successfully.");
             } else {
-                Alert.alert("Error", "Failed to update record.");
+                const errorData = await response.json().catch(() => ({}));
+                console.error("Update failed with status:", response.status, errorData);
+                if (Platform.OS === 'web') alert(`Error: Failed to update record (${response.status}). ${errorData.message || ""}`);
+                else Alert.alert("Error", `Failed to update record (${response.status}).`);
             }
         } catch (error) {
-            Alert.alert("Error", "An unexpected error occurred.");
+            console.error("Update exception:", error);
+            if (Platform.OS === 'web') alert("Error: An unexpected network error occurred.");
+            else Alert.alert("Error", "An unexpected error occurred.");
+        } finally {
+            setIsUpdating(false);
         }
     };
 
@@ -397,7 +425,7 @@ export default function MilkCollectionHistoryScreen() {
                 <View style={styles.dateTimeBadge}>
                     <Ionicons name="calendar-outline" size={12} color="#6B7280" style={{ marginRight: 4 }} />
                     <ThemedText style={styles.dateTimeText}>
-                        {formatDate(item.date)} • {item.shift}
+                        {formatDate(item.date)} • {item.shift} • <ThemedText style={{ fontWeight: '800', color: '#374151', fontSize: 13 }}>{item.source || 'Cow'}</ThemedText>
                     </ThemedText>
                 </View>
             </View>
@@ -589,6 +617,27 @@ export default function MilkCollectionHistoryScreen() {
                         </View>
 
                         <View style={styles.modalBody}>
+                            {/* --- Milk Source Grid --- */}
+                            <View style={{ marginBottom: 15 }}>
+                                <ThemedText style={[styles.inputLabel, { color: '#374151', fontSize: 13, fontWeight: '700', marginBottom: 8 }]}>Milk Source</ThemedText>
+                                <View style={styles.modalSourceGrid}>
+                                    {['Cow', 'Buffalo', 'Goat', 'Other'].map(src => (
+                                        <TouchableOpacity
+                                            key={src}
+                                            onPress={() => setEditForm(prev => ({ ...prev, source: src }))}
+                                            style={[
+                                                styles.modalSourceItem,
+                                                editForm.source === src && styles.modalSourceItemSelected
+                                            ]}
+                                        >
+                                            <ThemedText style={[
+                                                styles.modalSourceText,
+                                                editForm.source === src && styles.modalSourceTextSelected
+                                            ]}>{src}</ThemedText>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
                             {/* --- Row 1: LR, Temp, Fat --- */}
                             <View style={styles.inputRow}>
                                 <View style={{ flex: 1, marginRight: 8 }}>
@@ -726,11 +775,12 @@ export default function MilkCollectionHistoryScreen() {
                             </View>
 
                             <TouchableOpacity
-                                style={styles.saveBtn}
+                                style={[styles.saveBtn, isUpdating && { opacity: 0.7 }]}
                                 onPress={handleUpdate}
                                 activeOpacity={0.8}
+                                disabled={isUpdating}
                             >
-                                <ThemedText style={styles.saveBtnText}>Save Changes</ThemedText>
+                                <ThemedText style={styles.saveBtnText}>{isUpdating ? 'Saving...' : 'Save Changes'}</ThemedText>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -1107,5 +1157,32 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: '700',
+    },
+    modalSourceGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    modalSourceItem: {
+        flex: 1,
+        minWidth: '45%',
+        paddingVertical: 10,
+        borderRadius: 10,
+        backgroundColor: '#F3F4F6',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    modalSourceItemSelected: {
+        backgroundColor: '#EBFBEE',
+        borderColor: '#22C55E',
+    },
+    modalSourceText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#4B5563',
+    },
+    modalSourceTextSelected: {
+        color: '#166534',
     },
 });

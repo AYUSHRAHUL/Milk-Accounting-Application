@@ -94,7 +94,7 @@ export function DailyReportCard({ data, dateStr }: DailyReportCardProps) {
         <View style={styles.sectionBlock}>
           <View style={styles.sectionHeader}>
             <Ionicons name="flask" size={18} color="#F59E0B" />
-            <ThemedText style={styles.sectionTitle}>Production Summary</ThemedText>
+            <ThemedText style={styles.sectionTitle}>Separation Summary</ThemedText>
           </View>
           <View style={styles.sectionRow}>
             <View style={styles.statColumn}>

@@ -23,15 +23,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const ALL_PRODUCT_TYPES = ['Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Fl. milk', 'Icecream', 'Yoghurt', 'Srikhand', 'Rasgolla', 'Gulabjamun', 'Rabbari', 'Other'];
+const ALL_PRODUCT_TYPES = ['Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Fl. milk', 'ST Milk', 'TD MILK', 'DTD MIlk', 'Icecream', 'Yoghurt', 'Srikhand', 'Rasgolla', 'Gulabjamun', 'Rabbari', 'Other'];
 const PRODUCT_ICONS: Record<string, string> = {
     Paneer: '🧀', Ghee: '🫙', Butter: '🧈', Curd: '🥛', Khoa: '🍮', 
-    'Fl. milk': '🧃', Icecream: '🍨', Yoghurt: '🍧', Srikhand: '🥣', 
+    'Fl. milk': '🧃', 'ST Milk': '🥛', 'TD MILK': '🥛', 'DTD MIlk': '🥛', 
+    Icecream: '🍨', Yoghurt: '🍧', Srikhand: '🥣', 
     Rasgolla: '⚪', Gulabjamun: '🧆', Rabbari: '🥘', Other: '📦', More: '➡️', Less: '⬆️',
 };
 const PRODUCT_COLORS: Record<string, string> = {
     Paneer: '#10B981', Ghee: '#F59E0B', Butter: '#FCD34D', Curd: '#3B82F6', Khoa: '#8B5CF6', 
-    'Fl. milk': '#EC4899', Icecream: '#F472B6', Yoghurt: '#A78BFA', Srikhand: '#FDE047', 
+    'Fl. milk': '#EC4899', 'ST Milk': '#2563EB', 'TD MILK': '#0EA5E9', 'DTD MIlk': '#38BDF8',
+    Icecream: '#F472B6', Yoghurt: '#A78BFA', Srikhand: '#FDE047', 
     Rasgolla: '#9CA3AF', Gulabjamun: '#78350F', Rabbari: '#FBBF24', Other: '#64748B', More: '#64748B', Less: '#64748B',
 };
 const PAYMENT_MODES = ['Cash', 'UPI', 'Credit'];
@@ -329,20 +331,20 @@ export default function SalesScreen() {
                             <View style={styles.productGrid}>
                                 {(() => {
                                     const displayList = showAllProducts 
-                                        ? [...ALL_PRODUCT_TYPES, 'Less'] 
-                                        : [...ALL_PRODUCT_TYPES.slice(0, 7), 'More'];
+                                        ? [...ALL_PRODUCT_TYPES, 'Show Fewer'] 
+                                        : [...ALL_PRODUCT_TYPES.slice(0, 7), 'Other...'];
                                         
                                     return displayList.map(p => {
-                                        if (p === 'More' || p === 'Less') {
+                                        if (p === 'Other...' || p === 'Show Fewer') {
                                             return (
                                                 <TouchableOpacity
                                                     key={p}
-                                                    onPress={() => setShowAllProducts(p === 'More')}
+                                                    onPress={() => setShowAllProducts(p === 'Other...')}
                                                     activeOpacity={0.8}
                                                     style={[styles.productCard, { justifyContent: 'center' }]}
                                                 >
-                                                    <ThemedText style={styles.productIcon}>{PRODUCT_ICONS[p]}</ThemedText>
-                                                    <ThemedText style={styles.productName}>{p === 'More' ? 'More...' : 'Show Less'}</ThemedText>
+                                                    <ThemedText style={styles.productIcon}>{PRODUCT_ICONS[p === 'Other...' ? 'More' : 'Less']}</ThemedText>
+                                                    <ThemedText style={styles.productName}>{p}</ThemedText>
                                                 </TouchableOpacity>
                                             );
                                         }
@@ -693,7 +695,7 @@ const styles = StyleSheet.create({
         borderRadius: 6,
         marginTop: 'auto', 
     },
-    stockText: { fontSize: 8, fontWeight: '800', textAlign: 'center' },
+    stockText: { fontSize: 7, fontWeight: '800', textAlign: 'center' },
     row: { flexDirection: 'row', marginBottom: 8 },
     warningBanner: {
         flexDirection: 'row', alignItems: 'center', gap: 8,

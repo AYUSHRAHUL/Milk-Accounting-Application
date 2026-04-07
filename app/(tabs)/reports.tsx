@@ -144,7 +144,7 @@ export default function ReportsScreen() {
                 <Ionicons name="flask" size={26} color="#F59E0B" />
               </View>
               <View style={styles.cardContent}>
-                <ThemedText style={styles.cardTitle}>Production Report</ThemedText>
+                <ThemedText style={styles.cardTitle}>Separation Report</ThemedText>
                 <View style={styles.statsRow}>
                   <View style={styles.stat}>
                     <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Products</ThemedText>

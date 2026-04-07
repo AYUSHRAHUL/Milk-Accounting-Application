@@ -86,7 +86,7 @@ export function CompleteReportTable({ entries }: CompleteReportTableProps) {
       return;
     }
 
-    const headers = ['Date', 'Opening Bal', 'Milk Collection', 'Available Milk', 'Production', 'Sales', 'Supplier Cost', 'Closing Bal'];
+    const headers = ['Date', 'Opening Bal', 'Milk Collection', 'Available Milk', 'Separation', 'Sales', 'Supplier Cost', 'Closing Bal'];
     const rows = filteredEntries.map((e) => [
       formatDateShort(e.date),
       e.openingBalance.toFixed(2),
@@ -196,7 +196,7 @@ export function CompleteReportTable({ entries }: CompleteReportTableProps) {
               <ThemedText style={[styles.cell, styles.headerCell, { width: 100, textAlign: 'right' }]}>Opening Bal</ThemedText>
               <ThemedText style={[styles.cell, styles.headerCell, { width: 120, textAlign: 'right' }]}>Milk Collection</ThemedText>
               <ThemedText style={[styles.cell, styles.headerCell, { width: 100, textAlign: 'right', color: theme.primary }]}>Total Mlk</ThemedText>
-              <ThemedText style={[styles.cell, styles.headerCell, { width: 100, textAlign: 'right', color: '#F59E0B' }]}>Production</ThemedText>
+              <ThemedText style={[styles.cell, styles.headerCell, { width: 100, textAlign: 'right', color: '#F59E0B' }]}>Separation</ThemedText>
               <ThemedText style={[styles.cell, styles.headerCell, { width: 100, textAlign: 'right', color: theme.success }]}>Sales</ThemedText>
               <ThemedText style={[styles.cell, styles.headerCell, { width: 110, textAlign: 'right', color: '#9333EA' }]}>Supplier Costs</ThemedText>
               <ThemedText style={[styles.cell, styles.headerCell, { width: 100, textAlign: 'right', color: theme.primary }]}>Closing Bal</ThemedText>

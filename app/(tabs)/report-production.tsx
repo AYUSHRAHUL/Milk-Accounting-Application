@@ -26,6 +26,7 @@ interface SeparationEntry {
   separationMilk: number;
   skimMilk: number;
   creamMilk: number;
+  mixedMilk: number;
   loss: number;
 }
 
@@ -39,6 +40,13 @@ interface ProductEntry {
     wholeMilk: number;
     skimMilk: number;
     creamMilk: number;
+    mixedMilk: number;
+  };
+  sourceWholeUsed?: {
+    cow: number;
+    buff: number;
+    goat: number;
+    other: number;
   };
 }
 
@@ -112,7 +120,7 @@ export default function ReportProductionScreen() {
 
   // --- Stats ---
   const totalProduced = filteredProducts.reduce((s, e) => s + e.quantityProduced, 0);
-  const totalMilkUsed = filteredProducts.reduce((s, e) => s + e.milkUsed.wholeMilk + e.milkUsed.skimMilk + e.milkUsed.creamMilk, 0);
+  const totalMilkUsed = filteredProducts.reduce((s, e) => s + e.milkUsed.wholeMilk + e.milkUsed.skimMilk + e.milkUsed.creamMilk + (e.milkUsed.mixedMilk || 0), 0);
   const totalSeparated = filteredSeparation.reduce((s, e) => s + e.separationMilk, 0);
 
   const formatDate = (iso: string) => {
@@ -129,17 +137,18 @@ export default function ReportProductionScreen() {
 
     let csv = '';
     if (activeTab === 'Products') {
-      const header = ['Date', 'Product', 'Quantity', 'Whole Milk used', 'Skim used', 'Cream used'];
+      const header = ['Date', 'Product', 'Quantity', 'Cow used', 'Buff used', 'Goat used', 'Other used', 'Skim used', 'Cream used', 'Mixed used'];
       const rows = filteredProducts.map(e =>
         [formatDate(e.date), e.productName, `${e.quantityProduced} ${e.unit}`,
-        e.milkUsed.wholeMilk.toString(), e.milkUsed.skimMilk.toString(), e.milkUsed.creamMilk.toString()]
+        (e.sourceWholeUsed?.cow || 0).toString(), (e.sourceWholeUsed?.buff || 0).toString(), (e.sourceWholeUsed?.goat || 0).toString(), (e.sourceWholeUsed?.other || 0).toString(),
+        e.milkUsed.skimMilk.toString(), e.milkUsed.creamMilk.toString(), (e.milkUsed.mixedMilk || 0).toString()]
       );
       csv = [header, ...rows].map(r => r.join(',')).join('\n');
     } else {
-      const header = ['Date', 'Separated (L)', 'Skim Produced (L)', 'Cream Produced (L)', 'Loss'];
+      const header = ['Date', 'Separated (L)', 'Skim Produced (L)', 'Cream Produced (L)', 'Mixed Produced (L)', 'Loss'];
       const rows = filteredSeparation.map(e => {
-        const loss = (e.separationMilk || 0) - ((e.skimMilk || 0) + (e.creamMilk || 0));
-        return [formatDate(e.date), e.separationMilk.toString(), e.skimMilk.toString(), e.creamMilk.toString(), loss.toFixed(1)];
+        const loss = (e.separationMilk || 0) - ((e.skimMilk || 0) + (e.creamMilk || 0) + (e.mixedMilk || 0));
+        return [formatDate(e.date), e.separationMilk.toString(), e.skimMilk.toString(), e.creamMilk.toString(), (e.mixedMilk || 0).toString(), loss.toFixed(2)];
       });
       csv = [header, ...rows].map(r => r.join(',')).join('\n');
     }
@@ -173,7 +182,7 @@ export default function ReportProductionScreen() {
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerText}>
-          <ThemedText style={styles.headerTitle}>Production Report</ThemedText>
+          <ThemedText style={styles.headerTitle}>Separation Report</ThemedText>
           <ThemedText style={styles.headerSub}>Milk Usage & Yield Analysis</ThemedText>
         </View>
         <TouchableOpacity disabled style={[styles.backBtn, { backgroundColor: 'transparent' }]}>
@@ -261,8 +270,8 @@ export default function ReportProductionScreen() {
               <View>
                 <View style={[styles.tableRow, { backgroundColor: theme.surfaceMuted }]}>
                   {activeTab === 'Products'
-                    ? ['Date', 'Product', 'Yield', 'Whole Used', 'Skim Used', 'Cream Used'].map(h => <ThemedText key={h} style={styles.cellHeader}>{h}</ThemedText>)
-                    : ['Date', 'Separated', 'Skim Out', 'Cream Out', 'Loss'].map(h => <ThemedText key={h} style={styles.cellHeader}>{h}</ThemedText>)
+                    ? ['Date', 'Product', 'Yield', 'Cow', 'Buff', 'Goat', 'Other', 'Skim', 'Cream', 'Mixed'].map(h => <ThemedText key={h} style={styles.cellHeader}>{h}</ThemedText>)
+                    : ['Date', 'Separated', 'Skim Out', 'Cream Out', 'Mixed Out', 'Loss'].map(h => <ThemedText key={h} style={styles.cellHeader}>{h}</ThemedText>)
                   }
                 </View>
 
@@ -271,19 +280,24 @@ export default function ReportProductionScreen() {
                     <ThemedText style={styles.cell}>{formatDate(e.date)}</ThemedText>
                     <ThemedText style={[styles.cell, { fontWeight: '700' }]}>{e.productName}</ThemedText>
                     <ThemedText style={[styles.cell, { color: '#F59E0B', fontWeight: '800' }]}>{e.quantityProduced} {e.unit}</ThemedText>
-                    <ThemedText style={styles.cell}>{e.milkUsed.wholeMilk} L</ThemedText>
-                    <ThemedText style={styles.cell}>{e.milkUsed.skimMilk} L</ThemedText>
-                    <ThemedText style={styles.cell}>{e.milkUsed.creamMilk} L</ThemedText>
+                    <ThemedText style={styles.cell}>{(e.sourceWholeUsed?.cow || 0).toFixed(2)} L</ThemedText>
+                    <ThemedText style={styles.cell}>{(e.sourceWholeUsed?.buff || 0).toFixed(2)} L</ThemedText>
+                    <ThemedText style={styles.cell}>{(e.sourceWholeUsed?.goat || 0).toFixed(2)} L</ThemedText>
+                    <ThemedText style={styles.cell}>{(e.sourceWholeUsed?.other || 0).toFixed(2)} L</ThemedText>
+                    <ThemedText style={styles.cell}>{e.milkUsed.skimMilk.toFixed(2)} L</ThemedText>
+                    <ThemedText style={styles.cell}>{e.milkUsed.creamMilk.toFixed(2)} L</ThemedText>
+                    <ThemedText style={styles.cell}>{(e.milkUsed.mixedMilk || 0).toFixed(2)} L</ThemedText>
                   </View>
                 )) : filteredSeparation.map((e, idx) => {
-                  const loss = (e.separationMilk || 0) - ((e.skimMilk || 0) + (e.creamMilk || 0));
+                  const loss = (e.separationMilk || 0) - ((e.skimMilk || 0) + (e.creamMilk || 0) + (e.mixedMilk || 0));
                   return (
                     <View key={e._id} style={[styles.tableRow, { backgroundColor: idx % 2 === 0 ? theme.background : 'rgba(0,0,0,0.02)' }]}>
                       <ThemedText style={styles.cell}>{formatDate(e.date)}</ThemedText>
-                      <ThemedText style={[styles.cell, { fontWeight: '800' }]}>{e.separationMilk} L</ThemedText>
-                      <ThemedText style={styles.cell}>{e.skimMilk} L</ThemedText>
-                      <ThemedText style={styles.cell}>{e.creamMilk} L</ThemedText>
-                      <ThemedText style={[styles.cell, { color: theme.error }]}>{loss.toFixed(1)} L</ThemedText>
+                      <ThemedText style={[styles.cell, { fontWeight: '800' }]}>{e.separationMilk.toFixed(2)} L</ThemedText>
+                      <ThemedText style={styles.cell}>{e.skimMilk.toFixed(2)} L</ThemedText>
+                      <ThemedText style={styles.cell}>{e.creamMilk.toFixed(2)} L</ThemedText>
+                      <ThemedText style={styles.cell}>{(e.mixedMilk || 0).toFixed(2)} L</ThemedText>
+                      <ThemedText style={[styles.cell, { color: theme.error }]}>{loss.toFixed(2)} L</ThemedText>
                     </View>
                   );
                 })}
