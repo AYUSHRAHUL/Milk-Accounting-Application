@@ -23,18 +23,24 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const ALL_PRODUCT_TYPES = ['Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Fl. milk', 'ST Milk', 'TD MILK', 'DTD MIlk', 'Icecream', 'Yoghurt', 'Srikhand', 'Rasgolla', 'Gulabjamun', 'Rabbari', 'Other'];
+const ALL_PRODUCT_TYPES = ['Cow Milk', 'Buffalo Milk', 'Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Fl. milk', 'Std. Milk', 'Toned Milk', 'D.Toned Milk', 'Skim Milk', 'Icecream', 'Yoghurt', 'Srikhand', 'Rasgolla', 'Gulabjamun', 'Rabbari', 'Goat Milk'];
 const PRODUCT_ICONS: Record<string, string> = {
     Paneer: '🧀', Ghee: '🫙', Butter: '🧈', Curd: '🥛', Khoa: '🍮', 
-    'Fl. milk': '🧃', 'ST Milk': '🥛', 'TD MILK': '🥛', 'DTD MIlk': '🥛', 
+    'Fl. milk': '🧃', 'Std. Milk': '🥛', 'Toned Milk': '🥛', 'D.Toned Milk': '🥛', 
     Icecream: '🍨', Yoghurt: '🍧', Srikhand: '🥣', 
-    Rasgolla: '⚪', Gulabjamun: '🧆', Rabbari: '🥘', Other: '📦', More: '➡️', Less: '⬆️',
+    Rasgolla: '⚪', Gulabjamun: '🧆', Rabbari: '🥘', 
+    'Cow Milk': '🐄', 'Buffalo Milk': '🐃', 'Goat Milk': '🐐', 'Other Milk': '🥛',
+    'Skim Milk': '💧', 'Cream': '🍯', 'Mixed Milk': '🥛',
+    Other: '📦', More: '➡️', Less: '⬆️',
 };
 const PRODUCT_COLORS: Record<string, string> = {
     Paneer: '#10B981', Ghee: '#F59E0B', Butter: '#FCD34D', Curd: '#3B82F6', Khoa: '#8B5CF6', 
-    'Fl. milk': '#EC4899', 'ST Milk': '#2563EB', 'TD MILK': '#0EA5E9', 'DTD MIlk': '#38BDF8',
+    'Fl. milk': '#EC4899', 'Std. Milk': '#2563EB', 'Toned Milk': '#0EA5E9', 'D.Toned Milk': '#38BDF8',
     Icecream: '#F472B6', Yoghurt: '#A78BFA', Srikhand: '#FDE047', 
-    Rasgolla: '#9CA3AF', Gulabjamun: '#78350F', Rabbari: '#FBBF24', Other: '#64748B', More: '#64748B', Less: '#64748B',
+    Rasgolla: '#9CA3AF', Gulabjamun: '#78350F', Rabbari: '#FBBF24', 
+    'Cow Milk': '#22C55E', 'Buffalo Milk': '#475569', 'Goat Milk': '#8B5CF6', 'Other Milk': '#64748B',
+    'Skim Milk': '#3B82F6', 'Cream': '#F59E0B', 'Mixed Milk': '#10B981',
+    Other: '#64748B', More: '#64748B', Less: '#64748B',
 };
 const PAYMENT_MODES = ['Cash', 'UPI', 'Credit'];
 
@@ -54,6 +60,8 @@ export default function SalesScreen() {
     const triggerAlert = (title: string, message: string, type: 'warning' | 'error' | 'info' | 'success' = 'warning') => {
         setAlertConfig({ visible: true, title, message, type });
     };
+
+    const [allProductTypes, setAllProductTypes] = useState(ALL_PRODUCT_TYPES);
 
     const [displayDate, setDisplayDate] = useState(() => {
         const now = new Date();
@@ -94,7 +102,11 @@ export default function SalesScreen() {
         setIsFetchingStock(true);
         try {
             const res = await apiFetch(`/api/sales/product-stock?userId=${user.id}`);
-            if (res.ok) setProductStock(await res.json());
+            if (res.ok) {
+                const stock = await res.json();
+                // Only fetch stock for predefined types to avoid ghost/old names
+                setProductStock(stock);
+            }
         } catch (e) {
             console.error('Stock fetch error', e);
         } finally {
@@ -331,8 +343,8 @@ export default function SalesScreen() {
                             <View style={styles.productGrid}>
                                 {(() => {
                                     const displayList = showAllProducts 
-                                        ? [...ALL_PRODUCT_TYPES, 'Show Fewer'] 
-                                        : [...ALL_PRODUCT_TYPES.slice(0, 7), 'Other...'];
+                                        ? [...allProductTypes, 'Show Fewer'] 
+                                        : [...allProductTypes.slice(0, 11), (allProductTypes.length > 11 ? 'Other...' : 'Other')];
                                         
                                     return displayList.map(p => {
                                         if (p === 'Other...' || p === 'Show Fewer') {
@@ -362,7 +374,7 @@ export default function SalesScreen() {
                                                     isSelected && { borderColor: color, borderWidth: 2.5, backgroundColor: `${color}12` }
                                                 ]}
                                             >
-                                                <ThemedText style={styles.productIcon}>{PRODUCT_ICONS[p]}</ThemedText>
+                                                <ThemedText style={styles.productIcon}>{PRODUCT_ICONS[p] || PRODUCT_ICONS['Other']}</ThemedText>
                                                 <ThemedText style={[styles.productName, isSelected && { color, fontWeight: '800' }]}>{p}</ThemedText>
                                                 <View style={[styles.stockBadge, { backgroundColor: stock > 0 ? '#DCFCE7' : '#FEE2E2' }]}>
                                                     <ThemedText style={[styles.stockText, { color: stock > 0 ? '#166534' : '#991B1B' }]}>

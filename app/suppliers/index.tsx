@@ -131,10 +131,13 @@ export default function SuppliersListScreen() {
 
                 <View style={styles.bottomSection}>
                     <View style={styles.animalBadges}>
-                        {item.animalType?.map(type => (
+                        {item.animalType?.slice().sort((a, b) => {
+                            const order: any = { 'Cow': 1, 'Buffalo': 2, 'Goat': 3, 'Other': 4 };
+                            return (order[a] || 5) - (order[b] || 5);
+                        }).map(type => (
                             <View key={type} style={[styles.animalBadge, { backgroundColor: theme.background, borderColor: theme.borderMuted }]}>
                                 <ThemedText style={[styles.animalText, { color: theme.primary }]}>
-                                    {type === 'Cow' ? '🐄 ' : '🐃 '}{type}
+                                    {type === 'Cow' ? '🐄 ' : type === 'Goat' ? '🐐 ' : type === 'Other' ? '📦 ' : '🐃 '}{type}
                                 </ThemedText>
                             </View>
                         ))}

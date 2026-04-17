@@ -17,7 +17,7 @@ const SaleEntrySchema: Schema = new Schema(
     userId: { type: String, required: true },
     date: { type: String, required: true },
     customerName: { type: String, required: false },
-    productType: { type: String, required: true, enum: ['Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Flavoured Milk', 'Icecream', 'Yoghurt', 'Srikhand', 'Rasagolla', 'Gulabjamun', 'Rabbari', 'Other'] },
+    productType: { type: String, required: true },
     quantity: { type: Number, required: true },
     pricePerUnit: { type: Number, required: true },
     totalAmount: { type: Number, required: true },

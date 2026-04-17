@@ -8,6 +8,7 @@ import { apiFetch } from '@/lib/api';
 
 const ALL_MODULES = [
   { id: 'collection', label: 'Milk Collection' },
+  { id: 'quality', label: 'Quality Parameters' },
   { id: 'history', label: 'History' },
   { id: 'production', label: 'Separation' },
   { id: 'products', label: 'Products' },
@@ -26,7 +27,7 @@ export default function AddUserScreen() {
     role: 'user',
   });
   
-  const [selectedModules, setSelectedModules] = useState<string[]>(['collection', 'history', 'production', 'suppliers', 'sales', 'reports']);
+  const [selectedModules, setSelectedModules] = useState<string[]>(['collection', 'history', 'production', 'suppliers', 'sales', 'reports', 'quality']);
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 

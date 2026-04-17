@@ -92,13 +92,13 @@ export default function LoginScreen() {
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <ScrollView
             ref={scrollRef}
             contentContainerStyle={styles.scrollContainer}
             keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator={true}
           >
 
             <View style={styles.headerArea}>
@@ -129,7 +129,6 @@ export default function LoginScreen() {
                     autoCapitalize="none"
                     onFocus={() => {
                       setFocusedField('email');
-                      scrollRef.current?.scrollTo({ y: 100, animated: true });
                     }}
                     onBlur={() => setFocusedField(null)}
                     selectionColor="#22C55E"
@@ -153,7 +152,6 @@ export default function LoginScreen() {
                     secureTextEntry={!showPassword}
                     onFocus={() => {
                       setFocusedField('password');
-                      scrollRef.current?.scrollToEnd({ animated: true });
                     }}
                     onBlur={() => setFocusedField(null)}
                     selectionColor="#22C55E"
@@ -237,7 +235,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 20, // requested marginHorizontal 20, keeping it in the container padding
     paddingTop: 40,
-    paddingBottom: 40,
+    paddingBottom: 60,
     justifyContent: 'center',
   },
   headerArea: {

@@ -88,14 +88,15 @@ export default function ReportSalesScreen() {
   }, [entries, productFilter]);
 
   const availableProducts = useMemo(() => {
-    const defaultProducts = [
-      'Paneer', 'Ghee', 'Butter', 'Curd',
-      'Khoa', 'Fl. milk', 'Icecream', 'Yoghurt',
-      'Srikhand', 'Rasgolla', 'Gulabjamun', 'Rabbari'
+    const priorityOrder = [
+      'Cow Milk', 'Buffalo Milk', 'Paneer', 'Ghee', 'Butter', 'Curd', 
+      'Khoa', 'Fl. milk', 'Std. Milk', 'Toned Milk', 'D.Toned Milk', 
+      'Skim Milk', 'Icecream', 'Yoghurt', 'Srikhand', 'Rasgolla', 
+      'Gulabjamun', 'Rabbari', 'Goat Milk'
     ];
     const dataProducts = entries.map(e => e.productType).filter(p => !!p);
-    const combined = new Set([...defaultProducts, ...dataProducts]);
-    const list = Array.from(combined).sort();
+    const combined = new Set([...priorityOrder, ...dataProducts]);
+    const list = Array.from(combined);
     return ['All', ...list];
   }, [entries]);
 
@@ -187,13 +188,6 @@ export default function ReportSalesScreen() {
               {formatCurrency(totalRevenue)}
             </ThemedText>
             <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Revenue</ThemedText>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: theme.warningMuted }]}>
-            <Ionicons name="cube-outline" size={18} color={theme.warning} style={{ marginBottom: 4 }} />
-            <ThemedText style={[styles.statValue, { color: theme.warning }]}>
-              {totalQty.toFixed(1)}
-            </ThemedText>
-            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Units Sold</ThemedText>
           </View>
           <View style={[styles.statCard, { backgroundColor: theme.primaryMuted }]}>
             <Ionicons name="receipt-outline" size={18} color={theme.primary} style={{ marginBottom: 4 }} />

@@ -48,6 +48,7 @@ const FEATURES: FeatureCard[] = [
   { title: 'Sales', id: 'sales', route: '/sales', image: SalesImage, icon: 'cash', useTint: true },
   { title: 'Reports', id: 'reports', route: '/reports', image: ReportsImage, icon: 'bar-chart', useTint: true },
   { title: 'History', id: 'history', route: '/milk-collection/history', image: HistoryImage, icon: 'list', useTint: true },
+  { title: 'Quality Parameters', id: 'quality', route: '/quality-parameters', image: null, icon: 'analytics', useTint: true },
 ];
 
 // Dashboard Card

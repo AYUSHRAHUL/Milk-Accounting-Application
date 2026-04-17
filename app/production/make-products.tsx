@@ -29,16 +29,15 @@ const PRODUCT_LIST = [
     { name: 'Curd', color: '#3B82F6', icon: '🥛', idealUnit: 'kg' },
     { name: 'Khoa', color: '#8B5CF6', icon: '🍮', idealUnit: 'kg' },
     { name: 'Fl. milk', color: '#EC4899', icon: '🧃', idealUnit: 'ltr' },
-    { name: 'ST Milk', color: '#2563EB', icon: '🥛', idealUnit: 'ltr' },
-    { name: 'TD MILK', color: '#0EA5E9', icon: '🥛', idealUnit: 'ltr' },
-    { name: 'DTD MIlk', color: '#38BDF8', icon: '🥛', idealUnit: 'ltr' },
+    { name: 'Std. Milk', color: '#2563EB', icon: '🥛', idealUnit: 'ltr' },
+    { name: 'Toned Milk', color: '#0EA5E9', icon: '🥛', idealUnit: 'ltr' },
+    { name: 'D.Toned Milk', color: '#38BDF8', icon: '🥛', idealUnit: 'ltr' },
     { name: 'Icecream', color: '#F472B6', icon: '🍨', idealUnit: 'ltr' },
     { name: 'Yoghurt', color: '#A78BFA', icon: '🍧', idealUnit: 'kg' },
     { name: 'Srikhand', color: '#FDE047', icon: '🥣', idealUnit: 'kg' },
     { name: 'Rasgolla', color: '#9CA3AF', icon: '⚪', idealUnit: 'units' },
     { name: 'Gulabjamun', color: '#78350F', icon: '🧆', idealUnit: 'units' },
     { name: 'Rabbari', color: '#FBBF24', icon: '🥘', idealUnit: 'kg' },
-    { name: 'Other', color: '#64748B', icon: '📦', idealUnit: 'kg' },
 ];
 
 const PAGE_PADDING = 24;
@@ -241,6 +240,7 @@ export default function MakeProductsScreen() {
                 setUseSkim(''); setUseCream(''); setUseMixed('');
                 setUseSkimPowder(''); setUseSugar(''); setUseStabilizer('');
                 fetchInventory();
+                setShowSuccess(true);
             }
         } catch (error) {
             console.error('Save Product Error:', error);

@@ -432,8 +432,8 @@ export default function MilkProductionScreen() {
                                 <View style={styles.resultGridCompact}>
                                     {[
                                         { label: 'Mixed', value: mixedMilk, setter: setMixedMilk, color: '#16A34A', key: 'mixed' },
-                                        { label: 'Cream', value: creamMilkInput, setter: setCreamMilkInput, color: '#F59E0B', key: 'cream' },
                                         { label: 'Skim', value: skimMilk, setter: setSkimMilk, color: '#3B82F6', key: 'skim' },
+                                        { label: 'Cream', value: creamMilkInput, setter: setCreamMilkInput, color: '#F59E0B', key: 'cream' },
                                     ].map((item) => (
                                         <View key={item.key} style={styles.sourceSepItem}>
                                             <ThemedText style={[styles.sourceBoxTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>{item.label}</ThemedText>
@@ -474,8 +474,8 @@ export default function MilkProductionScreen() {
                                     {[
                                         { label: 'Avail', value: `${totalAvailable.toFixed(3)}L`, color: '#22C55E' },
                                         { label: 'Left', value: `${wholeMilk.toFixed(3)}L`, color: '#16A34A' },
-                                        { label: 'Skim', value: `${(inventory.skimMilk + skimQty).toFixed(3)}L`, color: '#60A5FA' },
                                         { label: 'Cream', value: `${(inventory.creamMilk + creamQty).toFixed(3)}L`, color: '#F59E0B' },
+                                        { label: 'Skim', value: `${(inventory.skimMilk + skimQty).toFixed(3)}L`, color: '#60A5FA' },
                                         { label: 'Mixed', value: `${(inventory.mixedMilk + mixedQty).toFixed(3)}L`, color: '#10B981' },
                                     ].map((item, idx) => (
                                         <View key={idx} style={styles.summaryStripItemCompact}>

@@ -19,27 +19,7 @@ export interface ExcelReportEntry {
     prod: Record<string, number>;
     cb: number;
   };
-  sm: {
-    ob: number;
-    prod: number;
-    total: number;
-    sale: number;
-    cb: number;
-  };
-  cream: {
-    ob: number;
-    prod: number;
-    total: number;
-    sale: number;
-    cb: number;
-  };
-  mixed: {
-    ob: number;
-    prod: number;
-    total: number;
-    sale: number;
-    cb: number;
-  };
+
   products: Record<string, {
     ob: number;
     prod: number;
@@ -67,11 +47,39 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
   };
 
   const processedEntries = useMemo(() => {
-    if (filterMode === 'Date') return entries;
+    // Sort all entries by date first for correct balance propagation
+    const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+    
+    // Propagate balances for "Date" mode
+    // We deep clone to avoid mutating the original entries prop
+    const linkedEntries: ExcelReportEntry[] = JSON.parse(JSON.stringify(sorted));
+    
+    for (let i = 1; i < linkedEntries.length; i++) {
+        const prev = linkedEntries[i-1];
+        const curr = linkedEntries[i];
+
+        // 1. Milk Account
+        curr.milk.ob = prev.milk.cb;
+        curr.milk.totalAvailable = curr.milk.ob + curr.milk.totalIn;
+        curr.milk.cb = curr.milk.totalAvailable - (curr.milk.cardSales + curr.milk.cashSales);
+
+
+
+        // 5. Products
+        Object.keys(curr.products).forEach(pk => {
+            if (prev.products[pk]) {
+                curr.products[pk].ob = prev.products[pk].cb;
+                curr.products[pk].total = curr.products[pk].ob + curr.products[pk].prod;
+                curr.products[pk].cb = curr.products[pk].total - curr.products[pk].sale;
+            }
+        });
+    }
+
+    if (filterMode === 'Date') return linkedEntries;
 
     // Month Aggregation Logic
     const monthly: Record<string, any> = {};
-    entries.forEach(e => {
+    linkedEntries.forEach(e => {
       const month = e.date.substring(0, 7); // YYYY-MM
       if (!monthly[month]) {
         monthly[month] = JSON.parse(JSON.stringify(e));
@@ -89,16 +97,7 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
         monthly[month].milk.cashSales += e.milk.cashSales;
         Object.keys(e.milk.prod).forEach(k => monthly[month].milk.prod[k] = (monthly[month].milk.prod[k] || 0) + e.milk.prod[k]);
 
-        // Aggregate sm/cream/mixed
-        monthly[month].sm.prod += e.sm.prod;
-        monthly[month].sm.total += e.sm.total;
-        monthly[month].sm.sale += e.sm.sale;
-        monthly[month].cream.prod += e.cream.prod;
-        monthly[month].cream.total += e.cream.total;
-        monthly[month].cream.sale += e.cream.sale;
-        monthly[month].mixed.prod += e.mixed.prod;
-        monthly[month].mixed.total += e.mixed.total;
-        monthly[month].mixed.sale += e.mixed.sale;
+
 
         // Products
         Object.keys(e.products).forEach(p => {
@@ -110,9 +109,7 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
 
         // Closing Balance update (take latest)
         monthly[month].milk.cb = e.milk.cb;
-        monthly[month].sm.cb = e.sm.cb;
-        monthly[month].cream.cb = e.cream.cb;
-        monthly[month].mixed.cb = e.mixed.cb;
+
         Object.keys(e.products).forEach(p => monthly[month].products[p].cb = e.products[p].cb);
       }
     });
@@ -132,15 +129,13 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
         'MILK_COW',
         'MILK_BUFF',
         'MILK_GOAT',
-        'MILK_OTHER',
+
         'MILK_TOTAL_IN',
         'MILK_TOTAL_AVAIL',
         'MILK_CARD_SALE',
         'MILK_CASH_SALE',
         'MILK_CB',
-        'SM_PROD', 'SM_OB', 'SM_TOTAL', 'SM_SELL', 'SM_CB',
-        'CREAM_PROD', 'CREAM_OB', 'CREAM_TOTAL', 'CREAM_SELL', 'CREAM_CB',
-        'MIXED_PROD', 'MIXED_OB', 'MIXED_TOTAL', 'MIXED_SELL', 'MIXED_CB',
+
         ...allProdKeys.flatMap(k => [`${k.toUpperCase()}_PROD`, `${k.toUpperCase()}_OB`, `${k.toUpperCase()}_TOTAL`, `${k.toUpperCase()}_SELL`, `${k.toUpperCase()}_CB`])
       ];
 
@@ -160,15 +155,13 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
         esc(e.milk.sourceTotals?.['Cow'] || 0),
         esc(e.milk.sourceTotals?.['Buffalo'] || 0),
         esc(e.milk.sourceTotals?.['Goat'] || 0),
-        esc(e.milk.sourceTotals?.['Other'] || 0),
+
         esc(e.milk.totalIn),
         esc(e.milk.totalAvailable),
         esc(e.milk.cardSales),
         esc(e.milk.cashSales),
         esc(e.milk.cb),
-        esc(e.sm.prod), esc(e.sm.ob), esc(e.sm.total), esc(e.sm.sale), esc(e.sm.cb),
-        esc(e.cream.prod), esc(e.cream.ob), esc(e.cream.total), esc(e.cream.sale), esc(e.cream.cb),
-        esc(e.mixed.prod), esc(e.mixed.ob), esc(e.mixed.total), esc(e.mixed.sale), esc(e.mixed.cb),
+
         ...allProdKeys.flatMap(k => [
           esc(e.products[k]?.prod || 0),
           esc(e.products[k]?.ob || 0),
@@ -197,7 +190,7 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
   };
 
   const STANDARD_PRODUCTS = [
-    'Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Fl. milk', 'ST Milk', 'TD MILK', 'DTD Milk', 'Icecream', 'Yoghurt', 'Srikhand', 'Rasgolla', 'Gulabjamun', 'Rabbari', 'Other'
+    'Skim Milk', 'Cream', 'Mixed Milk', 'Cow Milk', 'Buffalo Milk', 'Goat Milk', 'Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Fl. milk', 'Std. Milk', 'Toned Milk', 'D.Toned Milk', 'Icecream', 'Yoghurt', 'Srikhand', 'Rasgolla', 'Gulabjamun', 'Rabbari'
   ];
 
   const allProdKeys = useMemo(() => {
@@ -243,18 +236,10 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
           {/* Row 1: Main Section Headers */}
           <View style={styles.tableHeaderRow}>
             <View style={[styles.headerCell, { width: 100 }]}><ThemedText style={styles.headerText}>DATE (2026)</ThemedText></View>
-            <View style={[styles.accountHeader, { width: (allSupplierKeys.length + 9) * 60, backgroundColor: '#EFF6FF' }]}>
+            <View style={[styles.accountHeader, { width: (allSupplierKeys.length + 8) * 60, backgroundColor: '#EFF6FF' }]}>
               <ThemedText style={[styles.headerText, { color: '#1D4ED8' }]}>MILK ACCOUNT</ThemedText>
             </View>
-            <View style={[styles.accountHeader, { width: 300, backgroundColor: theme.successMuted }]}>
-              <ThemedText style={[styles.headerText, { color: theme.success }]}>SKIM MILK</ThemedText>
-            </View>
-            <View style={[styles.accountHeader, { width: 300, backgroundColor: 'rgba(253,224,71,0.2)' }]}>
-              <ThemedText style={[styles.headerText, { color: '#A16207' }]}>CREAM</ThemedText>
-            </View>
-            <View style={[styles.accountHeader, { width: 300, backgroundColor: 'rgba(16,185,129,0.1)' }]}>
-              <ThemedText style={[styles.headerText, { color: '#10B981' }]}>MIXED MILK</ThemedText>
-            </View>
+
             {allProdKeys.map(pk => (
               <View key={pk} style={[styles.accountHeader, { width: 300, backgroundColor: 'rgba(245,158,11,0.1)' }]}>
                 <ThemedText style={[styles.headerText, { color: '#F59E0B' }]}>{pk.toUpperCase()}</ThemedText>
@@ -272,32 +257,13 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
             <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>COW</ThemedText></View>
             <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>BUFF</ThemedText></View>
             <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>GOAT</ThemedText></View>
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>OTHER</ThemedText></View>
+
             <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>TOTAL</ThemedText></View>
             <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>CARD</ThemedText></View>
             <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>CASH</ThemedText></View>
             <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>C.B.</ThemedText></View>
 
-            {/* SM Cols */}
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>PROD</ThemedText></View>
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>O.B.</ThemedText></View>
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>TOTAL</ThemedText></View>
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>SELL</ThemedText></View>
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>C.B.</ThemedText></View>
 
-            {/* Cream Cols */}
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>PROD</ThemedText></View>
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>O.B.</ThemedText></View>
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>TOTAL</ThemedText></View>
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>SELL</ThemedText></View>
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>C.B.</ThemedText></View>
-
-            {/* Mixed Cols */}
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>PROD</ThemedText></View>
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>O.B.</ThemedText></View>
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>TOTAL</ThemedText></View>
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>SELL</ThemedText></View>
-            <View style={styles.subCol}><ThemedText style={styles.subHeaderText}>C.B.</ThemedText></View>
 
             {/* Product Cols */}
             {allProdKeys.map(pk => (
@@ -323,32 +289,13 @@ export const ExcelReportTable: React.FC<Props> = ({ entries }) => {
                 <View style={styles.subCol}><ThemedText style={styles.cellText}>{(e.milk.sourceTotals?.['Cow'] || 0).toFixed(3)}</ThemedText></View>
                 <View style={styles.subCol}><ThemedText style={styles.cellText}>{(e.milk.sourceTotals?.['Buffalo'] || 0).toFixed(3)}</ThemedText></View>
                 <View style={styles.subCol}><ThemedText style={styles.cellText}>{(e.milk.sourceTotals?.['Goat'] || 0).toFixed(3)}</ThemedText></View>
-                <View style={styles.subCol}><ThemedText style={styles.cellText}>{(e.milk.sourceTotals?.['Other'] || 0).toFixed(3)}</ThemedText></View>
+
                 <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.milk.totalIn.toFixed(3)}</ThemedText></View>
                 <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.milk.cardSales.toFixed(3)}</ThemedText></View>
                 <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.milk.cashSales.toFixed(3)}</ThemedText></View>
                 <View style={styles.subCol}><ThemedText style={[styles.cellText, { fontWeight: 'bold' }]}>{e.milk.cb.toFixed(3)}</ThemedText></View>
  
-                {/* SM Data */}
-                <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.sm.prod.toFixed(3)}</ThemedText></View>
-                <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.sm.ob.toFixed(3)}</ThemedText></View>
-                <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.sm.total.toFixed(3)}</ThemedText></View>
-                <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.sm.sale.toFixed(3)}</ThemedText></View>
-                <View style={styles.subCol}><ThemedText style={[styles.cellText, { fontWeight: 'bold' }]}>{e.sm.cb.toFixed(3)}</ThemedText></View>
 
-                {/* Cream Data */}
-                <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.cream.prod.toFixed(3)}</ThemedText></View>
-                <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.cream.ob.toFixed(3)}</ThemedText></View>
-                <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.cream.total.toFixed(3)}</ThemedText></View>
-                <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.cream.sale.toFixed(3)}</ThemedText></View>
-                <View style={styles.subCol}><ThemedText style={[styles.cellText, { fontWeight: 'bold' }]}>{e.cream.cb.toFixed(3)}</ThemedText></View>
-
-                {/* Mixed Data */}
-                <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.mixed.prod.toFixed(3)}</ThemedText></View>
-                <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.mixed.ob.toFixed(3)}</ThemedText></View>
-                <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.mixed.total.toFixed(3)}</ThemedText></View>
-                <View style={styles.subCol}><ThemedText style={styles.cellText}>{e.mixed.sale.toFixed(3)}</ThemedText></View>
-                <View style={styles.subCol}><ThemedText style={[styles.cellText, { fontWeight: 'bold' }]}>{e.mixed.cb.toFixed(3)}</ThemedText></View>
 
                 {/* Product Data */}
                 {allProdKeys.map(pk => (

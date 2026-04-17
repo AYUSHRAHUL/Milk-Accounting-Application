@@ -118,10 +118,6 @@ export default function ReportProductionScreen() {
     });
   }, [productEntries, periodFilter]);
 
-  // --- Stats ---
-  const totalProduced = filteredProducts.reduce((s, e) => s + e.quantityProduced, 0);
-  const totalMilkUsed = filteredProducts.reduce((s, e) => s + e.milkUsed.wholeMilk + e.milkUsed.skimMilk + e.milkUsed.creamMilk + (e.milkUsed.mixedMilk || 0), 0);
-  const totalSeparated = filteredSeparation.reduce((s, e) => s + e.separationMilk, 0);
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
@@ -137,18 +133,18 @@ export default function ReportProductionScreen() {
 
     let csv = '';
     if (activeTab === 'Products') {
-      const header = ['Date', 'Product', 'Quantity', 'Cow used', 'Buff used', 'Goat used', 'Other used', 'Skim used', 'Cream used', 'Mixed used'];
+      const header = ['Date', 'Product', 'Quantity', 'Cow used', 'Buff used', 'Goat used', 'Other used', 'Skim used', 'Cream used'];
       const rows = filteredProducts.map(e =>
         [formatDate(e.date), e.productName, `${e.quantityProduced} ${e.unit}`,
         (e.sourceWholeUsed?.cow || 0).toString(), (e.sourceWholeUsed?.buff || 0).toString(), (e.sourceWholeUsed?.goat || 0).toString(), (e.sourceWholeUsed?.other || 0).toString(),
-        e.milkUsed.skimMilk.toString(), e.milkUsed.creamMilk.toString(), (e.milkUsed.mixedMilk || 0).toString()]
+        e.milkUsed.skimMilk.toString(), e.milkUsed.creamMilk.toString()]
       );
       csv = [header, ...rows].map(r => r.join(',')).join('\n');
     } else {
-      const header = ['Date', 'Separated (L)', 'Skim Produced (L)', 'Cream Produced (L)', 'Mixed Produced (L)', 'Loss'];
+      const header = ['Date', 'Separated (L)', 'Skim Produced (L)', 'Cream Produced (L)', 'Loss'];
       const rows = filteredSeparation.map(e => {
         const loss = (e.separationMilk || 0) - ((e.skimMilk || 0) + (e.creamMilk || 0) + (e.mixedMilk || 0));
-        return [formatDate(e.date), e.separationMilk.toString(), e.skimMilk.toString(), e.creamMilk.toString(), (e.mixedMilk || 0).toString(), loss.toFixed(2)];
+        return [formatDate(e.date), e.separationMilk.toString(), e.skimMilk.toString(), e.creamMilk.toString(), loss.toFixed(2)];
       });
       csv = [header, ...rows].map(r => r.join(',')).join('\n');
     }
@@ -232,23 +228,7 @@ export default function ReportProductionScreen() {
           </View>
         </View>
 
-        {/* Summary */}
-        <View style={styles.statsRow}>
-          <View style={[styles.statCard, { backgroundColor: 'rgba(245,158,11,0.1)' }]}>
-            <ThemedText style={[styles.statValue, { color: '#F59E0B' }]}>
-              {activeTab === 'Products' ? totalProduced.toFixed(1) : totalSeparated.toFixed(1)}
-            </ThemedText>
-            <ThemedText style={styles.statLabel}>
-              {activeTab === 'Products' ? 'Products (kg/L)' : 'Separated (L)'}
-            </ThemedText>
-          </View>
-          {activeTab === 'Products' && (
-            <View style={[styles.statCard, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
-              <ThemedText style={[styles.statValue, { color: '#3B82F6' }]}>{totalMilkUsed.toFixed(1)} L</ThemedText>
-              <ThemedText style={styles.statLabel}>Milk Usage</ThemedText>
-            </View>
-          )}
-        </View>
+
 
         {/* DataTable */}
         <Card variant="elevated" style={styles.tableCard}>
@@ -270,8 +250,8 @@ export default function ReportProductionScreen() {
               <View>
                 <View style={[styles.tableRow, { backgroundColor: theme.surfaceMuted }]}>
                   {activeTab === 'Products'
-                    ? ['Date', 'Product', 'Yield', 'Cow', 'Buff', 'Goat', 'Other', 'Skim', 'Cream', 'Mixed'].map(h => <ThemedText key={h} style={styles.cellHeader}>{h}</ThemedText>)
-                    : ['Date', 'Separated', 'Skim Out', 'Cream Out', 'Mixed Out', 'Loss'].map(h => <ThemedText key={h} style={styles.cellHeader}>{h}</ThemedText>)
+                    ? ['Date', 'Product', 'Yield', 'Cow', 'Buff', 'Goat', 'Other', 'Skim', 'Cream'].map(h => <ThemedText key={h} style={styles.cellHeader}>{h}</ThemedText>)
+                    : ['Date', 'Separated', 'Skim Out', 'Cream Out', 'Loss'].map(h => <ThemedText key={h} style={styles.cellHeader}>{h}</ThemedText>)
                   }
                 </View>
 
@@ -286,7 +266,6 @@ export default function ReportProductionScreen() {
                     <ThemedText style={styles.cell}>{(e.sourceWholeUsed?.other || 0).toFixed(2)} L</ThemedText>
                     <ThemedText style={styles.cell}>{e.milkUsed.skimMilk.toFixed(2)} L</ThemedText>
                     <ThemedText style={styles.cell}>{e.milkUsed.creamMilk.toFixed(2)} L</ThemedText>
-                    <ThemedText style={styles.cell}>{(e.milkUsed.mixedMilk || 0).toFixed(2)} L</ThemedText>
                   </View>
                 )) : filteredSeparation.map((e, idx) => {
                   const loss = (e.separationMilk || 0) - ((e.skimMilk || 0) + (e.creamMilk || 0) + (e.mixedMilk || 0));
@@ -296,7 +275,6 @@ export default function ReportProductionScreen() {
                       <ThemedText style={[styles.cell, { fontWeight: '800' }]}>{e.separationMilk.toFixed(2)} L</ThemedText>
                       <ThemedText style={styles.cell}>{e.skimMilk.toFixed(2)} L</ThemedText>
                       <ThemedText style={styles.cell}>{e.creamMilk.toFixed(2)} L</ThemedText>
-                      <ThemedText style={styles.cell}>{(e.mixedMilk || 0).toFixed(2)} L</ThemedText>
                       <ThemedText style={[styles.cell, { color: theme.error }]}>{loss.toFixed(2)} L</ThemedText>
                     </View>
                   );
@@ -345,10 +323,6 @@ const styles = StyleSheet.create({
   periodFilter: { flexDirection: 'row', borderRadius: 12, padding: 4 },
   periodPill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
   periodText: { fontSize: 11, fontWeight: '700' },
-  statsRow: { flexDirection: 'row', gap: 12 },
-  statCard: { flex: 1, borderRadius: 16, padding: 16, alignItems: 'center' },
-  statValue: { fontSize: 20, fontWeight: '900' },
-  statLabel: { fontSize: 11, color: '#6B7280', marginTop: 2, fontWeight: '600' },
   tableCard: { padding: 0, overflow: 'hidden', borderRadius: 20 },
   tableHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 16, alignItems: 'center' },
   tableHeaderTitle: { color: '#fff', fontWeight: '800', fontSize: 14 },

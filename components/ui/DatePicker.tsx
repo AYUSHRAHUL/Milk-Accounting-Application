@@ -200,6 +200,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                         backgroundColor: isDark ? '#0F172A' : '#F8FAFC',
                         borderColor: isDark ? '#1F2937' : '#E2E8F0',
                     },
+                    style
                 ]}
                 onPress={handlePress}
                 activeOpacity={0.7}
@@ -242,10 +243,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        height: 48,
+        height: 40,
         borderWidth: 1,
         borderRadius: 12,
-        paddingHorizontal: 12,
+        paddingHorizontal: 8,
         width: '100%',
         overflow: 'hidden', 
     },

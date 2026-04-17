@@ -97,7 +97,8 @@ export default function MilkCollectionScreen() {
     const yyyy = d.getFullYear();
     return `${dd}-${mm}-${yyyy}`;
   });
-  const [time, setTime] = useState(() => new Date().toTimeString().split(' ')[0].substring(0, 5));
+  const [timeHrs, setTimeHrs] = useState(() => String(new Date().getHours()).padStart(2, '0'));
+  const [timeMins, setTimeMins] = useState(() => String(new Date().getMinutes()).padStart(2, '0'));
   const [shift, setShift] = useState('Morning');
   const [source, setSource] = useState('Cow');
   const [customSource, setCustomSource] = useState('');
@@ -250,7 +251,7 @@ export default function MilkCollectionScreen() {
   }, [fatType, temp, lr]);
 
   const handleSave = async () => {
-    if (!supplier || !quantity || !costPerLiter || (source === 'Other' && !customSource) || !date || !time) {
+    if (!supplier || !quantity || !costPerLiter || (source === 'Other' && !customSource) || !date || !timeHrs || !timeMins) {
       Alert.alert('Missing Fields', 'Please fill in all mandatory fields.');
       return;
     }
@@ -265,7 +266,8 @@ export default function MilkCollectionScreen() {
     setIsLoading(true);
     try {
       const [dd, mm, yyyy] = date.split('-').map(Number);
-      const [hr, min] = time.split(':').map(Number);
+      const hr = parseInt(timeHrs);
+      const min = parseInt(timeMins);
       const collectionDate = new Date(yyyy, mm - 1, dd, hr, min);
 
       const response = await apiFetch('/api/milk/collection', {
@@ -274,6 +276,7 @@ export default function MilkCollectionScreen() {
         body: JSON.stringify({
           userId: user?.id,
           supplier,
+          supplierId: selectedSupplierId,
           date: collectionDate.toISOString(),
           shift,
           source,
@@ -460,44 +463,70 @@ export default function MilkCollectionScreen() {
             <View style={styles.sectionCard}>
               <SectionTitle title="Schedule" />
 
-              <View style={{ gap: 12 }}>
-                <View style={styles.row}>
-                  <View style={styles.halfField}>
-                    <DatePicker
-                      label="Date"
-                      value={date}
-                      onChange={setDate}
-                      format="DD-MM-YYYY"
-                    />
-                  </View>
+              <View style={styles.scheduleRow}>
+                {/* Date */}
+                <View style={styles.scheduleColDate}>
+                  <Text style={styles.miniLabel}>Date</Text>
+                  <DatePicker
+                    value={date}
+                    onChange={setDate}
+                    format="DD-MM-YYYY"
+                  />
+                </View>
 
-                  <View style={styles.halfField}>
-                    <Text style={styles.label}>Time</Text>
-                    <View style={[styles.textInput, focusedField === 'time' && styles.textInputFocused, { flexDirection: 'row', alignItems: 'center' }]}>
-                      <Ionicons name="time-outline" size={18} color="#22C55E" style={{ marginRight: 10 }} />
-                      <TextInput
-                        style={[styles.textInputMain]}
-                        value={time}
-                        onChangeText={setTime}
-                        placeholder="HH:MM"
-                        placeholderTextColor="#9CA3AF"
-                         onFocus={() => {
-                          setFocusedField('time');
-                          scrollRef.current?.scrollTo({ y: 100, animated: true });
-                        }}
-                        onBlur={() => setFocusedField(null)}
-                      />
-                    </View>
+                {/* Time */}
+                <View style={styles.scheduleColTime}>
+                  <Text style={styles.miniLabel}>Time</Text>
+                  <View style={styles.timeInputRow}>
+                    <TextInput
+                      style={[
+                        styles.timeInputCompact,
+                        focusedField === 'timeHrs' && styles.timeInputFocused,
+                        Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)
+                      ]}
+                      value={timeHrs}
+                      onChangeText={(t) => {
+                        const val = t.replace(/[^0-9]/g, '');
+                        if (val.length <= 2) setTimeHrs(val);
+                      }}
+                      placeholder="00"
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="numeric"
+                      maxLength={2}
+                      onFocus={() => setFocusedField('timeHrs')}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                    <Text style={styles.timeColonCompact}>:</Text>
+                    <TextInput
+                      style={[
+                        styles.timeInputCompact,
+                        focusedField === 'timeMins' && styles.timeInputFocused,
+                        Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)
+                      ]}
+                      value={timeMins}
+                      onChangeText={(t) => {
+                        const val = t.replace(/[^0-9]/g, '');
+                        if (val.length <= 2) setTimeMins(val);
+                      }}
+                      placeholder="00"
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="numeric"
+                      maxLength={2}
+                      onFocus={() => setFocusedField('timeMins')}
+                      onBlur={() => setFocusedField(null)}
+                    />
                   </View>
                 </View>
 
-                <View style={styles.inlineFieldRow}>
-                  <Text style={styles.inlineLabel}>Shift</Text>
-                  <View style={styles.inlinePillRow}>
-                    {SHIFTS.map((s) => (
-                      <PillButton key={s} label={s} selected={shift === s} onPress={() => setShift(s)} />
-                    ))}
-                  </View>
+                {/* Shift */}
+                <View style={styles.scheduleColShift}>
+                  <Text style={styles.miniLabel}>Shift</Text>
+                  <TouchableOpacity 
+                    style={styles.shiftSelectBoxCompact}
+                    onPress={() => setShift(shift === 'Morning' ? 'Evening' : 'Morning')}
+                  >
+                    <Text style={styles.shiftSelectTextCompact}>{shift}</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -684,16 +713,16 @@ export default function MilkCollectionScreen() {
 
               <View style={{ marginTop: 12 }}>
                 <Text style={styles.label}>COB (Clot on Boiling)</Text>
-                <View style={[styles.inlinePillRow, { marginTop: 4 }]}>
-                  {COB_OPTIONS.map((opt) => (
-                    <PillButton 
-                      key={opt} 
-                      label={opt} 
-                      selected={cob === opt} 
-                      onPress={() => setCob(opt)} 
-                    />
-                  ))}
-                </View>
+                <TouchableOpacity 
+                  style={[styles.standaloneSelectBox, { marginTop: 4 }]}
+                  onPress={() => {
+                    const idx = COB_OPTIONS.indexOf(cob);
+                    const next = COB_OPTIONS[(idx + 1) % COB_OPTIONS.length];
+                    setCob(next);
+                  }}
+                >
+                  <Text style={styles.shiftSelectText}>{cob || '---'}</Text>
+                </TouchableOpacity>
                 {cob === 'Positive' && (
                   <Text style={{ color: '#EF4444', fontSize: 11, marginTop: 4, fontWeight: '600' }}>
                     Warning: Positive COB milk will not be recorded.
@@ -804,8 +833,8 @@ const styles = StyleSheet.create({
   sectionCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 12,
-    marginBottom: 10,
+    padding: 10,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: '#F3F4F6',
     shadowColor: '#000',
@@ -819,7 +848,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   sectionDot: {
     width: 8,
@@ -1181,5 +1210,109 @@ const styles = StyleSheet.create({
     color: '#111827',
     padding: 0,
     margin: 0,
+  },
+  timeInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  timeInput: {
+    width: 60,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FAFAFA',
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  timeInputFocused: {
+    borderColor: '#22C55E',
+    backgroundColor: '#FFFFFF',
+  },
+  timeColon: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  shiftSelectBox: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FAFAFA',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shiftSelectText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  scheduleRow: {
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'flex-end',
+  },
+  scheduleColDate: {
+    flex: 1,
+  },
+  scheduleColTime: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  scheduleColShift: {
+    flex: 1,
+  },
+  miniLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  timeInputCompact: {
+    width: 34,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FAFAFA',
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  timeColonCompact: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  shiftSelectBoxCompact: {
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FAFAFA',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shiftSelectTextCompact: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  standaloneSelectBox: {
+    width: '100%',
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FAFAFA',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

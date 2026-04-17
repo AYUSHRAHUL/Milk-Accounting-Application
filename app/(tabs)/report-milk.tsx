@@ -24,6 +24,7 @@ interface MilkEntryRow {
   _id: string;
   date: string;
   supplier: string;
+  supplierId: string;
   shift: string;
   source: string;
   fatType: string;
@@ -38,6 +39,12 @@ interface MilkEntryRow {
   mbrt?: string;
   mbrtTime?: string;
   cob?: string;
+  protein?: number;
+  lactose?: number;
+  ash?: number;
+  addedWater?: number;
+  tsMachine?: number;
+  tsDiff?: number;
 }
 
 type ShiftFilter = 'All' | 'Morning' | 'Evening';
@@ -66,6 +73,7 @@ export default function ReportMilkScreen() {
         _id: item._id,
         date: item.date,
         supplier: item.supplier,
+        supplierId: item.supplierId || 'N/A',
         shift: item.shift,
         source: item.source,
         fatType: item.fatType,
@@ -80,6 +88,12 @@ export default function ReportMilkScreen() {
         mbrt: item.mbrt,
         mbrtTime: item.mbrtTime,
         cob: item.cob,
+        protein: item.protein,
+        lactose: item.lactose,
+        ash: item.ash,
+        addedWater: item.addedWater,
+        tsMachine: item.tsMachine,
+        tsDiff: item.tsDiff,
       }));
       setEntries(mapped);
     } catch (error) {
@@ -115,14 +129,14 @@ export default function ReportMilkScreen() {
     });
   }, [entries, shiftFilter, sourceFilter, periodFilter]);
 
-  // ── Summary stats ──────────────────────────────────────────
-  const totalLiters = filtered.reduce((s, e) => s + e.quantity, 0);
-  const totalCost = filtered.reduce((s, e) => s + e.totalCost, 0);
-  const totalEntries = filtered.length;
-
   const formatDate = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
+  };
+
+  const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
   };
 
   const formatCurrency = (amount: number) =>
@@ -133,7 +147,7 @@ export default function ReportMilkScreen() {
       Alert.alert('No data to export');
       return;
     }
-    const header = ['Date', 'Supplier', 'Shift', 'Source', 'Fat Type', 'Quantity (L)', 'Cost / Litre', 'Total Cost', 'LR', 'Temperature', 'CLR', 'SNF', 'TS', 'MBRT Status', 'MBRT Time', 'COB'];
+    const header = ['Date', 'Time', 'Supplier Name', 'Supplier ID', 'Shift', 'Source', 'Fat %', 'Quantity (L)', 'Cost / Litre', 'Total Cost', 'LR', 'Temperature', 'CLR', 'SNF', 'TS', 'MBRT Status', 'MBRT Time', 'COB'];
 
     // Helper to escape CSV fields
     const esc = (v: any) => {
@@ -146,7 +160,9 @@ export default function ReportMilkScreen() {
 
     const rows = filtered.map((e) => [
       esc(formatDate(e.date)),
+      esc(formatTime(e.date)),
       esc(e.supplier),
+      esc(e.supplierId),
       esc(e.shift),
       esc(e.source),
       esc(e.fatType),
@@ -207,29 +223,6 @@ export default function ReportMilkScreen() {
       </View>
 
       <View style={styles.body}>
-
-        {/* ── Summary Stats ── */}
-        <View style={styles.statsRow}>
-          <View style={[styles.statCard, { backgroundColor: theme.primaryMuted }]}>
-            <Ionicons name="water" size={18} color={theme.primary} style={{ marginBottom: 4 }} />
-            <ThemedText style={[styles.statValue, { color: theme.primary }]}>
-              {totalLiters.toFixed(1)} L
-            </ThemedText>
-            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Volume</ThemedText>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: theme.errorMuted }]}>
-            <Ionicons name="wallet" size={18} color={theme.error} style={{ marginBottom: 4 }} />
-            <ThemedText style={[styles.statValue, { color: theme.error }]}>
-              {formatCurrency(totalCost)}
-            </ThemedText>
-            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Cost</ThemedText>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: theme.warningMuted }]}>
-            <Ionicons name="list" size={18} color={theme.warning} style={{ marginBottom: 4 }} />
-            <ThemedText style={[styles.statValue, { color: theme.warning }]}>{totalEntries}</ThemedText>
-            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Entries</ThemedText>
-          </View>
-        </View>
 
         {/* ── Action Buttons ── */}
         <View style={styles.actionsRow}>
@@ -345,7 +338,7 @@ export default function ReportMilkScreen() {
         <Card variant="elevated" style={styles.tableCard}>
           <View style={[styles.tableHeader, { backgroundColor: theme.primary }]}>
             <ThemedText style={styles.tableHeaderTitle}>Collection Records</ThemedText>
-            <ThemedText style={styles.tableHeaderCount}>{totalEntries} rows</ThemedText>
+            <ThemedText style={styles.tableHeaderCount}>{filtered.length} rows</ThemedText>
           </View>
 
           {isLoading ? (
@@ -357,8 +350,8 @@ export default function ReportMilkScreen() {
               <View>
                 {/* Column headers */}
                 <View style={[styles.tableRow, { backgroundColor: theme.surfaceMuted }]}>
-                  {['Date', 'Supplier', 'Shift', 'Source', 'Fat Type', 'Qty (L)', '₹/L', 'Total', 'LR', 'Temp', 'CLR', 'SNF', 'TS', 'MBRT Status', 'MBRT Time', 'COB'].map((h) => (
-                    <ThemedText key={h} style={[styles.cell, styles.colHeader, { color: theme.text }]}>
+                  {['Date', 'Time', 'Supplier', 'ID', 'Shift', 'Source', 'Fat %', 'Qty', 'LR', 'T', 'CLR', 'SNF', 'TS', 'Prot', 'Lact', 'Ash', 'Water', 'TS(M)', 'Diff', 'MBRT', 'Time', 'COB'].map((h) => (
+                    <ThemedText key={h} style={[styles.cell, styles.colHeader, { color: theme.text, minWidth: (h === 'Supplier' ? 120 : (h === 'Date' || h === 'Time' ? 80 : 60)) }]}>
                       {h}
                     </ThemedText>
                   ))}
@@ -377,9 +370,11 @@ export default function ReportMilkScreen() {
                       key={entry._id}
                       style={[styles.tableRow, { backgroundColor: rowBg, borderBottomColor: theme.borderMuted }]}
                     >
-                      <ThemedText style={styles.cell}>{formatDate(entry.date)}</ThemedText>
-                      <ThemedText style={[styles.cell, { fontWeight: '600', maxWidth: 100 }]} numberOfLines={1}>{entry.supplier}</ThemedText>
-                      <View style={styles.cell}>
+                      <ThemedText style={[styles.cell, { minWidth: 80 }]}>{formatDate(entry.date)}</ThemedText>
+                      <ThemedText style={[styles.cell, { minWidth: 80 }]}>{formatTime(entry.date)}</ThemedText>
+                      <ThemedText style={[styles.cell, { fontWeight: '600', minWidth: 120 }]} numberOfLines={1}>{entry.supplier}</ThemedText>
+                      <ThemedText style={[styles.cell, { color: theme.textSecondary, fontSize: 11, minWidth: 60 }]}>{entry.supplierId}</ThemedText>
+                      <View style={[styles.cell, { minWidth: 60 }]}>
                         <View style={[
                           styles.shiftBadge,
                           { backgroundColor: entry.shift === 'Morning' ? 'rgba(245,158,11,0.12)' : 'rgba(99,102,241,0.12)' }
@@ -392,23 +387,30 @@ export default function ReportMilkScreen() {
                           </ThemedText>
                         </View>
                       </View>
-                      <ThemedText style={styles.cell}>{entry.source}</ThemedText>
-                      <ThemedText style={styles.cell}>{entry.fatType}</ThemedText>
-                      <ThemedText style={[styles.cell, { color: theme.primary, fontWeight: '700' }]}>
-                        {entry.quantity.toFixed(2)}
+                      <ThemedText style={[styles.cell, { minWidth: 60 }]}>{entry.source}</ThemedText>
+                      <ThemedText style={[styles.cell, { minWidth: 60 }]}>{entry.fatType}</ThemedText>
+                      <ThemedText style={[styles.cell, { color: theme.primary, fontWeight: '700', minWidth: 60 }]}>
+                        {entry.quantity.toFixed(1)}
                       </ThemedText>
-                      <ThemedText style={styles.cell}>{formatCurrency(entry.costPerLiter)}</ThemedText>
-                      <ThemedText style={[styles.cell, { color: theme.error, fontWeight: '700' }]}>
-                        {formatCurrency(entry.totalCost)}
-                      </ThemedText>
-                      <ThemedText style={styles.cell}>{entry.lr || '0'}</ThemedText>
-                      <ThemedText style={styles.cell}>{entry.temp ? `${entry.temp}°C` : '0'}</ThemedText>
-                      <ThemedText style={styles.cell}>{entry.clr || '0'}</ThemedText>
-                      <ThemedText style={styles.cell}>{entry.snf || '0'}</ThemedText>
-                      <ThemedText style={styles.cell}>{entry.ts || '0'}</ThemedText>
-                      <ThemedText style={styles.cell}>{entry.mbrt || 'N/A'}</ThemedText>
-                      <ThemedText style={styles.cell}>{entry.mbrtTime || 'N/A'}</ThemedText>
-                      <ThemedText style={styles.cell}>{entry.cob || 'N/A'}</ThemedText>
+                      
+                      <ThemedText style={[styles.cell, { minWidth: 60 }]}>{entry.lr || '0'}</ThemedText>
+                      <ThemedText style={[styles.cell, { minWidth: 60 }]}>{entry.temp ? `${entry.temp}°` : '0'}</ThemedText>
+                      <ThemedText style={[styles.cell, { minWidth: 60 }]}>{entry.clr || '0'}</ThemedText>
+                      <ThemedText style={[styles.cell, { minWidth: 60 }]}>{entry.snf || '0'}</ThemedText>
+                      <ThemedText style={[styles.cell, { minWidth: 60 }]}>{entry.ts || '0'}</ThemedText>
+                      
+                      {/* Machine Analysis Columns */}
+                      <ThemedText style={[styles.cell, { minWidth: 60 }]}>{entry.protein || '0'}</ThemedText>
+                      <ThemedText style={[styles.cell, { minWidth: 60 }]}>{entry.lactose || '0'}</ThemedText>
+                      <ThemedText style={[styles.cell, { minWidth: 60 }]}>{entry.ash || '0'}</ThemedText>
+                      <ThemedText style={[styles.cell, { minWidth: 60 }]}>{entry.addedWater || '0'}</ThemedText>
+                      <ThemedText style={[styles.cell, { minWidth: 60, color: '#2563EB', fontWeight: '700' }]}>{entry.tsMachine || '0'}</ThemedText>
+                      <ThemedText style={[styles.cell, { minWidth: 60, color: '#DC2626', fontWeight: '700' }]}>{entry.tsDiff || '0'}</ThemedText>
+                      
+                      {/* Microbiology Columns */}
+                      <ThemedText style={[styles.cell, { minWidth: 80 }]}>{entry.mbrt || 'N/A'}</ThemedText>
+                      <ThemedText style={[styles.cell, { minWidth: 60 }]}>{entry.mbrtTime || 'N/A'}</ThemedText>
+                      <ThemedText style={[styles.cell, { minWidth: 60 }]}>{entry.cob || 'N/A'}</ThemedText>
                     </View>
                   );
                 })}
@@ -434,7 +436,7 @@ export default function ReportMilkScreen() {
             </View>
             <ThemedText style={styles.modalTitle}>Export as CSV</ThemedText>
             <ThemedText style={[styles.modalDesc, { color: theme.textSecondary }]}>
-              Download {totalEntries} filtered milk collection records as a CSV file.
+              Download {filtered.length} filtered milk collection records as a CSV file.
             </ThemedText>
 
             <View style={styles.modalActions}>
@@ -487,27 +489,6 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     gap: Spacing.md,
     paddingBottom: 40,
-  },
-  // Stats
-  statsRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  statCard: {
-    flex: 1,
-    borderRadius: 14,
-    padding: Spacing.md,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 15,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  statLabel: {
-    fontSize: 10,
-    marginTop: 2,
-    textAlign: 'center',
   },
   // Action buttons
   actionsRow: {
@@ -608,13 +589,13 @@ const styles = StyleSheet.create({
     minWidth: 90,
   },
   shiftBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 6,
     alignSelf: 'flex-start',
   },
   shiftBadgeText: {
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '700',
   },
   // Modal

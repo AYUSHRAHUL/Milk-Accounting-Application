@@ -44,7 +44,7 @@ app.post('/api/auth/register', async (req, res) => {
       email: String(email).toLowerCase(),
       passwordHash,
       role: role || 'user',
-      modules: ['collection', 'history', 'production', 'suppliers', 'sales', 'reports'],
+      modules: ['collection', 'history', 'production', 'suppliers', 'sales', 'reports', 'quality'],
     });
 
     return res.status(201).json({
@@ -224,8 +224,24 @@ app.get('/api/milk/collection', async (req, res) => {
     const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
     if (!userId) return res.status(400).json({ message: 'userId is required' });
 
-    const entries = await MilkEntry.find({ userId }).sort({ date: -1, createdAt: -1 });
-    return res.status(200).json(entries);
+    const entries = await MilkEntry.find({ userId }).sort({ date: -1, createdAt: -1 }).lean();
+
+    // Dynamically populate missing supplierId for older records or missing fields
+    const suppliers = await Supplier.find({ userId, isActive: true }).select('name supplierId').lean();
+    const supplierMap: Record<string, string> = {};
+    suppliers.forEach(s => { 
+      if (s.name) supplierMap[s.name.trim().toLowerCase()] = s.supplierId; 
+    });
+
+    const enrichedEntries = entries.map(entry => {
+      const nameKey = entry.supplier ? entry.supplier.trim().toLowerCase() : '';
+      return {
+        ...entry,
+        supplierId: entry.supplierId || supplierMap[nameKey] || 'N/A'
+      };
+    });
+
+    return res.status(200).json(enrichedEntries);
   } catch (error: any) {
     console.error('Fetch Milk Entries Error:', error);
     return res.status(500).json({ message: error?.message || 'Internal Server Error' });
@@ -236,7 +252,7 @@ app.post('/api/milk/collection', async (req, res) => {
   try {
     await connectToDatabase();
     const body = req.body ?? {};
-    const { userId, supplier, date, shift, source, customSource, fatType, snf, clr, lr, temp, ts, quantity, costPerLiter, totalCost, mbrt, mbrtTime, cob } =
+    const { userId, supplier, supplierId, date, shift, source, customSource, fatType, snf, clr, lr, temp, ts, quantity, costPerLiter, totalCost, mbrt, mbrtTime, cob } =
       body;
 
     if (!userId || !supplier || !date || !shift || !source || !quantity || !costPerLiter || !totalCost) {
@@ -246,6 +262,7 @@ app.post('/api/milk/collection', async (req, res) => {
     const newEntry = new MilkEntry({
       userId,
       supplier,
+      supplierId,
       date,
       shift,
       source,
@@ -606,6 +623,14 @@ app.get('/api/production/inventory', async (req, res) => {
       },
     ]);
 
+    // 3. Subtract direct sales of raw/intermediate milk
+    const rawSales = await SaleEntry.aggregate([
+      { $match: { userId: matchUserId } },
+      { $group: { _id: '$productType', total: { $sum: '$quantity' } } },
+    ]);
+    const salesMap: Record<string, number> = {};
+    rawSales.forEach((s: any) => { salesMap[s._id] = s.total; });
+
     const sourceCounts = await MilkEntry.aggregate([
       { $match: { userId: matchUserId } },
       { $group: { _id: '$source', total: { $sum: '$quantity' } } },
@@ -634,17 +659,17 @@ app.get('/api/production/inventory', async (req, res) => {
     const wholeMilk = Math.max(0, totalCollected - prod.totalSeparated - use.usedWhole);
     
     const sourceAvailable = {
-      Cow: Math.max(0, sourceTotals.Cow - separatedMap.totalCow - use.cow),
-      Buffalo: Math.max(0, sourceTotals.Buffalo - separatedMap.totalBuffalo - use.buff),
-      Goat: Math.max(0, sourceTotals.Goat - separatedMap.totalGoat - use.goat),
-      Other: Math.max(0, sourceTotals.Other - separatedMap.totalOther - use.other),
+      Cow: Math.max(0, sourceTotals.Cow - separatedMap.totalCow - use.cow - (salesMap['Cow Milk'] || 0)),
+      Buffalo: Math.max(0, sourceTotals.Buffalo - separatedMap.totalBuffalo - use.buff - (salesMap['Buffalo Milk'] || 0)),
+      Goat: Math.max(0, sourceTotals.Goat - separatedMap.totalGoat - use.goat - (salesMap['Goat Milk'] || 0)),
+      Other: Math.max(0, sourceTotals.Other - separatedMap.totalOther - use.other - (salesMap['Other Milk'] || 0)),
     };
 
     return res.status(200).json({
       wholeMilk: Math.max(0, wholeMilk),
-      skimMilk: Math.max(0, prod.totalSkim - use.usedSkim),
-      creamMilk: Math.max(0, prod.totalCream - use.usedCream),
-      mixedMilk: Math.max(0, prod.totalMixed - use.usedMixed),
+      skimMilk: Math.max(0, prod.totalSkim - use.usedSkim - (salesMap['Skim Milk'] || 0)),
+      creamMilk: Math.max(0, prod.totalCream - use.usedCream - (salesMap['Cream'] || 0)),
+      mixedMilk: Math.max(0, prod.totalMixed - use.usedMixed - (salesMap['Mixed Milk'] || 0)),
       sourceAvailable
     });
   } catch (error: any) {
@@ -713,25 +738,76 @@ app.get('/api/sales/product-stock', async (req, res) => {
     const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
     if (!userId) return res.status(400).json({ message: 'userId is required' });
 
-    // Total produced per product
+    const { ObjectId } = mongoose.Types;
+    const matchUserId = ObjectId.isValid(userId) ? { $in: [userId, new ObjectId(userId)] } : userId;
+
+    // 1. Get standard products from ProductProduction
     const produced = await ProductProduction.aggregate([
-      { $match: { userId } },
+      { $match: { userId: matchUserId } },
       { $group: { _id: '$productName', total: { $sum: '$quantityProduced' } } }
     ]);
 
-    // Total sold per product type
+    // 2. Get total sold per product type
     const sold = await SaleEntry.aggregate([
-      { $match: { userId } },
+      { $match: { userId: matchUserId } },
       { $group: { _id: '$productType', total: { $sum: '$quantity' } } }
     ]);
-
     const soldMap: Record<string, number> = {};
     sold.forEach((s: any) => { soldMap[s._id] = s.total; });
 
+    // 3. Get Raw & Intermediate Milk Stock (Same logic as production/inventory)
+    const collectedMilk = await MilkEntry.aggregate([
+      { $match: { userId: matchUserId } },
+      { $group: { _id: null, total: { $sum: '$quantity' } } },
+    ]);
+    const totalCollected = collectedMilk.length > 0 ? collectedMilk[0].total : 0;
+
+    const production = await MilkProduction.aggregate([
+      { $match: { userId: matchUserId } },
+      { $group: { _id: null, totalSeparated: { $sum: '$separationMilk' }, totalSkim: { $sum: '$skimMilk' }, totalCream: { $sum: '$creamMilk' }, totalMixed: { $sum: '$mixedMilk' } } },
+    ]);
+    const prod = production[0] || { totalSeparated: 0, totalSkim: 0, totalCream: 0, totalMixed: 0 };
+
+    const used = await ProductProduction.aggregate([
+      { $match: { userId: matchUserId } },
+      { $group: { _id: null, usedWhole: { $sum: '$milkUsed.wholeMilk' }, usedSkim: { $sum: '$milkUsed.skimMilk' }, usedCream: { $sum: '$milkUsed.creamMilk' }, usedMixed: { $sum: '$milkUsed.mixedMilk' }, cow: { $sum: '$sourceWholeUsed.cow' }, buff: { $sum: '$sourceWholeUsed.buff' }, goat: { $sum: '$sourceWholeUsed.goat' }, other: { $sum: '$sourceWholeUsed.other' } } },
+    ]);
+    const use = used[0] || { usedWhole: 0, usedSkim: 0, usedCream: 0, usedMixed: 0, cow: 0, buff: 0, goat: 0, other: 0 };
+
+    const sourceCounts = await MilkEntry.aggregate([
+      { $match: { userId: matchUserId } },
+      { $group: { _id: '$source', total: { $sum: '$quantity' } } },
+    ]);
+    const sourceTotals: Record<string, number> = { Cow: 0, Buffalo: 0, Goat: 0, Other: 0 };
+    sourceCounts.forEach((s: any) => {
+      if (s._id in sourceTotals) sourceTotals[s._id] = s.total;
+      else sourceTotals.Other += s.total;
+    });
+
+    const sourceProduced = await MilkProduction.aggregate([
+      { $match: { userId: matchUserId } },
+      { $group: { _id: null, totalCow: { $sum: '$sourceSeparation.cow' }, totalBuffalo: { $sum: '$sourceSeparation.buffalo' }, totalGoat: { $sum: '$sourceSeparation.goat' }, totalOther: { $sum: '$sourceSeparation.other' } }}
+    ]);
+    const separatedMap = sourceProduced[0] || { totalCow: 0, totalBuffalo: 0, totalGoat: 0, totalOther: 0 };
+
+    // Final Stock Map
     const stock: Record<string, number> = {};
+    
+    // Add standard products
     produced.forEach((p: any) => {
       stock[p._id] = Math.max(0, p.total - (soldMap[p._id] || 0));
     });
+
+    // Add Raw Milk Types
+    stock['Cow Milk'] = Math.max(0, sourceTotals.Cow - separatedMap.totalCow - use.cow - (soldMap['Cow Milk'] || 0));
+    stock['Buffalo Milk'] = Math.max(0, sourceTotals.Buffalo - separatedMap.totalBuffalo - use.buff - (soldMap['Buffalo Milk'] || 0));
+    stock['Goat Milk'] = Math.max(0, sourceTotals.Goat - separatedMap.totalGoat - use.goat - (soldMap['Goat Milk'] || 0));
+    stock['Other Milk'] = Math.max(0, sourceTotals.Other - separatedMap.totalOther - use.other - (soldMap['Other Milk'] || 0));
+
+    // Add Intermediate Products
+    stock['Skim Milk'] = Math.max(0, prod.totalSkim - use.usedSkim - (soldMap['Skim Milk'] || 0));
+    stock['Cream'] = Math.max(0, prod.totalCream - use.usedCream - (soldMap['Cream'] || 0));
+    stock['Mixed Milk'] = Math.max(0, prod.totalMixed - use.usedMixed - (soldMap['Mixed Milk'] || 0));
 
     return res.status(200).json(stock);
   } catch (error: any) {
@@ -768,22 +844,76 @@ app.post('/api/sales', async (req, res) => {
       return res.status(400).json({ message: 'Quantity must be greater than zero' });
     }
 
-    // Check available stock from production minus previous sales
-    const produced = await ProductProduction.aggregate([
-      { $match: { userId, productName: productType } },
-      { $group: { _id: null, total: { $sum: '$quantityProduced' } } }
-    ]);
-    const soldSoFar = await SaleEntry.aggregate([
-      { $match: { userId, productType } },
-      { $group: { _id: null, total: { $sum: '$quantity' } } }
-    ]);
-    const totalProduced = produced[0]?.total || 0;
-    const totalSold = soldSoFar[0]?.total || 0;
-    const availableStock = Math.max(0, totalProduced - totalSold);
+    // Check available stock
+    let availableStock = 0;
+    const rawTypes = ['Cow Milk', 'Buffalo Milk', 'Goat Milk', 'Other Milk'];
+    const intermediateTypes = ['Skim Milk', 'Cream', 'Mixed Milk'];
 
-    if (parsedQuantity > availableStock) {
+    if (rawTypes.includes(productType) || intermediateTypes.includes(productType)) {
+      // Logic for raw/intermediate milk stock
+      const { ObjectId } = mongoose.Types;
+      const matchUserId = ObjectId.isValid(userId) ? { $in: [userId, new ObjectId(userId)] } : userId;
+
+      const collected = await MilkEntry.aggregate([
+        { $match: { userId: matchUserId } },
+        { $group: { _id: '$source', total: { $sum: '$quantity' } } },
+      ]);
+      const sourceTotals: Record<string, number> = { Cow: 0, Buffalo: 0, Goat: 0, Other: 0 };
+      collected.forEach((s: any) => {
+        if (s._id in sourceTotals) sourceTotals[s._id] = s.total;
+        else sourceTotals.Other += s.total;
+      });
+
+      const separated = await MilkProduction.aggregate([
+        { $match: { userId: matchUserId } },
+        { $group: {
+            _id: null,
+            totalCow: { $sum: '$sourceSeparation.cow' },
+            totalBuffalo: { $sum: '$sourceSeparation.buffalo' },
+            totalGoat: { $sum: '$sourceSeparation.goat' },
+            totalOther: { $sum: '$sourceSeparation.other' },
+            totalSkim: { $sum: '$skimMilk' },
+            totalCream: { $sum: '$creamMilk' },
+            totalMixed: { $sum: '$mixedMilk' }
+        }}
+      ]);
+      const sep = separated[0] || { totalCow: 0, totalBuffalo: 0, totalGoat: 0, totalOther: 0, totalSkim: 0, totalCream: 0, totalMixed: 0 };
+
+      const usedInProducts = await ProductProduction.aggregate([
+        { $match: { userId: matchUserId } },
+        { $group: { _id: null, usedSkim: { $sum: '$milkUsed.skimMilk' }, usedCream: { $sum: '$milkUsed.creamMilk' }, usedMixed: { $sum: '$milkUsed.mixedMilk' }, cow: { $sum: '$sourceWholeUsed.cow' }, buff: { $sum: '$sourceWholeUsed.buff' }, goat: { $sum: '$sourceWholeUsed.goat' }, other: { $sum: '$sourceWholeUsed.other' } } },
+      ]);
+      const use = usedInProducts[0] || { usedSkim: 0, usedCream: 0, usedMixed: 0, cow: 0, buff: 0, goat: 0, other: 0 };
+
+      const soldItems = await SaleEntry.aggregate([
+        { $match: { userId: matchUserId, productType } },
+        { $group: { _id: null, total: { $sum: '$quantity' } } }
+      ]);
+      const sold = soldItems[0]?.total || 0;
+
+      if (productType === 'Cow Milk') availableStock = sourceTotals.Cow - sep.totalCow - use.cow - sold;
+      else if (productType === 'Buffalo Milk') availableStock = sourceTotals.Buffalo - sep.totalBuffalo - use.buff - sold;
+      else if (productType === 'Goat Milk') availableStock = sourceTotals.Goat - sep.totalGoat - use.goat - sold;
+      else if (productType === 'Other Milk') availableStock = sourceTotals.Other - sep.totalOther - use.other - sold;
+      else if (productType === 'Skim Milk') availableStock = sep.totalSkim - use.usedSkim - sold;
+      else if (productType === 'Cream') availableStock = sep.totalCream - use.usedCream - sold;
+      else if (productType === 'Mixed Milk') availableStock = sep.totalMixed - use.usedMixed - sold;
+    } else {
+      // Logic for regular products
+      const produced = await ProductProduction.aggregate([
+        { $match: { userId, productName: productType } },
+        { $group: { _id: null, total: { $sum: '$quantityProduced' } } }
+      ]);
+      const soldSoFar = await SaleEntry.aggregate([
+        { $match: { userId, productType } },
+        { $group: { _id: null, total: { $sum: '$quantity' } } }
+      ]);
+      availableStock = (produced[0]?.total || 0) - (soldSoFar[0]?.total || 0);
+    }
+
+    if (parsedQuantity > availableStock + 0.001) {
       return res.status(400).json({
-        message: `Insufficient stock! Only ${availableStock.toFixed(2)} units of ${productType} available.`,
+        message: `Insufficient stock! Only ${Math.max(0, availableStock).toFixed(2)} units of ${productType} available.`,
         availableStock
       });
     }
@@ -895,9 +1025,9 @@ app.get('/api/reports/complete', async (req, res) => {
     });
 
     const categories = [
-      'Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Fl. milk', 'Butter Milk',
-      'Sweet Khoa', 'Unsweet Khoa', 'Shrikhand', 'Icecream', 'Gulabjamun',
-      'Rasogolla', 'Yoghurt', 'Skim Milk Curd'
+      'Paneer', 'Ghee', 'Butter', 'Curd', 'Khoa', 'Fl. milk', 'Std. Milk', 
+      'Toned Milk', 'D.Toned Milk', 'Icecream', 'Yoghurt', 'Srikhand', 
+      'Rasgolla', 'Gulabjamun', 'Rabbari', 'Skim Milk', 'Cream', 'Mixed Milk'
     ];
 
     allDates.forEach(day => {
@@ -906,7 +1036,7 @@ app.get('/api/reports/complete', async (req, res) => {
         milk: {
           ob: 0,
           collections: {},
-          sourceTotals: { Cow: 0, Buffalo: 0, Other: 0 },
+          sourceTotals: { Cow: 0, Buffalo: 0, Goat: 0 },
           totalIn: 0,
           totalAvailable: 0,
           cardSales: 0,
@@ -914,9 +1044,6 @@ app.get('/api/reports/complete', async (req, res) => {
           prod: {},
           cb: 0
         },
-        sm: { ob: 0, prod: 0, total: 0, sale: 0, cb: 0 },
-        cream: { ob: 0, prod: 0, total: 0, sale: 0, cb: 0 },
-        mixed: { ob: 0, prod: 0, total: 0, sale: 0, cb: 0 },
         products: {}
       };
       categories.forEach(cat => {
@@ -934,11 +1061,13 @@ app.get('/api/reports/complete', async (req, res) => {
       }
       dailyData[day].milk.collections[supplierName] += r.quantity;
 
-      const source = r.source || 'Other';
-      if (!dailyData[day].milk.sourceTotals[source]) {
-        dailyData[day].milk.sourceTotals[source] = 0;
+      const source = r.source;
+      if (source && source !== 'Other') {
+        if (!dailyData[day].milk.sourceTotals[source]) {
+          dailyData[day].milk.sourceTotals[source] = 0;
+        }
+        dailyData[day].milk.sourceTotals[source] += r.quantity;
       }
-      dailyData[day].milk.sourceTotals[source] += r.quantity;
 
       dailyData[day].milk.totalIn += r.quantity;
     });
@@ -947,9 +1076,16 @@ app.get('/api/reports/complete', async (req, res) => {
     milkProductions.forEach((r: any) => {
       const day = getDayStr(r.date);
       dailyData[day].milk.prod.separation = (dailyData[day].milk.prod.separation || 0) + r.separationMilk;
-      dailyData[day].sm.prod += r.skimMilk;
-      dailyData[day].cream.prod += r.creamMilk;
-      dailyData[day].mixed.prod += (r.mixedMilk || 0);
+      
+      const setProd = (p: string, val: number) => {
+        const pk = p.toLowerCase();
+        if (!dailyData[day].products[pk]) dailyData[day].products[pk] = { ob: 0, prod: 0, total: 0, sale: 0, cb: 0 };
+        dailyData[day].products[pk].prod += val;
+      };
+
+      setProd('skim milk', r.skimMilk);
+      setProd('cream', r.creamMilk);
+      setProd('mixed milk', r.mixedMilk || 0);
     });
 
     // Populate Product Productions
@@ -962,9 +1098,16 @@ app.get('/api/reports/complete', async (req, res) => {
       dailyData[day].products[category].prod += r.quantityProduced;
 
       if (r.milkUsed?.wholeMilk) dailyData[day].milk.prod[category] = (dailyData[day].milk.prod[category] || 0) + r.milkUsed.wholeMilk;
-      if (r.milkUsed?.skimMilk) dailyData[day].sm.prod -= r.milkUsed.skimMilk;
-      if (r.milkUsed?.creamMilk) dailyData[day].cream.prod -= r.milkUsed.creamMilk;
-      if (r.milkUsed?.mixedMilk) dailyData[day].mixed.prod -= r.milkUsed.mixedMilk;
+
+      const reduceProd = (p: string, val: number) => {
+        const pk = p.toLowerCase();
+        if (!dailyData[day].products[pk]) dailyData[day].products[pk] = { ob: 0, prod: 0, total: 0, sale: 0, cb: 0 };
+        dailyData[day].products[pk].prod -= val;
+      };
+
+      if (r.milkUsed?.skimMilk) reduceProd('skim milk', r.milkUsed.skimMilk);
+      if (r.milkUsed?.creamMilk) reduceProd('cream', r.milkUsed.creamMilk);
+      if (r.milkUsed?.mixedMilk) reduceProd('mixed milk', r.milkUsed.mixedMilk);
     });
 
     // Populate Sales
@@ -973,13 +1116,9 @@ app.get('/api/reports/complete', async (req, res) => {
       const product = r.productType;
       const isCard = r.paymentMode === 'UPI' || r.paymentMode === 'Credit';
 
-      if (product === 'Cow Milk' || product === 'Raw Milk' || product === 'Buffalo Milk') {
+      if (product === 'Cow Milk' || product === 'Raw Milk' || product === 'Buffalo Milk' || product === 'Goat Milk') {
         if (isCard) dailyData[day].milk.cardSales += r.quantity;
         else dailyData[day].milk.cashSales += r.quantity;
-      } else if (product === 'Skim Milk') {
-        dailyData[day].sm.sale += r.quantity;
-      } else if (product === 'Cream') {
-        dailyData[day].cream.sale += r.quantity;
       } else {
         const prodKey = product.toLowerCase();
         if (!dailyData[day].products[prodKey]) {
@@ -993,9 +1132,6 @@ app.get('/api/reports/complete', async (req, res) => {
 
     // Calculate Running Balances
     let milkRunning = 0;
-    let smRunning = 0;
-    let creamRunning = 0;
-    let mixedRunning = 0;
     const prodRunning: Record<string, number> = {};
 
     const result = sortedDates.map(date => {
@@ -1007,24 +1143,6 @@ app.get('/api/reports/complete', async (req, res) => {
       const milkProdTotal = (Object.values(d.milk.prod || {}) as any[]).reduce((a, b) => a + b, 0);
       d.milk.cb = d.milk.totalAvailable - d.milk.cardSales - d.milk.cashSales - milkProdTotal;
       milkRunning = d.milk.cb;
-
-      // Skim Milk
-      d.sm.ob = smRunning;
-      d.sm.total = d.sm.ob + d.sm.prod;
-      d.sm.cb = d.sm.total - d.sm.sale;
-      smRunning = d.sm.cb;
-
-      // Cream
-      d.cream.ob = creamRunning;
-      d.cream.total = d.cream.ob + d.cream.prod;
-      d.cream.cb = d.cream.total - d.cream.sale;
-      creamRunning = d.cream.cb;
-
-      // Mixed Milk
-      d.mixed.ob = mixedRunning;
-      d.mixed.total = d.mixed.ob + d.mixed.prod;
-      d.mixed.cb = d.mixed.total - d.mixed.sale;
-      mixedRunning = d.mixed.cb;
 
       // Products
       Object.keys(d.products).forEach(p => {
@@ -1161,7 +1279,7 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
       email: String(email).toLowerCase(),
       passwordHash,
       role: role || 'user',
-      modules: modules || ['collection', 'history', 'production', 'suppliers', 'sales', 'reports'],
+      modules: modules || ['collection', 'history', 'production', 'suppliers', 'sales', 'reports', 'quality'],
       adminId: String(req.query.adminId || req.body.adminId || ''),
     });
 
@@ -1251,7 +1369,7 @@ app.post('/api/super-admin/admins', requireSuperAdmin, async (req, res) => {
       email: String(email).toLowerCase(),
       passwordHash,
       role: 'admin',
-      modules: modules || ['collection', 'history', 'production', 'suppliers', 'sales', 'reports'],
+      modules: modules || ['collection', 'history', 'production', 'suppliers', 'sales', 'reports', 'quality'],
       adminId: superAdminId,
     });
 
@@ -1291,7 +1409,7 @@ app.post('/api/super-admin/admins/:adminId/users', requireSuperAdmin, async (req
       email: String(email).toLowerCase(),
       passwordHash,
       role: 'user',
-      modules: modules || ['collection', 'history', 'production', 'suppliers', 'sales', 'reports'],
+      modules: modules || ['collection', 'history', 'production', 'suppliers', 'sales', 'reports', 'quality'],
       adminId: adminId,
     });
 

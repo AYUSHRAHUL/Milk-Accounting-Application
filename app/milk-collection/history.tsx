@@ -32,6 +32,7 @@ interface MilkEntryData {
     date: string;
     shift: string;
     supplier: string;
+    supplierId?: string;
     source: string;
     fatType: string;
     snf?: number;
@@ -421,6 +422,11 @@ export default function MilkCollectionHistoryScreen() {
                         <Ionicons name="person" size={16} color="#4338CA" />
                     </View>
                     <ThemedText style={styles.supplierName}>{item.supplier || 'Unknown Supplier'}</ThemedText>
+                    {item.supplierId && (
+                        <ThemedText style={{ fontSize: 10, color: '#6B7280', marginLeft: 8, backgroundColor: '#F3F4F6', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 }}>
+                            ID: {item.supplierId}
+                        </ThemedText>
+                    )}
                 </View>
                 <View style={styles.dateTimeBadge}>
                     <Ionicons name="calendar-outline" size={12} color="#6B7280" style={{ marginRight: 4 }} />
@@ -436,7 +442,7 @@ export default function MilkCollectionHistoryScreen() {
                     <ThemedText style={styles.gridValue}>{item.quantity?.toFixed(2) || '0.00'} L</ThemedText>
                 </View>
                 <View style={[styles.gridItem, styles.gridBorder]}>
-                    <ThemedText style={styles.gridLabel}>FAT</ThemedText>
+                    <ThemedText style={styles.gridLabel}>FAT %</ThemedText>
                     <ThemedText style={styles.gridValue}>
                         {!isNaN(parseFloat(item.fatType)) ? parseFloat(item.fatType).toFixed(1) : (item.fatType || '0.0')}
                     </ThemedText>

@@ -8,6 +8,7 @@ import { apiFetch } from '@/lib/api';
 
 const ALL_MODULES = [
   { id: 'collection', label: 'Milk Collection' },
+  { id: 'quality', label: 'Quality Parameters' },
   { id: 'history', label: 'History' },
   { id: 'production', label: 'Separation' },
   { id: 'products', label: 'Products' },

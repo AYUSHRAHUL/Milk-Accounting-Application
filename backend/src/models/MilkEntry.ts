@@ -3,6 +3,7 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 export interface IMilkEntry extends Document {
   userId: string;
   supplier: string;
+  supplierId?: string;
   date: Date;
   shift: string;
   source: string;
@@ -19,6 +20,12 @@ export interface IMilkEntry extends Document {
   mbrt?: string;
   mbrtTime?: string;
   cob?: string;
+  protein?: number;
+  lactose?: number;
+  ash?: number;
+  addedWater?: number;
+  tsMachine?: number;
+  tsDiff?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +34,7 @@ const MilkEntrySchema: Schema = new Schema(
   {
     userId: { type: String, required: true },
     supplier: { type: String, required: true },
+    supplierId: { type: String },
     date: { type: Date, required: true },
     shift: { type: String, required: true, enum: ['Morning', 'Evening'] },
     source: { type: String, required: true, enum: ['Cow', 'Buffalo', 'Goat', 'Other'] },
@@ -40,9 +48,15 @@ const MilkEntrySchema: Schema = new Schema(
     quantity: { type: Number, required: true },
     costPerLiter: { type: Number, required: true },
     totalCost: { type: Number, required: true },
-    mbrt: { type: String, enum: ['Very good', 'Fair', 'Poor', 'very Poor'] },
+    mbrt: { type: String },
     mbrtTime: { type: String },
     cob: { type: String },
+    protein: { type: Number },
+    lactose: { type: Number },
+    ash: { type: Number },
+    addedWater: { type: Number },
+    tsMachine: { type: Number },
+    tsDiff: { type: Number },
   },
   { timestamps: true }
 );
