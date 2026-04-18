@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: '45%', // Top half background
+    height: '50%', // Top half background
     backgroundColor: '#22C55E',
   },
   bottomBackground: {
@@ -240,17 +240,17 @@ const styles = StyleSheet.create({
   },
   headerArea: {
     alignItems: 'center',
-    marginBottom: 32,
-    marginTop: 20,
+    marginBottom: 40,
+    marginTop: 30,
   },
   logoContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     backgroundColor: '#DCFCE7',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -259,9 +259,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   logoImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+    width: '125%',
+    height: '125%',
+    resizeMode: 'contain',
   },
   title: {
     fontSize: 28,

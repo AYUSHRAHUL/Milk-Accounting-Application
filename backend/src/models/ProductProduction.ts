@@ -51,5 +51,8 @@ const ProductProductionSchema: Schema = new Schema(
   { timestamps: true }
 );
 
+// Indexes for performance
+ProductProductionSchema.index({ userId: 1, date: -1 });
+
 export const ProductProduction: Model<IProductProduction> =
   mongoose.models.ProductProduction || mongoose.model<IProductProduction>('ProductProduction', ProductProductionSchema);

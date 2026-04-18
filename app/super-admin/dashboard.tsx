@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -74,7 +74,17 @@ export default function SuperAdminDashboardScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView 
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl 
+            refreshing={isRefreshing} 
+            onRefresh={fetchAdmins}
+            colors={['#3B82F6']}
+            tintColor="#3B82F6"
+          />
+        }
+      >
         {/* Welcome Section */}
         <View style={styles.welcomeCard}>
           <Text style={styles.welcomeText}>Welcome back,</Text>

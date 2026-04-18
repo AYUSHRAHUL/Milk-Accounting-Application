@@ -81,7 +81,7 @@ export default function AdminUserManagementScreen() {
         </View>
         <TouchableOpacity 
           onPress={() => router.push({
-            pathname: `/super-admin/admins/${adminId}/add-user`,
+            pathname: `/super-admin/admins/${adminId}/add-user` as any,
             params: { adminName }
           })} 
           style={styles.addBtn}

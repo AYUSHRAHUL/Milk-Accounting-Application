@@ -47,8 +47,8 @@ const FEATURES: FeatureCard[] = [
   { title: 'Products', id: 'products', route: '/production/make-products', image: null, icon: 'cube', useTint: true },
   { title: 'Sales', id: 'sales', route: '/sales', image: SalesImage, icon: 'cash', useTint: true },
   { title: 'Reports', id: 'reports', route: '/reports', image: ReportsImage, icon: 'bar-chart', useTint: true },
-  { title: 'History', id: 'history', route: '/milk-collection/history', image: HistoryImage, icon: 'list', useTint: true },
   { title: 'Quality Parameters', id: 'quality', route: '/quality-parameters', image: null, icon: 'analytics', useTint: true },
+  { title: 'History', id: 'history', route: '/milk-collection/history', image: HistoryImage, icon: 'list', useTint: true },
 ];
 
 // Dashboard Card
@@ -195,9 +195,7 @@ export default function DashboardScreen() {
 
           <Text style={styles.headerTitle}>Dashboard</Text>
 
-          <TouchableOpacity>
-            <Ionicons name="notifications-outline" size={26} color="#22C55E" />
-          </TouchableOpacity>
+          <View style={{ width: 28 }} />
         </View>
 
         {/* Welcome */}

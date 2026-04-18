@@ -84,13 +84,13 @@ export default function HelpScreen() {
               theme={theme}
             />
             <FaqItem
-              q="How do I change language?"
-              a="Open the side menu and select 'Language', then pick your preferred language."
+              q="How do I change my admin password?"
+              a="Navigate to the Admin Panel and tap the green 'Change password' card. A secure pop-up will appear allowing you to update your credentials."
               theme={theme}
             />
             <FaqItem
-              q="How do I switch dark mode?"
-              a="Open the side menu and select 'Mode', then choose between Light or Dark."
+              q="How do I delete an admin account?"
+              a="As a Super Admin, go to the Admins management page and tap the red trash icon on the admin's card. Confirm the prompt to complete deletion."
               theme={theme}
             />
           </View>
@@ -110,7 +110,7 @@ export default function HelpScreen() {
                   </ThemedText>
                   <TouchableOpacity style={{ marginTop: 12 }}>
                     <ThemedText type="link" style={{ color: EMERALD_GREEN, fontWeight: '700' }}>
-                      support@kaamwalah.com
+                      support@zyncle.com
                     </ThemedText>
                   </TouchableOpacity>
                 </View>

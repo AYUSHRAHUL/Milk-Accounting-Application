@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -29,9 +29,43 @@ export default function ManageAdminsScreen() {
     if (user?.id) fetchAdmins();
   }, [user]);
 
+  const handleDeleteAdmin = async (id: string) => {
+    const performDelete = async () => {
+      try {
+        const res = await apiFetch(`/api/super-admin/admins/${id}?superAdminId=${user?.id}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          if (Platform.OS === 'web') alert('Admin deleted successfully');
+          else Alert.alert('Success', 'Admin deleted successfully');
+          fetchAdmins();
+        } else {
+          const data = await res.json();
+          if (Platform.OS === 'web') alert(data.error || 'Failed to delete admin');
+          else Alert.alert('Error', data.error || 'Failed to delete admin');
+        }
+      } catch (e) {
+        console.error(e);
+        if (Platform.OS === 'web') alert('Something went wrong');
+        else Alert.alert('Error', 'Something went wrong');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (confirm('Are you sure you want to delete this admin?')) {
+        performDelete();
+      }
+    } else {
+      Alert.alert('Delete Admin', 'Are you sure you want to delete this admin?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: performDelete }
+      ]);
+    }
+  };
+
   const renderAdminItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
-      <View style={styles.cardHeader}>
+      <View style={[styles.cardHeader, { marginBottom: 0 }]}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{item.name[0].toUpperCase()}</Text>
         </View>
@@ -39,31 +73,11 @@ export default function ManageAdminsScreen() {
           <Text style={styles.name}>{item.name}</Text>
           <Text style={styles.email}>{item.email}</Text>
         </View>
-        <TouchableOpacity style={styles.actionBtn}>
-          <Ionicons name="ellipsis-vertical" size={20} color="#64748B" />
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.divider} />
-      
-      <View style={styles.cardFooter}>
-        <View style={styles.stat}>
-          <Ionicons name="cube-outline" size={16} color="#64748B" />
-          <Text style={styles.statText}>{item.modules?.length || 0} Modules</Text>
-        </View>
-        <View style={styles.stat}>
-          <Ionicons name="people-outline" size={16} color="#64748B" />
-          <Text style={styles.statText}>{item.userCount || 0} Users</Text>
-        </View>
         <TouchableOpacity 
-          style={styles.manageBtn}
-          onPress={() => router.push({
-            pathname: `/super-admin/admins/${item._id}/users`,
-            params: { adminName: item.name }
-          })}
+          style={styles.deleteBtn}
+          onPress={() => handleDeleteAdmin(item._id)}
         >
-          <Text style={styles.manageBtnText}>Manage Users</Text>
-          <Ionicons name="arrow-forward" size={16} color="#2563EB" />
+          <Ionicons name="trash-outline" size={20} color="#EF4444" />
         </TouchableOpacity>
       </View>
     </View>
@@ -127,6 +141,7 @@ const styles = StyleSheet.create({
   name: { fontSize: 18, fontWeight: '800', color: '#1E293B' },
   email: { fontSize: 14, color: '#64748B', marginTop: 2 },
   actionBtn: { padding: 8 },
+  deleteBtn: { padding: 8, backgroundColor: '#FEF2F2', borderRadius: 10, marginLeft: 8 },
   
   divider: { height: 1, backgroundColor: '#F1F5F9', marginBottom: 16 },
   

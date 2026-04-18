@@ -27,6 +27,9 @@ const SupplierSchema: Schema = new Schema(
   { timestamps: true }
 );
 
+// Indexes for performance
+SupplierSchema.index({ userId: 1, supplierId: 1 });
+
 export const Supplier: Model<ISupplier> =
   mongoose.models.Supplier || mongoose.model<ISupplier>('Supplier', SupplierSchema);
 

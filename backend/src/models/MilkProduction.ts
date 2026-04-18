@@ -39,5 +39,8 @@ const MilkProductionSchema: Schema = new Schema(
   { timestamps: true }
 );
 
+// Indexes for performance
+MilkProductionSchema.index({ userId: 1, date: -1 });
+
 export const MilkProduction: Model<IMilkProduction> =
   mongoose.models.MilkProduction || mongoose.model<IMilkProduction>('MilkProduction', MilkProductionSchema);

@@ -125,7 +125,7 @@ export default function LandingScreen() {
             </Animated.View>
 
             <Animated.View style={[styles.textContainer, textAnimatedStyle]}>
-              <Text style={styles.title}>Milk Accounting{'\n'}App</Text>
+              <Text style={styles.title}>Milk Accounting</Text>
               <Text style={styles.subtitle}>Streamline your daily milk accounting</Text>
             </Animated.View>
           </View>
@@ -171,12 +171,12 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: height * 0.55,
+    height: height * 0.60,
     backgroundColor: '#22C55E',
   },
   curveContainer: {
     position: 'absolute',
-    top: height * 0.55 - 50,
+    top: height * 0.60 - 50,
     left: 0,
     right: 0,
     height: 100,
@@ -203,16 +203,16 @@ const styles = StyleSheet.create({
   },
   topSection: {
     alignItems: 'center',
-    marginTop: height * 0.05,
+    marginTop: height * 0.08,
   },
   logoContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
     backgroundColor: '#DCFCE7',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 50,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
@@ -221,20 +221,20 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   logoImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+    width: '125%',
+    height: '125%',
+    resizeMode: 'contain',
   },
   textContainer: {
     alignItems: 'center',
   },
   title: {
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: '800',
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 12,
-    lineHeight: 40,
+    marginBottom: 16,
+    lineHeight: 42,
     letterSpacing: -0.5,
   },
   subtitle: {

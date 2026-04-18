@@ -269,17 +269,6 @@ export default function ProfileScreen() {
                 />
               </Card>
 
-              {/* Logout Section */}
-              <TouchableOpacity 
-                style={[styles.logoutButton, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]} 
-                onPress={handleLogout}
-              >
-                <View style={[styles.infoIconBox, { backgroundColor: '#FEE2E2' }]}>
-                  <Ionicons name="log-out-outline" size={22} color="#EF4444" />
-                </View>
-                <ThemedText style={[styles.logoutText, { color: '#B91C1C' }]}>Log Out</ThemedText>
-                <Ionicons name="chevron-forward" size={18} color="#EF4444" style={{ marginLeft: 'auto' }} />
-              </TouchableOpacity>
 
             </View>
           )}

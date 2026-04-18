@@ -50,12 +50,6 @@ const COLORS = {
   overlay: 'rgba(0,0,0,0.35)',
 };
 
-const languageOptions: { id: AppLanguage; label: string }[] = [
-  { id: 'en', label: 'English' },
-  { id: 'hi', label: 'Hindi' },
-  { id: 'or', label: 'Odia' },
-  { id: 'te', label: 'Telugu' },
-];
 
 
 
@@ -128,10 +122,7 @@ function DrawerMenuItem({ item, index }: { item: DrawerItem; index: number }) {
 // ─── Main Drawer Component ───────────────────────────────────────────────────
 
 export function AppDrawerContent(props: DrawerContentComponentProps) {
-  const prefs = useContext(PreferencesContext);
   const { user, logout } = useAuth();
-
-  const [languageOpen, setLanguageOpen] = useState(false);
 
 
   // Profile header animation
@@ -158,7 +149,6 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
 
   const items: DrawerItem[] = [
     { key: 'profile', label: 'Profile', icon: 'person-outline', onPress: () => navigateTo('/(tabs)/profile') },
-    { key: 'language', label: 'Language', icon: 'language-outline', onPress: () => setLanguageOpen(true) },
 
     { key: 'help', label: 'Need Help', icon: 'help-circle-outline', onPress: () => navigateTo('/(tabs)/help') },
     { key: 'support', label: 'Support', icon: 'chatbox-ellipses-outline', onPress: () => navigateTo('/(tabs)/support') },
@@ -237,41 +227,6 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
         <Text style={styles.footerText}>Mom Ami Dairyware</Text>
       </View>
 
-      {/* ── Language Modal ── */}
-      <Modal visible={languageOpen} transparent animationType="fade" onRequestClose={() => setLanguageOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setLanguageOpen(false)}>
-          <Pressable style={styles.modal} onPress={() => undefined}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Language</Text>
-              <Pressable onPress={() => setLanguageOpen(false)} hitSlop={10}>
-                <Ionicons name="close" size={20} color={COLORS.secondaryText} />
-              </Pressable>
-            </View>
-            {languageOptions.map((opt) => {
-              const selected = !!prefs && prefs.language === opt.id;
-              return (
-                <Pressable
-                  key={opt.id}
-                  onPress={async () => {
-                    if (prefs) await prefs.setLanguage(opt.id);
-                    setLanguageOpen(false);
-                  }}
-                  style={[
-                    styles.choice,
-                    {
-                      borderColor: selected ? COLORS.primaryGreen : COLORS.divider,
-                      backgroundColor: selected ? COLORS.lightGreen : 'transparent',
-                    },
-                  ]}
-                >
-                  <Text style={[styles.choiceText, selected && { fontWeight: '700' }]}>{opt.label}</Text>
-                  {selected ? <Ionicons name="checkmark-circle" size={18} color={COLORS.primaryGreen} /> : null}
-                </Pressable>
-              );
-            })}
-          </Pressable>
-        </Pressable>
-      </Modal>
 
 
     </SafeAreaView>

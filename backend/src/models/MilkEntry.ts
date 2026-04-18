@@ -61,6 +61,10 @@ const MilkEntrySchema: Schema = new Schema(
   { timestamps: true }
 );
 
+// Indexes for performance
+MilkEntrySchema.index({ userId: 1, date: -1 });
+MilkEntrySchema.index({ supplierId: 1 });
+
 export const MilkEntry: Model<IMilkEntry> =
   mongoose.models.MilkEntry || mongoose.model<IMilkEntry>('MilkEntry', MilkEntrySchema);
 

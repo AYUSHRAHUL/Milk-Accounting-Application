@@ -24,5 +24,8 @@ const UserSchema: Schema<IUser> = new Schema(
   { timestamps: true }
 );
 
+// Indexes for performance
+UserSchema.index({ adminId: 1 });
+
 export const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 

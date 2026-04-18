@@ -270,10 +270,15 @@ app.get('/api/milk/collection', async (req, res) => {
     const entries = await MilkEntry.find({ userId }).sort({ date: -1, createdAt: -1 }).lean();
 
     // Dynamically populate missing supplierId for older records or missing fields
-    const suppliers = await Supplier.find({ userId, isActive: true }).select('name supplierId').lean();
+    // Include inactive suppliers to improve historical data resolution
+    const suppliers = await Supplier.find({ userId }).select('name supplierId').lean();
     const supplierMap: Record<string, string> = {};
     suppliers.forEach(s => { 
-      if (s.name) supplierMap[s.name.trim().toLowerCase()] = s.supplierId; 
+      if (s.name) {
+        // Robust normalization: trim and lowercase
+        const normalized = s.name.trim().toLowerCase();
+        supplierMap[normalized] = s.supplierId; 
+      }
     });
 
     const enrichedEntries = entries.map(entry => {
@@ -479,13 +484,6 @@ app.get('/api/production/milk-summary', async (req, res) => {
     ]);
     const separatedMapBeforeToday = sourceProducedBeforeToday[0] || { totalCow: 0, totalBuffalo: 0, totalGoat: 0, totalOther: 0 };
 
-    const sourceOpeningBalance = {
-      Cow: Math.max(0, sourceTotalsBeforeToday.Cow - separatedMapBeforeToday.totalCow - wUsedBeforeToday.cow),
-      Buffalo: Math.max(0, sourceTotalsBeforeToday.Buffalo - separatedMapBeforeToday.totalBuffalo - wUsedBeforeToday.buff),
-      Goat: Math.max(0, sourceTotalsBeforeToday.Goat - separatedMapBeforeToday.totalGoat - wUsedBeforeToday.goat),
-      Other: Math.max(0, sourceTotalsBeforeToday.Other - separatedMapBeforeToday.totalOther - wUsedBeforeToday.other),
-    };
-
     // Calculate today's collections and used
     const collectedTodayAggr = await MilkEntry.aggregate([
       { $match: { userId: matchUserId, date: { $gte: startOfToday } } },
@@ -505,9 +503,6 @@ app.get('/api/production/milk-summary', async (req, res) => {
     ]);
     const todayWholeUsed = wholeUsedTodayAggr.length > 0 ? wholeUsedTodayAggr[0].total : 0;
     const todayUsed = todaySeparated + todayWholeUsed;
-
-    const openingBalance = Math.max(0, totalCollectedBeforeToday - totalSeparatedBeforeToday - totalWholeUsedBeforeToday);
-    const closingBalance = Math.max(0, totalCollected - totalSeparated - totalWholeUsed);
 
     const sourceCounts = await MilkEntry.aggregate([
       { $match: { userId: matchUserId } },
@@ -533,14 +528,46 @@ app.get('/api/production/milk-summary', async (req, res) => {
 
     const separatedMap = sourceProduced[0] || { totalCow: 0, totalBuffalo: 0, totalGoat: 0, totalOther: 0 };
 
-    const sourceAvailable = {
-      Cow: Math.max(0, sourceTotals.Cow - separatedMap.totalCow - wholeUsedSummary.cow),
-      Buffalo: Math.max(0, sourceTotals.Buffalo - separatedMap.totalBuffalo - wholeUsedSummary.buff),
-      Goat: Math.max(0, sourceTotals.Goat - separatedMap.totalGoat - wholeUsedSummary.goat),
-      Other: Math.max(0, sourceTotals.Other - separatedMap.totalOther - wholeUsedSummary.other),
+    const sourceOpeningBalance = {
+      Cow: Math.max(0, sourceTotalsBeforeToday.Cow - separatedMapBeforeToday.totalCow - wUsedBeforeToday.cow),
+      Buffalo: Math.max(0, sourceTotalsBeforeToday.Buffalo - separatedMapBeforeToday.totalBuffalo - wUsedBeforeToday.buff),
+      Goat: Math.max(0, sourceTotalsBeforeToday.Goat - separatedMapBeforeToday.totalGoat - wUsedBeforeToday.goat),
+      Other: Math.max(0, sourceTotalsBeforeToday.Other - separatedMapBeforeToday.totalOther - wUsedBeforeToday.other),
     };
 
-    const availableMilk = Math.max(0, totalCollected - totalSeparated - totalWholeUsed);
+    const inconsistencies: string[] = [];
+    const checkNeg = (val: number, label: string) => {
+      if (val < -0.001) inconsistencies.push(`${label} is logically negative (${val.toFixed(2)})`);
+    };
+
+    const availableMilkRaw = totalCollected - totalSeparated - totalWholeUsed;
+    checkNeg(availableMilkRaw, 'Overall Available Milk');
+    
+    const openingBalanceRaw = totalCollectedBeforeToday - totalSeparatedBeforeToday - totalWholeUsedBeforeToday;
+    checkNeg(openingBalanceRaw, 'Opening Balance');
+
+    const closingBalanceRaw = totalCollected - totalSeparated - totalWholeUsed;
+    checkNeg(closingBalanceRaw, 'Closing Balance');
+
+    const cowAvail = sourceTotals.Cow - separatedMap.totalCow - wholeUsedSummary.cow;
+    const buffAvail = sourceTotals.Buffalo - separatedMap.totalBuffalo - wholeUsedSummary.buff;
+    const goatAvail = sourceTotals.Goat - separatedMap.totalGoat - wholeUsedSummary.goat;
+    const otherAvail = sourceTotals.Other - separatedMap.totalOther - wholeUsedSummary.other;
+
+    checkNeg(cowAvail, 'Cow Milk');
+    checkNeg(buffAvail, 'Buffalo Milk');
+    checkNeg(goatAvail, 'Goat Milk');
+    checkNeg(otherAvail, 'Other Milk');
+
+    const sourceAvailable = {
+      Cow: Math.max(0, cowAvail),
+      Buffalo: Math.max(0, buffAvail),
+      Goat: Math.max(0, goatAvail),
+      Other: Math.max(0, otherAvail),
+    };
+
+    const openingBalance = Math.max(0, openingBalanceRaw);
+    const closingBalance = Math.max(0, closingBalanceRaw);
 
     const [lastMilkEntry, lastSeparation, lastProduct] = await Promise.all([
       MilkEntry.findOne({ userId: matchUserId as any }).sort({ date: -1 }).select('date'),
@@ -557,7 +584,7 @@ app.get('/api/production/milk-summary', async (req, res) => {
     const lastActiveDate = dates.length > 0 ? new Date(Math.max(...dates)) : null;
 
     return res.status(200).json({
-      availableMilk,
+      availableMilk: Math.max(0, availableMilkRaw),
       openingBalance,
       closingBalance,
       closingBalanceDate: lastActiveDate,
@@ -567,7 +594,8 @@ app.get('/api/production/milk-summary', async (req, res) => {
       todayUsed,
       sourceTotals,
       sourceOpeningBalance,
-      sourceAvailable
+      sourceAvailable,
+      inconsistencies: inconsistencies.length > 0 ? inconsistencies : undefined
     });
   } catch (error: any) {
     console.error('Milk Summary Error:', error);
@@ -699,21 +727,46 @@ app.get('/api/production/inventory', async (req, res) => {
     const prod = production[0] || { totalSeparated: 0, totalSkim: 0, totalCream: 0, totalMixed: 0 };
     const use = used[0] || { usedWhole: 0, usedSkim: 0, usedCream: 0, usedMixed: 0, cow: 0, buff: 0, goat: 0, other: 0 };
 
-    const wholeMilk = Math.max(0, totalCollected - prod.totalSeparated - use.usedWhole);
-    
+    const inconsistencies: string[] = [];
+    const checkNeg = (val: number, label: string) => {
+      if (val < -0.001) inconsistencies.push(`${label} is logically negative (${val.toFixed(2)})`);
+    };
+
+    const wholeMilkRaw = totalCollected - prod.totalSeparated - use.usedWhole;
+    checkNeg(wholeMilkRaw, 'Whole Milk');
+
+    const skimAvail = prod.totalSkim - use.usedSkim - (salesMap['Skim Milk'] || 0);
+    const creamAvail = prod.totalCream - use.usedCream - (salesMap['Cream'] || 0);
+    const mixedAvail = prod.totalMixed - use.usedMixed - (salesMap['Mixed Milk'] || 0);
+
+    checkNeg(skimAvail, 'Skim Milk');
+    checkNeg(creamAvail, 'Cream');
+    checkNeg(mixedAvail, 'Mixed Milk');
+
+    const cowAvail = sourceTotals.Cow - separatedMap.totalCow - use.cow - (salesMap['Cow Milk'] || 0);
+    const buffAvail = sourceTotals.Buffalo - separatedMap.totalBuffalo - use.buff - (salesMap['Buffalo Milk'] || 0);
+    const goatAvail = sourceTotals.Goat - separatedMap.totalGoat - use.goat - (salesMap['Goat Milk'] || 0);
+    const otherAvail = sourceTotals.Other - separatedMap.totalOther - use.other - (salesMap['Other Milk'] || 0);
+
+    checkNeg(cowAvail, 'Cow Milk');
+    checkNeg(buffAvail, 'Buffalo Milk');
+    checkNeg(goatAvail, 'Goat Milk');
+    checkNeg(otherAvail, 'Other Milk');
+
     const sourceAvailable = {
-      Cow: Math.max(0, sourceTotals.Cow - separatedMap.totalCow - use.cow - (salesMap['Cow Milk'] || 0)),
-      Buffalo: Math.max(0, sourceTotals.Buffalo - separatedMap.totalBuffalo - use.buff - (salesMap['Buffalo Milk'] || 0)),
-      Goat: Math.max(0, sourceTotals.Goat - separatedMap.totalGoat - use.goat - (salesMap['Goat Milk'] || 0)),
-      Other: Math.max(0, sourceTotals.Other - separatedMap.totalOther - use.other - (salesMap['Other Milk'] || 0)),
+      Cow: Math.max(0, cowAvail),
+      Buffalo: Math.max(0, buffAvail),
+      Goat: Math.max(0, goatAvail),
+      Other: Math.max(0, otherAvail),
     };
 
     return res.status(200).json({
-      wholeMilk: Math.max(0, wholeMilk),
-      skimMilk: Math.max(0, prod.totalSkim - use.usedSkim - (salesMap['Skim Milk'] || 0)),
-      creamMilk: Math.max(0, prod.totalCream - use.usedCream - (salesMap['Cream'] || 0)),
-      mixedMilk: Math.max(0, prod.totalMixed - use.usedMixed - (salesMap['Mixed Milk'] || 0)),
-      sourceAvailable
+      wholeMilk: Math.max(0, wholeMilkRaw),
+      skimMilk: Math.max(0, skimAvail),
+      creamMilk: Math.max(0, creamAvail),
+      mixedMilk: Math.max(0, mixedAvail),
+      sourceAvailable,
+      inconsistencies: inconsistencies.length > 0 ? inconsistencies : undefined
     });
   } catch (error: any) {
     console.error('Production Inventory Error:', error);
@@ -833,24 +886,53 @@ app.get('/api/sales/product-stock', async (req, res) => {
     ]);
     const separatedMap = sourceProduced[0] || { totalCow: 0, totalBuffalo: 0, totalGoat: 0, totalOther: 0 };
 
+    const inconsistencies: string[] = [];
+    const checkNeg = (val: number, label: string) => {
+      if (val < -0.001) inconsistencies.push(`${label} stock is logically negative (${val.toFixed(2)})`);
+    };
+
     // Final Stock Map
-    const stock: Record<string, number> = {};
+    const stock: Record<string, any> = {};
     
     // Add standard products
     produced.forEach((p: any) => {
-      stock[p._id] = Math.max(0, p.total - (soldMap[p._id] || 0));
+      const pStock = p.total - (soldMap[p._id] || 0);
+      checkNeg(pStock, p._id);
+      stock[p._id] = Math.max(0, pStock);
     });
 
     // Add Raw Milk Types
-    stock['Cow Milk'] = Math.max(0, sourceTotals.Cow - separatedMap.totalCow - use.cow - (soldMap['Cow Milk'] || 0));
-    stock['Buffalo Milk'] = Math.max(0, sourceTotals.Buffalo - separatedMap.totalBuffalo - use.buff - (soldMap['Buffalo Milk'] || 0));
-    stock['Goat Milk'] = Math.max(0, sourceTotals.Goat - separatedMap.totalGoat - use.goat - (soldMap['Goat Milk'] || 0));
-    stock['Other Milk'] = Math.max(0, sourceTotals.Other - separatedMap.totalOther - use.other - (soldMap['Other Milk'] || 0));
+    const cowVal = sourceTotals.Cow - separatedMap.totalCow - use.cow - (soldMap['Cow Milk'] || 0);
+    const buffVal = sourceTotals.Buffalo - separatedMap.totalBuffalo - use.buff - (soldMap['Buffalo Milk'] || 0);
+    const goatVal = sourceTotals.Goat - separatedMap.totalGoat - use.goat - (soldMap['Goat Milk'] || 0);
+    const otherVal = sourceTotals.Other - separatedMap.totalOther - use.other - (soldMap['Other Milk'] || 0);
+
+    checkNeg(cowVal, 'Cow Milk');
+    checkNeg(buffVal, 'Buffalo Milk');
+    checkNeg(goatVal, 'Goat Milk');
+    checkNeg(otherVal, 'Other Milk');
+
+    stock['Cow Milk'] = Math.max(0, cowVal);
+    stock['Buffalo Milk'] = Math.max(0, buffVal);
+    stock['Goat Milk'] = Math.max(0, goatVal);
+    stock['Other Milk'] = Math.max(0, otherVal);
 
     // Add Intermediate Products
-    stock['Skim Milk'] = Math.max(0, prod.totalSkim - use.usedSkim - (soldMap['Skim Milk'] || 0));
-    stock['Cream'] = Math.max(0, prod.totalCream - use.usedCream - (soldMap['Cream'] || 0));
-    stock['Mixed Milk'] = Math.max(0, prod.totalMixed - use.usedMixed - (soldMap['Mixed Milk'] || 0));
+    const skimVal = prod.totalSkim - use.usedSkim - (soldMap['Skim Milk'] || 0);
+    const creamVal = prod.totalCream - use.usedCream - (soldMap['Cream'] || 0);
+    const mixedVal = prod.totalMixed - use.usedMixed - (soldMap['Mixed Milk'] || 0);
+
+    checkNeg(skimVal, 'Skim Milk');
+    checkNeg(creamVal, 'Cream');
+    checkNeg(mixedVal, 'Mixed Milk');
+
+    stock['Skim Milk'] = Math.max(0, skimVal);
+    stock['Cream'] = Math.max(0, creamVal);
+    stock['Mixed Milk'] = Math.max(0, mixedVal);
+
+    if (inconsistencies.length > 0) {
+      stock.inconsistencies = inconsistencies;
+    }
 
     return res.status(200).json(stock);
   } catch (error: any) {

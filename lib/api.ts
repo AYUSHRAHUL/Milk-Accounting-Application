@@ -12,6 +12,33 @@ export function apiUrl(path: string) {
   return `${normalized}${path}`;
 }
 
-export async function apiFetch(path: string, init?: RequestInit) {
-  return fetch(apiUrl(path), init);
+export async function apiFetch(path: string, init?: RequestInit, retries = 2): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+  try {
+    const response = await fetch(apiUrl(path), {
+      ...init,
+      signal: controller.signal,
+    });
+    
+    // Auto-retry on 5xx or network-like failures for GET only
+    if (!response.ok && response.status >= 500 && retries > 0 && (!init?.method || init.method === 'GET')) {
+      console.warn(`Retrying ${path}... (${retries} attempts left)`);
+      return apiFetch(path, init, retries - 1);
+    }
+
+    return response;
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your internet connection.');
+    }
+    // Retry on network errors
+    if (retries > 0 && (!init?.method || init.method === 'GET')) {
+      return apiFetch(path, init, retries - 1);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }

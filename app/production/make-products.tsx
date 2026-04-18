@@ -138,31 +138,31 @@ export default function MakeProductsScreen() {
         const mVal = parseFloat(useMixed) || 0;
 
         if (cVal > (inventory.sourceAvailable.Cow || 0) + 0.001) {
-            Alert.alert('Low Balance', `Cow Milk balance is only ${inventory.sourceAvailable.Cow.toFixed(3)}L`);
+            Alert.alert('Low Balance', `Cow Milk balance is only ${inventory.sourceAvailable.Cow.toFixed(2)}L`);
             setUseCow((inventory.sourceAvailable.Cow || 0).toString());
         }
         if (bVal > (inventory.sourceAvailable.Buffalo || 0) + 0.001) {
-            Alert.alert('Low Balance', `Buffalo Milk balance is only ${inventory.sourceAvailable.Buffalo.toFixed(3)}L`);
+            Alert.alert('Low Balance', `Buffalo Milk balance is only ${inventory.sourceAvailable.Buffalo.toFixed(2)}L`);
             setUseBuff((inventory.sourceAvailable.Buffalo || 0).toString());
         }
         if (gVal > (inventory.sourceAvailable.Goat || 0) + 0.001) {
-            Alert.alert('Low Balance', `Goat Milk balance is only ${inventory.sourceAvailable.Goat.toFixed(3)}L`);
+            Alert.alert('Low Balance', `Goat Milk balance is only ${inventory.sourceAvailable.Goat.toFixed(2)}L`);
             setUseGoat((inventory.sourceAvailable.Goat || 0).toString());
         }
         if (oVal > (inventory.sourceAvailable.Other || 0) + 0.001) {
-            Alert.alert('Low Balance', `Other Milk balance is only ${inventory.sourceAvailable.Other.toFixed(3)}L`);
+            Alert.alert('Low Balance', `Other Milk balance is only ${inventory.sourceAvailable.Other.toFixed(2)}L`);
             setUseOther((inventory.sourceAvailable.Other || 0).toString());
         }
         if (sVal > (inventory.skimMilk || 0) + 0.001) {
-            Alert.alert('Low Balance', `Skim Milk balance is only ${inventory.skimMilk.toFixed(3)}L`);
+            Alert.alert('Low Balance', `Skim Milk balance is only ${inventory.skimMilk.toFixed(2)}L`);
             setUseSkim((inventory.skimMilk || 0).toString());
         }
         if (rVal > (inventory.creamMilk || 0) + 0.001) {
-            Alert.alert('Low Balance', `Cream balance is only ${inventory.creamMilk.toFixed(3)}L`);
+            Alert.alert('Low Balance', `Cream balance is only ${inventory.creamMilk.toFixed(2)}L`);
             setUseCream((inventory.creamMilk || 0).toString());
         }
         if (mVal > (inventory.sepMixed || 0) + 0.001) {
-            Alert.alert('Low Balance', `Mixed Milk balance is only ${inventory.sepMixed.toFixed(3)}L`);
+            Alert.alert('Low Balance', `Mixed Milk balance is only ${inventory.sepMixed.toFixed(2)}L`);
             setUseMixed((inventory.sepMixed || 0).toString());
         }
     }, [useCow, useBuff, useGoat, useOther, useSkim, useCream, useMixed, inventory]);
@@ -187,25 +187,25 @@ export default function MakeProductsScreen() {
         }
 
         if (cUsed > (inventory.sourceAvailable.Cow || 0) + 0.01) {
-            Alert.alert('Low Balance', `Cow Milk balance is ${inventory.sourceAvailable.Cow.toFixed(3)}L`); return;
+            Alert.alert('Low Balance', `Cow Milk balance is ${inventory.sourceAvailable.Cow.toFixed(2)}L`); return;
         }
         if (bUsed > (inventory.sourceAvailable.Buffalo || 0) + 0.01) {
-            Alert.alert('Low Balance', `Buffalo Milk balance is ${inventory.sourceAvailable.Buffalo.toFixed(3)}L`); return;
+            Alert.alert('Low Balance', `Buffalo Milk balance is ${inventory.sourceAvailable.Buffalo.toFixed(2)}L`); return;
         }
         if (gUsed > (inventory.sourceAvailable.Goat || 0) + 0.01) {
-            Alert.alert('Low Balance', `Goat Milk balance is ${inventory.sourceAvailable.Goat.toFixed(3)}L`); return;
+            Alert.alert('Low Balance', `Goat Milk balance is ${inventory.sourceAvailable.Goat.toFixed(2)}L`); return;
         }
         if (oUsed > (inventory.sourceAvailable.Other || 0) + 0.01) {
-            Alert.alert('Low Balance', `Other Milk balance is ${inventory.sourceAvailable.Other.toFixed(3)}L`); return;
+            Alert.alert('Low Balance', `Other Milk balance is ${inventory.sourceAvailable.Other.toFixed(2)}L`); return;
         }
         if (skimUsed > inventory.skimMilk + 0.01) {
-            Alert.alert('Low Balance', `Skim Milk balance is ${inventory.skimMilk.toFixed(3)}L`); return;
+            Alert.alert('Low Balance', `Skim Milk balance is ${inventory.skimMilk.toFixed(2)}L`); return;
         }
         if (creamUsed > inventory.creamMilk + 0.01) {
-            Alert.alert('Low Balance', `Cream Milk balance is ${inventory.creamMilk.toFixed(3)}L`); return;
+            Alert.alert('Low Balance', `Cream Milk balance is ${inventory.creamMilk.toFixed(2)}L`); return;
         }
         if (sepMixedUsed > inventory.sepMixed + 0.01) {
-            Alert.alert('Low Balance', `Mixed Milk balance is ${inventory.sepMixed.toFixed(3)}L`); return;
+            Alert.alert('Low Balance', `Mixed Milk balance is ${inventory.sepMixed.toFixed(2)}L`); return;
         }
 
         const [dd, mm, yyyy] = date.split('-').map(Number);
@@ -319,7 +319,7 @@ export default function MakeProductsScreen() {
                                     <ThemedText style={styles.invLabel}>Available Milk</ThemedText>
                                     <View style={{ flex: 1 }} />
                                     <ThemedText style={[styles.invValueMain, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>
-                                        {isFetchingInventory ? '--' : totalAvailableMilk.toFixed(3)}<ThemedText style={styles.invUnit}> L</ThemedText>
+                                        {isFetchingInventory ? '--' : totalAvailableMilk.toFixed(2)}<ThemedText style={styles.invUnit}> L</ThemedText>
                                     </ThemedText>
                                 </View>
 
@@ -327,25 +327,25 @@ export default function MakeProductsScreen() {
                                     <View style={styles.sourceItem}>
                                         <ThemedText style={styles.sourceLabel}>Cow</ThemedText>
                                         <ThemedText style={[styles.sourceValue, { color: isDark ? '#CBD5E1' : '#475569' }]}>
-                                            {Math.max(0, (inventory.sourceAvailable.Cow || 0) - (parseFloat(useCow) || 0)).toFixed(3)}L
+                                            {Math.max(0, (inventory.sourceAvailable.Cow || 0) - (parseFloat(useCow) || 0)).toFixed(2)}L
                                         </ThemedText>
                                     </View>
                                     <View style={styles.sourceItem}>
                                         <ThemedText style={styles.sourceLabel}>Buffalo</ThemedText>
                                         <ThemedText style={[styles.sourceValue, { color: isDark ? '#CBD5E1' : '#475569' }]}>
-                                            {Math.max(0, (inventory.sourceAvailable.Buffalo || 0) - (parseFloat(useBuff) || 0)).toFixed(3)}L
+                                            {Math.max(0, (inventory.sourceAvailable.Buffalo || 0) - (parseFloat(useBuff) || 0)).toFixed(2)}L
                                         </ThemedText>
                                     </View>
                                     <View style={styles.sourceItem}>
                                         <ThemedText style={styles.sourceLabel}>Goat</ThemedText>
                                         <ThemedText style={[styles.sourceValue, { color: isDark ? '#CBD5E1' : '#475569' }]}>
-                                            {Math.max(0, (inventory.sourceAvailable.Goat || 0) - (parseFloat(useGoat) || 0)).toFixed(3)}L
+                                            {Math.max(0, (inventory.sourceAvailable.Goat || 0) - (parseFloat(useGoat) || 0)).toFixed(2)}L
                                         </ThemedText>
                                     </View>
                                     <View style={styles.sourceItem}>
                                         <ThemedText style={styles.sourceLabel}>Other</ThemedText>
                                         <ThemedText style={[styles.sourceValue, { color: isDark ? '#CBD5E1' : '#475569' }]}>
-                                            {Math.max(0, (inventory.sourceAvailable.Other || 0) - (parseFloat(useOther) || 0)).toFixed(3)}L
+                                            {Math.max(0, (inventory.sourceAvailable.Other || 0) - (parseFloat(useOther) || 0)).toFixed(2)}L
                                         </ThemedText>
                                     </View>
                                 </View>
@@ -655,13 +655,14 @@ const InventoryCard = React.memo(({ label, value, color, isDark, loading, subVal
             <ThemedText style={styles.invLabel} numberOfLines={1}>{label}</ThemedText>
         </View>
         <ThemedText style={[styles.invValue, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>
-            {loading ? '--' : value.toFixed(3)}<ThemedText style={styles.invUnit}> L</ThemedText>
+            {loading ? '--' : value.toFixed(2)}<ThemedText style={styles.invUnit}> L</ThemedText>
         </ThemedText>
         {subValue && !loading && (
             <ThemedText style={styles.invSubValue}>{subValue}</ThemedText>
         )}
     </View>
 ));
+InventoryCard.displayName = 'InventoryCard';
 
 const UsageInputBox = React.memo(({ label, value, setter, avail, isDark, onFocus }: any) => {
     const isExceeded = (parseFloat(value) || 0) > avail + 0.01;
@@ -690,11 +691,12 @@ const UsageInputBox = React.memo(({ label, value, setter, avail, isDark, onFocus
                 />
             </View>
             <ThemedText style={[styles.sourceAvailText, { color: isExceeded ? '#EF4444' : '#64748B' }]}>
-                {isExceeded ? 'Exceeded!' : `Left: ${Math.max(0, avail - (parseFloat(value) || 0)).toFixed(3)}L`}
+                {isExceeded ? 'Exceeded!' : `Left: ${Math.max(0, avail - (parseFloat(value) || 0)).toFixed(2)}L`}
             </ThemedText>
         </View>
     );
 });
+UsageInputBox.displayName = 'UsageInputBox';
 
 const YieldInputRow = React.memo(({ label, value, onChange, color, isDark, placeholder, flex = 1, isText = false, onFocus }: any) => {
     const [isFocused, setIsFocused] = React.useState(false);
@@ -723,6 +725,7 @@ const YieldInputRow = React.memo(({ label, value, onChange, color, isDark, place
         </View>
     );
 });
+YieldInputRow.displayName = 'YieldInputRow';
 
 /* ── STYLES ── */
 const styles = StyleSheet.create({

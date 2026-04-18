@@ -26,6 +26,9 @@ const SaleEntrySchema: Schema = new Schema(
   { timestamps: true }
 );
 
+// Indexes for performance
+SaleEntrySchema.index({ userId: 1, date: -1 });
+
 export const SaleEntry: Model<ISaleEntry> =
   mongoose.models.SaleEntry || mongoose.model<ISaleEntry>('SaleEntry', SaleEntrySchema);
 

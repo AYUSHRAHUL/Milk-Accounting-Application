@@ -124,7 +124,7 @@ export default function QualityParametersScreen() {
         let calculatedTS = 0;
 
         if (lr > 0 && temp > 0) {
-            const clrVal = lr + getCLRCorrection(temp);
+            const clrVal = lr + getCLRCorrection(temp, fat);
             setEditCLR(clrVal.toFixed(1));
 
             const snfVal = (clrVal / 4) + (0.2 * fat) + 0.7;
@@ -629,9 +629,17 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingVertical: 10,
-        borderBottomWidth: 1,
+        borderColor: '#E2E8F0',
         height: 60,
     },
+    filterSection: {
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        backgroundColor: '#FFF',
+        borderBottomWidth: 1,
+        borderColor: '#F1F5F9',
+    },
+    filterRow: {},
     backBtnCompact: {
         width: 36,
         height: 36,

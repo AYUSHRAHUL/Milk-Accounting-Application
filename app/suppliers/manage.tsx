@@ -50,6 +50,11 @@ export default function ManageSupplierScreen() {
             return;
         }
 
+        if (phone.length !== 10) {
+            Alert.alert('Invalid Phone', 'Phone Number must be exactly 10 digits.');
+            return;
+        }
+
         setIsLoading(true);
         try {
             const url = isEditing

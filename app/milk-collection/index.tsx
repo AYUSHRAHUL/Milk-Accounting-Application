@@ -117,6 +117,7 @@ export default function MilkCollectionScreen() {
   const [cob, setCob] = useState('');
   const [showMbrtDropdown, setShowMbrtDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [availableSources, setAvailableSources] = useState<string[]>(MILK_SOURCES);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -156,6 +157,8 @@ export default function MilkCollectionScreen() {
       setFilteredSuppliers(filtered);
     } else {
       setFilteredSuppliers(allSuppliers);
+      // Reset sources to default if search is cleared
+      setAvailableSources(MILK_SOURCES);
     }
   }, [searchQuery, allSuppliers]);
 
@@ -166,6 +169,16 @@ export default function MilkCollectionScreen() {
     setSupplier(displayName);
     setSelectedSupplierId(displayId);
     setSearchQuery(`${displayName} (${displayId})`);
+    
+    // Dynamic Milk Sources based on Supplier settings
+    if (s.animalType && Array.isArray(s.animalType) && s.animalType.length > 0) {
+      setAvailableSources(s.animalType);
+      setSource(s.animalType[0]); // Auto-select first one
+    } else {
+      setAvailableSources(MILK_SOURCES);
+      setSource('Cow');
+    }
+
     setShowDropdown(false);
     setFocusedField(null);
   };
@@ -421,7 +434,11 @@ export default function MilkCollectionScreen() {
 
               {showDropdown && (
                 <View style={styles.dropdown}>
-                  <ScrollView style={{ maxHeight: 200 }} keyboardShouldPersistTaps="handled">
+                  <ScrollView 
+                    style={{ maxHeight: 200 }} 
+                    keyboardShouldPersistTaps="handled" 
+                    nestedScrollEnabled={true}
+                  >
                     {filteredSuppliers.length > 0 ? (
                       filteredSuppliers.map((s) => (
                         <TouchableOpacity
@@ -536,7 +553,7 @@ export default function MilkCollectionScreen() {
               <SectionTitle title="Milk Source" />
 
               <View style={styles.sourceGrid}>
-                {MILK_SOURCES.map((s) => (
+                {availableSources.map((s) => (
                   <SourceCard 
                     key={s} 
                     label={s} 
@@ -571,6 +588,22 @@ export default function MilkCollectionScreen() {
 
               <View style={styles.row}>
                 <View style={styles.halfField}>
+                  <Text style={styles.label}>Quantity (L)</Text>
+                  <TextInput
+                    style={inputStyle('quantity')}
+                    placeholder="0.0"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="numeric"
+                    value={quantity}
+                    onChangeText={setQuantity}
+                     onFocus={() => {
+                      setFocusedField('quantity');
+                      scrollRef.current?.scrollTo({ y: 350, animated: true });
+                    }}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <View style={styles.halfField}>
                   <Text style={styles.label}>LR</Text>
                   <TextInput
                     style={inputStyle('lr')}
@@ -602,6 +635,9 @@ export default function MilkCollectionScreen() {
                     onBlur={() => setFocusedField(null)}
                   />
                 </View>
+              </View>
+
+              <View style={styles.row}>
                 <View style={styles.halfField}>
                   <Text style={styles.label}>Fat (%)</Text>
                   <TextInput
@@ -613,14 +649,11 @@ export default function MilkCollectionScreen() {
                     onChangeText={setFatType}
                     onFocus={() => {
                       setFocusedField('fat');
-                      scrollRef.current?.scrollTo({ y: 350, animated: true });
+                      scrollRef.current?.scrollTo({ y: 400, animated: true });
                     }}
                     onBlur={() => setFocusedField(null)}
                   />
                 </View>
-              </View>
-
-              <View style={styles.row}>
                 <View style={styles.halfField}>
                   <Text style={styles.label}>CLR</Text>
                   <TextInput
@@ -641,6 +674,8 @@ export default function MilkCollectionScreen() {
                     editable={false}
                   />
                 </View>
+              </View>
+              <View style={styles.row}>
                 <View style={styles.halfField}>
                   <Text style={styles.label}>TS (%)</Text>
                   <TextInput
@@ -649,24 +684,6 @@ export default function MilkCollectionScreen() {
                     placeholderTextColor="#9CA3AF"
                     value={ts}
                     editable={false}
-                  />
-                </View>
-              </View>
-              <View style={styles.row}>
-                <View style={styles.halfField}>
-                  <Text style={styles.label}>Quantity (L)</Text>
-                  <TextInput
-                    style={inputStyle('quantity')}
-                    placeholder="0.0"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="numeric"
-                    value={quantity}
-                    onChangeText={setQuantity}
-                     onFocus={() => {
-                      setFocusedField('quantity');
-                      scrollRef.current?.scrollTo({ y: 450, animated: true });
-                    }}
-                    onBlur={() => setFocusedField(null)}
                   />
                 </View>
 
