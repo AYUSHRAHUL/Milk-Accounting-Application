@@ -106,6 +106,49 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+app.post('/api/auth/change-password', async (req, res) => {
+  try {
+    const { email, oldPassword, newPassword } = req.body ?? {};
+    if (!email || !oldPassword || !newPassword) {
+      return res.status(400).json({ error: 'Email, old password and new password are required' });
+    }
+
+    await connectToDatabase();
+
+    const user = await User.findOne({ email: String(email).toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    let isMatch = false;
+    if (user.passwordHash) {
+      isMatch = await bcrypt.compare(String(oldPassword), user.passwordHash);
+    } else if ((user as any).password) {
+      isMatch = (user as any).password === oldPassword;
+    }
+
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid old password' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const newPasswordHash = await bcrypt.hash(String(newPassword), salt);
+
+    user.passwordHash = newPasswordHash;
+    // Clearing the plain text password if it exists (legacy)
+    if ((user as any).password) {
+      (user as any).password = undefined;
+    }
+    
+    await user.save();
+
+    return res.status(200).json({ message: 'your password successfull update' });
+  } catch (error: any) {
+    console.error('Change Password Error:', error);
+    return res.status(500).json({ error: error?.message || 'Internal Server Error' });
+  }
+});
+
 // --- Suppliers ---
 app.get('/api/suppliers', async (req, res) => {
   try {
@@ -1374,6 +1417,21 @@ app.post('/api/super-admin/admins', requireSuperAdmin, async (req, res) => {
     });
 
     return res.status(201).json({ message: 'Admin created successfully', user: newAdmin });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/super-admin/admins/:id', requireSuperAdmin, async (req, res) => {
+  try {
+    await connectToDatabase();
+    const id = req.params.id;
+    const admin = await User.findById(id);
+    if (!admin || admin.role !== 'admin') {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+    await User.findByIdAndDelete(id);
+    return res.status(200).json({ message: 'Admin deleted successfully' });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
