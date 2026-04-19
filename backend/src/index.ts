@@ -154,9 +154,15 @@ app.get('/api/suppliers', async (req, res) => {
   try {
     await connectToDatabase();
     const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
+    const status = typeof req.query.status === 'string' ? req.query.status : 'active';
     if (!userId) return res.status(400).json({ message: 'userId is required' });
 
-    const suppliers = await Supplier.find({ userId, isActive: true }).sort({ createdAt: -1 });
+    const query: any = { userId };
+    if (status !== 'all') {
+      query.isActive = true;
+    }
+
+    const suppliers = await Supplier.find(query).sort({ createdAt: -1 });
     return res.status(200).json(suppliers);
   } catch (error: any) {
     console.error('Fetch Suppliers Error:', error);
@@ -1332,7 +1338,7 @@ app.get('/api/reports', async (req, res) => {
     ]);
     const products = { produced: productResult[0]?.totalProduced || 0, batches: productResult[0]?.totalBatches || 0 };
 
-    const activeSuppliers = await Supplier.countDocuments(dateQuery);
+    const activeSuppliers = await Supplier.countDocuments({ userId, isActive: true });
     const totalSuppliers = await Supplier.countDocuments({ userId });
 
     return res.status(200).json({

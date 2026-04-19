@@ -7,6 +7,23 @@ import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { TextInput, Alert, ActivityIndicator, Modal, Platform } from 'react-native';
 
+if (Platform.OS === 'web') {
+  if (typeof document !== 'undefined') {
+    const styleId = 'hide-ms-reveal';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.innerHTML = `
+        input::-ms-reveal,
+        input::-ms-clear {
+          display: none !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+}
+
 export default function AdminDashboardScreen() {
   const { user, logout } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
@@ -14,6 +31,8 @@ export default function AdminDashboardScreen() {
   const [form, setForm] = useState({ email: user?.email || '', oldPassword: '', newPassword: '' });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   
   const fetchUsers = async () => {
     if (!user?.id) return;
@@ -106,7 +125,9 @@ export default function AdminDashboardScreen() {
           <Ionicons name="arrow-back" size={24} color="#1E293B" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Admin Panel</Text>
-        <View style={{ width: 24 }} />
+        <TouchableOpacity onPress={fetchUsers} disabled={isRefreshing} style={styles.refreshTopBtn}>
+          <Ionicons name={isRefreshing ? "sync" : "refresh"} size={24} color={isRefreshing ? "#94A3B8" : "#3B82F6"} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView 
@@ -183,23 +204,33 @@ export default function AdminDashboardScreen() {
               </View>
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Old Password</Text>
-                <TextInput 
-                  style={styles.input}
-                  value={form.oldPassword}
-                  onChangeText={(v) => setForm({...form, oldPassword: v})}
-                  placeholder="Enter old password"
-                  secureTextEntry
-                />
+                <View style={styles.passwordContainer}>
+                  <TextInput 
+                    style={[styles.passwordInput, Platform.OS === 'web' && { outlineStyle: 'none' } as any]}
+                    value={form.oldPassword}
+                    onChangeText={(v) => setForm({...form, oldPassword: v})}
+                    placeholder="Enter old password"
+                    secureTextEntry={!showOldPassword}
+                  />
+                  <TouchableOpacity onPress={() => setShowOldPassword(!showOldPassword)} style={styles.eyeIcon}>
+                    <Ionicons name={showOldPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
               </View>
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>New Password</Text>
-                <TextInput 
-                  style={styles.input}
-                  value={form.newPassword}
-                  onChangeText={(v) => setForm({...form, newPassword: v})}
-                  placeholder="Enter new password"
-                  secureTextEntry
-                />
+                <View style={styles.passwordContainer}>
+                  <TextInput 
+                    style={[styles.passwordInput, Platform.OS === 'web' && { outlineStyle: 'none' } as any]}
+                    value={form.newPassword}
+                    onChangeText={(v) => setForm({...form, newPassword: v})}
+                    placeholder="Enter new password"
+                    secureTextEntry={!showNewPassword}
+                  />
+                  <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)} style={styles.eyeIcon}>
+                    <Ionicons name={showNewPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
               </View>
               
               <View style={styles.formActions}>
@@ -238,22 +269,6 @@ export default function AdminDashboardScreen() {
             </View>
           ))}
         </View>
-
-        {/* Manual Refresh Button at the bottom */}
-        <TouchableOpacity 
-          style={[styles.refreshFooterBtn, isRefreshing && { opacity: 0.7 }]}
-          onPress={fetchUsers}
-          disabled={isRefreshing}
-        >
-          <Ionicons 
-            name={isRefreshing ? "sync" : "refresh-circle"} 
-            size={24} 
-            color="#3B82F6" 
-          />
-          <Text style={styles.refreshFooterText}>
-            {isRefreshing ? 'Refreshing Dashboard...' : 'Refresh Dashboard Data'}
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -286,6 +301,9 @@ const styles = StyleSheet.create({
   inputGroup: { marginBottom: 16 },
   inputLabel: { fontSize: 14, fontWeight: '600', color: '#64748B', marginBottom: 6, marginLeft: 2 },
   input: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, padding: 12, fontSize: 15, color: '#1E293B' },
+  passwordContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, paddingHorizontal: 12 },
+  passwordInput: { flex: 1, paddingVertical: 12, fontSize: 15, color: '#1E293B' },
+  eyeIcon: { padding: 4 },
   formActions: { marginTop: 8, gap: 12 },
   submitBtn: { backgroundColor: '#3B82F6', padding: 16, borderRadius: 12, alignItems: 'center' },
   submitBtnText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
@@ -295,23 +313,5 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { backgroundColor: '#FFF', width: '100%', maxWidth: 400, borderRadius: 24, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 5 },
   modalTitle: { fontSize: 20, fontWeight: '800', color: '#1E293B', marginBottom: 20, textAlign: 'center' },
-
-  refreshFooterBtn: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    backgroundColor: '#EFF6FF', 
-    padding: 16, 
-    borderRadius: 16, 
-    marginTop: 24, 
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-    gap: 10
-  },
-  refreshFooterText: { 
-    fontSize: 15, 
-    fontWeight: '700', 
-    color: '#3B82F6' 
-  }
+  refreshTopBtn: { padding: 4 }
 });

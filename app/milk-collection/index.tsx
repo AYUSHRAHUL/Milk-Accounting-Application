@@ -372,6 +372,7 @@ export default function MilkCollectionScreen() {
           keyboardShouldPersistTaps="handled"
           bounces={true}
           overScrollMode="always"
+          nestedScrollEnabled={true}
         >
           <Text style={styles.headerSubtitle}>Recording for: {todayFormatted}</Text>
 

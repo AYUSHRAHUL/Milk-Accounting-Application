@@ -32,7 +32,7 @@ export default function ReportSuppliersVisualsScreen() {
   const fetchEntries = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await apiFetch(`/api/suppliers?userId=${user?.id}`);
+      const response = await apiFetch(`/api/suppliers?userId=${user?.id}&status=all`);
       if (!response.ok) return;
 
       const data = await response.json();

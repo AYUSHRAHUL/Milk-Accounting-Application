@@ -37,6 +37,7 @@ interface SupplierRow {
 }
 
 type AnimalFilter = 'All' | 'Cow' | 'Buffalo' | 'Goat' | 'Other';
+type StatusFilter = 'Total' | 'Active' | 'Inactive';
 
 export default function ReportSuppliersScreen() {
   const { user } = useAuth();
@@ -46,12 +47,13 @@ export default function ReportSuppliersScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [entries, setEntries] = useState<SupplierRow[]>([]);
   const [animalFilter, setAnimalFilter] = useState<AnimalFilter>('All');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('Total');
   const [exportModalVisible, setExportModal] = useState(false);
 
   const fetchEntries = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await apiFetch(`/api/suppliers?userId=${user?.id}`);
+      const res = await apiFetch(`/api/suppliers?userId=${user?.id}&status=all`);
       if (!res.ok) return;
       const data = await res.json();
       setEntries(
@@ -79,12 +81,18 @@ export default function ReportSuppliersScreen() {
     entries.filter((e) => {
       const animalOk =
         animalFilter === 'All' || (e.animalType || []).includes(animalFilter);
-      return animalOk;
+      const statusOk = 
+        statusFilter === 'Total' || 
+        (statusFilter === 'Active' && e.isActive) || 
+        (statusFilter === 'Inactive' && !e.isActive);
+      return animalOk && statusOk;
     }),
-    [entries, animalFilter]);
+    [entries, animalFilter, statusFilter]);
 
   // ── Summary stats ────────────────────────────────────────
-  const totalSuppliers = filtered.length;
+  const totalCount = entries.length;
+  const activeCount = entries.filter((e) => e.isActive).length;
+  const inactiveCount = totalCount - activeCount;
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
@@ -135,8 +143,8 @@ export default function ReportSuppliersScreen() {
           <ThemedText style={styles.headerTitle}>Supplier Report</ThemedText>
           <ThemedText style={styles.headerSub}>Directory &amp; Status Overview</ThemedText>
         </View>
-        <TouchableOpacity disabled style={[styles.backBtn, { backgroundColor: 'transparent' }]}>
-          <Ionicons name="people-outline" size={24} color="rgba(255,255,255,0.35)" />
+        <TouchableOpacity onPress={() => setExportModal(true)} style={styles.exportTopBtn}>
+          <ThemedText style={styles.exportTopBtnText}>Export CSV</ThemedText>
         </TouchableOpacity>
       </View>
 
@@ -144,31 +152,34 @@ export default function ReportSuppliersScreen() {
 
         {/* ── Summary Stats ── */}
         <View style={styles.statsRow}>
-          <View style={[styles.statCard, { backgroundColor: PURPLE_BG }]}>
-            <Ionicons name="people" size={18} color={PURPLE} style={{ marginBottom: 4 }} />
-            <ThemedText style={[styles.statValue, { color: PURPLE }]}>{totalSuppliers}</ThemedText>
-            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total</ThemedText>
-          </View>
-        </View>
-
-        {/* ── Action Buttons ── */}
-        <View style={styles.actionsRow}>
-          <TouchableOpacity
-            onPress={() => setExportModal(true)}
-            style={[styles.actionBtn, { borderColor: PURPLE, borderWidth: 1.5, backgroundColor: 'transparent' }]}
-            activeOpacity={0.8}
+          <TouchableOpacity 
+            onPress={() => setStatusFilter('Total')}
+            style={[styles.statCard, { backgroundColor: statusFilter === 'Total' ? PURPLE_BG : theme.surfaceMuted }]}
+            activeOpacity={0.7}
           >
-            <Ionicons name="download-outline" size={17} color={PURPLE} />
-            <ThemedText style={[styles.actionBtnText, { color: PURPLE }]}>Export CSV</ThemedText>
+            <Ionicons name="people" size={18} color={statusFilter === 'Total' ? PURPLE : theme.textSecondary} style={{ marginBottom: 4 }} />
+            <ThemedText style={[styles.statValue, { color: statusFilter === 'Total' ? PURPLE : theme.text }]}>{totalCount}</ThemedText>
+            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total</ThemedText>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => router.push('/(tabs)/report-suppliers-visuals')}
-            style={[styles.actionBtn, { backgroundColor: PURPLE }]}
-            activeOpacity={0.8}
+          <TouchableOpacity 
+            onPress={() => setStatusFilter('Active')}
+            style={[styles.statCard, { backgroundColor: statusFilter === 'Active' ? theme.successMuted : theme.surfaceMuted }]}
+            activeOpacity={0.7}
           >
-            <Ionicons name="bar-chart-outline" size={17} color="#fff" />
-            <ThemedText style={[styles.actionBtnText, { color: '#fff' }]}>See Visuals</ThemedText>
+            <Ionicons name="checkmark-circle" size={18} color={statusFilter === 'Active' ? theme.success : theme.textSecondary} style={{ marginBottom: 4 }} />
+            <ThemedText style={[styles.statValue, { color: statusFilter === 'Active' ? theme.success : theme.text }]}>{activeCount}</ThemedText>
+            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Active</ThemedText>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={() => setStatusFilter('Inactive')}
+            style={[styles.statCard, { backgroundColor: statusFilter === 'Inactive' ? theme.errorMuted : theme.surfaceMuted }]}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close-circle" size={18} color={statusFilter === 'Inactive' ? theme.error : theme.textSecondary} style={{ marginBottom: 4 }} />
+            <ThemedText style={[styles.statValue, { color: statusFilter === 'Inactive' ? theme.error : theme.text }]}>{inactiveCount}</ThemedText>
+            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Inactive</ThemedText>
           </TouchableOpacity>
         </View>
 
@@ -211,7 +222,7 @@ export default function ReportSuppliersScreen() {
         <Card variant="elevated" style={styles.tableCard}>
           <View style={[styles.tableHeader, { backgroundColor: PURPLE }]}>
             <ThemedText style={styles.tableHeaderTitle}>Supplier Directory</ThemedText>
-            <ThemedText style={styles.tableHeaderCount}>{totalSuppliers} rows</ThemedText>
+            <ThemedText style={styles.tableHeaderCount}>{filtered.length} rows</ThemedText>
           </View>
 
           {isLoading ? (
@@ -291,7 +302,7 @@ export default function ReportSuppliersScreen() {
             </View>
             <ThemedText style={styles.modalTitle}>Export as CSV</ThemedText>
             <ThemedText style={[styles.modalDesc, { color: theme.textSecondary }]}>
-              Download {totalSuppliers} filtered supplier records as a CSV file.
+              Download {filtered.length} filtered supplier records as a CSV file.
             </ThemedText>
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -331,6 +342,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center', alignItems: 'center',
   },
+  exportTopBtn: {
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
+  },
+  exportTopBtnText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   headerText: { flex: 1, alignItems: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff', textAlign: 'center' },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 1, textAlign: 'center' },

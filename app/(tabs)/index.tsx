@@ -142,8 +142,11 @@ export default function DashboardScreen() {
   const [sourceOpeningBalance, setSourceOpeningBalance] = useState<any>(null);
   const [sourceClosingBalance, setSourceClosingBalance] = useState<any>(null);
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const fetchSummary = useCallback(async () => {
     if (!user?.id) return;
+    setIsRefreshing(true);
     try {
       const res = await apiFetch(`/api/production/milk-summary?userId=${user.id}`);
       if (res.ok) {
@@ -156,6 +159,8 @@ export default function DashboardScreen() {
       }
     } catch (error) {
       console.error('Dashboard Summary Error:', error);
+    } finally {
+      setIsRefreshing(false);
     }
   }, [user?.id]);
 
@@ -195,7 +200,9 @@ export default function DashboardScreen() {
 
           <Text style={styles.headerTitle}>Dashboard</Text>
 
-          <View style={{ width: 28 }} />
+          <TouchableOpacity onPress={fetchSummary} disabled={isRefreshing} style={{ padding: 4 }}>
+            <Ionicons name={isRefreshing ? "sync" : "refresh"} size={24} color={isRefreshing ? "#9CA3AF" : "#22C55E"} />
+          </TouchableOpacity>
         </View>
 
         {/* Welcome */}
