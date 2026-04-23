@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { PreferencesProvider } from '@/context/PreferencesContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { LogBox, View, Platform } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { CustomSplashScreen } from '@/components/SplashScreen';
 
 // Suppress known React Native Web deprecation warnings that clutter the console
@@ -131,10 +132,12 @@ export default function RootLayout() {
   }
 
   return (
-    <PreferencesProvider>
-      <AuthProvider>
-        <RootLayoutNav />
-      </AuthProvider>
-    </PreferencesProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PreferencesProvider>
+        <AuthProvider>
+          <RootLayoutNav />
+        </AuthProvider>
+      </PreferencesProvider>
+    </GestureHandlerRootView>
   );
 }

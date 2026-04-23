@@ -269,11 +269,6 @@ export default function MilkProductionScreen() {
                                     ) : (
                                         <View style={styles.bannerStatsRow}>
                                             <View style={styles.bannerStatItem}>
-                                                <ThemedText style={[styles.bannerStatValue, { fontSize: 22, color: '#fff' }]}>{totalCollectedMilk.toFixed(1)} L</ThemedText>
-                                                <ThemedText style={styles.bannerStatLabel}>Total Received</ThemedText>
-                                            </View>
-                                            <View style={styles.bannerDividerCompact} />
-                                            <View style={styles.bannerStatItem}>
                                                 <ThemedText style={[styles.bannerStatValue, { fontSize: 22, color: '#fff' }]}>{totalAvailable.toFixed(1)} L</ThemedText>
                                                 <ThemedText style={styles.bannerStatLabel}>Available Milk</ThemedText>
                                             </View>

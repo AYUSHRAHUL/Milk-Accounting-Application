@@ -15,7 +15,10 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    FlatList,
+    Animated as RNAnimated,
 } from 'react-native';
+import { ScrollView as GHScrollView, FlatList as GHFlatList } from 'react-native-gesture-handler';
 import Animated, {
     Easing,
     useAnimatedStyle,
@@ -126,6 +129,21 @@ export default function MilkCollectionScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [filteredSuppliers, setFilteredSuppliers] = useState<any[]>([]);
+
+  // Custom visual scrollbar states
+  const [listContentHeight, setListContentHeight] = useState(1);
+  const [listVisibleHeight, setListVisibleHeight] = useState(1);
+  const scrollOffsetY = useRef(new RNAnimated.Value(0)).current;
+
+  const showCustomScrollbar = listContentHeight > listVisibleHeight;
+  const scrollIndicatorSize = Math.max((listVisibleHeight / listContentHeight) * listVisibleHeight, 30);
+  const safeIndicatorSize = isNaN(scrollIndicatorSize) ? 30 : scrollIndicatorSize;
+
+  const scrollIndicatorPosition = scrollOffsetY.interpolate({
+    inputRange: [0, Math.max(1, listContentHeight - listVisibleHeight)],
+    outputRange: [0, Math.max(0, listVisibleHeight - safeIndicatorSize)],
+    extrapolate: 'clamp',
+  });
 
   // Fetch Suppliers on Mount
   useEffect(() => {
@@ -373,6 +391,7 @@ export default function MilkCollectionScreen() {
           bounces={true}
           overScrollMode="always"
           nestedScrollEnabled={true}
+          scrollEnabled={!showDropdown}
         >
           <Text style={styles.headerSubtitle}>Recording for: {todayFormatted}</Text>
 
@@ -420,54 +439,68 @@ export default function MilkCollectionScreen() {
                         }, 200);
                       }}
                     />
-                    {searchQuery.length > 0 && (
-                      <TouchableOpacity onPress={() => {
-                        setSearchQuery('');
-                        setSupplier('');
-                        setSelectedSupplierId(null);
-                      }}>
-                        <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-                      </TouchableOpacity>
-                    )}
                   </View>
                 </View>
               </View>
 
               {showDropdown && (
                 <View style={styles.dropdown}>
-                  <ScrollView 
-                    style={{ maxHeight: 200 }} 
-                    keyboardShouldPersistTaps="handled" 
+                  <RNAnimated.FlatList
+                    data={filteredSuppliers}
+                    keyExtractor={(item: any) => item._id}
+                    style={{ maxHeight: 250 }}
+                    contentContainerStyle={{ flexGrow: 1, paddingRight: showCustomScrollbar ? 14 : 0 }}
+                    keyboardShouldPersistTaps="always"
                     nestedScrollEnabled={true}
-                  >
-                    {filteredSuppliers.length > 0 ? (
-                      filteredSuppliers.map((s) => (
-                        <TouchableOpacity
-                          key={s._id}
-                          style={styles.dropdownItem}
-                          onPress={() => selectSupplier(s)}
-                        >
-                          <View style={styles.dropdownItemLeft}>
-                            <View style={styles.avatarMini}>
-                              <Text style={styles.avatarText}>{s.name?.charAt(0).toUpperCase() || '?'}</Text>
-                            </View>
-                            <View style={styles.dropdownInfoRow}>
-                              <Text style={styles.dropdownItemName}>{s.name}</Text>
-                              <Text style={styles.dropdownItemSeparator}>•</Text>
-                              <Text style={styles.dropdownItemId}>ID: {s.supplierId}</Text>
-                            </View>
+                    showsVerticalScrollIndicator={false}
+                    onContentSizeChange={(_w, h) => setListContentHeight(h)}
+                    onLayout={(e) => setListVisibleHeight(e.nativeEvent.layout.height)}
+                    onScroll={RNAnimated.event(
+                      [{ nativeEvent: { contentOffset: { y: scrollOffsetY } } }],
+                      { useNativeDriver: true }
+                    )}
+                    scrollEventThrottle={16}
+                    renderItem={({ item: s }) => (
+                      <TouchableOpacity
+                        style={styles.dropdownItem}
+                        onPress={() => selectSupplier(s)}
+                      >
+                        <View style={styles.dropdownItemLeft}>
+                          <View style={styles.avatarMini}>
+                            <Text style={styles.avatarText}>{s.name?.charAt(0).toUpperCase() || '?'}</Text>
                           </View>
-                          <Ionicons name="chevron-forward" size={16} color="#E5E7EB" />
-                        </TouchableOpacity>
-                      ))
-                    ) : (
+                          <View style={styles.dropdownInfoRow}>
+                            <Text style={styles.dropdownItemName}>{s.name}</Text>
+                            <Text style={styles.dropdownItemSeparator}>•</Text>
+                            <Text style={styles.dropdownItemId}>ID: {s.supplierId}</Text>
+                          </View>
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color="#E5E7EB" />
+                      </TouchableOpacity>
+                    )}
+                    ListEmptyComponent={
                       <View style={{ padding: 20, alignItems: 'center' }}>
                         <Text style={{ color: '#9CA3AF' }}>No suppliers found.</Text>
                       </View>
-                    )}
-                  </ScrollView>
+                    }
+                  />
+                  {showCustomScrollbar && (
+                    <View style={styles.customScrollbarTrack}>
+                      <RNAnimated.View
+                        style={[
+                          styles.customScrollbarThumb,
+                          {
+                            height: safeIndicatorSize,
+                            transform: [{ translateY: scrollIndicatorPosition }]
+                          }
+                        ]}
+                      />
+                    </View>
+                  )}
                 </View>
               )}
+
+
               
               {selectedSupplierId && (
                 <View style={styles.selectedBadge}>
@@ -1120,6 +1153,21 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 5,
     zIndex: 1000,
+  },
+  customScrollbarTrack: {
+    position: 'absolute',
+    right: 3,
+    top: 3,
+    bottom: 3,
+    width: 6,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  customScrollbarThumb: {
+    width: '100%',
+    backgroundColor: '#9CA3AF',
+    borderRadius: 3,
   },
   dropdownItem: {
     flexDirection: 'row',

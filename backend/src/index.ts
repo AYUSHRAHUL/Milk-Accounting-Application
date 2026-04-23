@@ -434,9 +434,22 @@ app.get('/api/production/milk-summary', async (req, res) => {
     const wholeUsedSummary = usedWholeInProducts[0] || { total: 0, cow: 0, buff: 0, goat: 0, other: 0 };
     const totalWholeUsed = wholeUsedSummary.total;
 
+    // Sum of all direct raw milk sales
+    const rawSales = await SaleEntry.aggregate([
+      { $match: { userId: matchUserId, productType: { $in: ['Cow Milk', 'Buffalo Milk', 'Goat Milk', 'Other Milk', 'Mixed Milk'] } } },
+      { $group: { _id: '$productType', total: { $sum: '$quantity' } } }
+    ]);
+    const salesTotalMap: Record<string, number> = {};
+    let totalDirectSold = 0;
+    rawSales.forEach(s => {
+      salesTotalMap[s._id] = s.total;
+      totalDirectSold += s.total;
+    });
+
     // Calculate before today for Opening Balance
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
+    const todayStr = startOfToday.toISOString().split('T')[0]; // YYYY-MM-DD
 
     const collectedBeforeToday = await MilkEntry.aggregate([
       { $match: { userId: matchUserId, date: { $lt: startOfToday } } },
@@ -490,6 +503,17 @@ app.get('/api/production/milk-summary', async (req, res) => {
     ]);
     const separatedMapBeforeToday = sourceProducedBeforeToday[0] || { totalCow: 0, totalBuffalo: 0, totalGoat: 0, totalOther: 0 };
 
+    const rawSalesBeforeToday = await SaleEntry.aggregate([
+      { $match: { userId: matchUserId, date: { $lt: todayStr }, productType: { $in: ['Cow Milk', 'Buffalo Milk', 'Goat Milk', 'Other Milk', 'Mixed Milk'] } } },
+      { $group: { _id: '$productType', total: { $sum: '$quantity' } } }
+    ]);
+    const salesBeforeTodayMap: Record<string, number> = {};
+    let totalDirectSoldBeforeToday = 0;
+    rawSalesBeforeToday.forEach(s => {
+      salesBeforeTodayMap[s._id] = s.total;
+      totalDirectSoldBeforeToday += s.total;
+    });
+
     // Calculate today's collections and used
     const collectedTodayAggr = await MilkEntry.aggregate([
       { $match: { userId: matchUserId, date: { $gte: startOfToday } } },
@@ -508,7 +532,14 @@ app.get('/api/production/milk-summary', async (req, res) => {
       { $group: { _id: null, total: { $sum: '$milkUsed.wholeMilk' } } }
     ]);
     const todayWholeUsed = wholeUsedTodayAggr.length > 0 ? wholeUsedTodayAggr[0].total : 0;
-    const todayUsed = todaySeparated + todayWholeUsed;
+
+    const directSalesTodayAggr = await SaleEntry.aggregate([
+      { $match: { userId: matchUserId, date: { $gte: todayStr }, productType: { $in: ['Cow Milk', 'Buffalo Milk', 'Goat Milk', 'Other Milk', 'Mixed Milk'] } } },
+      { $group: { _id: null, total: { $sum: '$quantity' } } }
+    ]);
+    const todayDirectSold = directSalesTodayAggr.length > 0 ? directSalesTodayAggr[0].total : 0;
+
+    const todayUsed = todaySeparated + todayWholeUsed + todayDirectSold;
 
     const sourceCounts = await MilkEntry.aggregate([
       { $match: { userId: matchUserId } },
@@ -535,10 +566,10 @@ app.get('/api/production/milk-summary', async (req, res) => {
     const separatedMap = sourceProduced[0] || { totalCow: 0, totalBuffalo: 0, totalGoat: 0, totalOther: 0 };
 
     const sourceOpeningBalance = {
-      Cow: Math.max(0, sourceTotalsBeforeToday.Cow - separatedMapBeforeToday.totalCow - wUsedBeforeToday.cow),
-      Buffalo: Math.max(0, sourceTotalsBeforeToday.Buffalo - separatedMapBeforeToday.totalBuffalo - wUsedBeforeToday.buff),
-      Goat: Math.max(0, sourceTotalsBeforeToday.Goat - separatedMapBeforeToday.totalGoat - wUsedBeforeToday.goat),
-      Other: Math.max(0, sourceTotalsBeforeToday.Other - separatedMapBeforeToday.totalOther - wUsedBeforeToday.other),
+      Cow: Math.max(0, sourceTotalsBeforeToday.Cow - separatedMapBeforeToday.totalCow - wUsedBeforeToday.cow - (salesBeforeTodayMap['Cow Milk'] || 0)),
+      Buffalo: Math.max(0, sourceTotalsBeforeToday.Buffalo - separatedMapBeforeToday.totalBuffalo - wUsedBeforeToday.buff - (salesBeforeTodayMap['Buffalo Milk'] || 0)),
+      Goat: Math.max(0, sourceTotalsBeforeToday.Goat - separatedMapBeforeToday.totalGoat - wUsedBeforeToday.goat - (salesBeforeTodayMap['Goat Milk'] || 0)),
+      Other: Math.max(0, sourceTotalsBeforeToday.Other - separatedMapBeforeToday.totalOther - wUsedBeforeToday.other - (salesBeforeTodayMap['Other Milk'] || 0)),
     };
 
     const inconsistencies: string[] = [];
@@ -546,19 +577,19 @@ app.get('/api/production/milk-summary', async (req, res) => {
       if (val < -0.001) inconsistencies.push(`${label} is logically negative (${val.toFixed(2)})`);
     };
 
-    const availableMilkRaw = totalCollected - totalSeparated - totalWholeUsed;
+    const availableMilkRaw = totalCollected - totalSeparated - totalWholeUsed - totalDirectSold;
     checkNeg(availableMilkRaw, 'Overall Available Milk');
     
-    const openingBalanceRaw = totalCollectedBeforeToday - totalSeparatedBeforeToday - totalWholeUsedBeforeToday;
+    const openingBalanceRaw = totalCollectedBeforeToday - totalSeparatedBeforeToday - totalWholeUsedBeforeToday - totalDirectSoldBeforeToday;
     checkNeg(openingBalanceRaw, 'Opening Balance');
 
-    const closingBalanceRaw = totalCollected - totalSeparated - totalWholeUsed;
+    const closingBalanceRaw = totalCollected - totalSeparated - totalWholeUsed - totalDirectSold;
     checkNeg(closingBalanceRaw, 'Closing Balance');
 
-    const cowAvail = sourceTotals.Cow - separatedMap.totalCow - wholeUsedSummary.cow;
-    const buffAvail = sourceTotals.Buffalo - separatedMap.totalBuffalo - wholeUsedSummary.buff;
-    const goatAvail = sourceTotals.Goat - separatedMap.totalGoat - wholeUsedSummary.goat;
-    const otherAvail = sourceTotals.Other - separatedMap.totalOther - wholeUsedSummary.other;
+    const cowAvail = sourceTotals.Cow - separatedMap.totalCow - wholeUsedSummary.cow - (salesTotalMap['Cow Milk'] || 0);
+    const buffAvail = sourceTotals.Buffalo - separatedMap.totalBuffalo - wholeUsedSummary.buff - (salesTotalMap['Buffalo Milk'] || 0);
+    const goatAvail = sourceTotals.Goat - separatedMap.totalGoat - wholeUsedSummary.goat - (salesTotalMap['Goat Milk'] || 0);
+    const otherAvail = sourceTotals.Other - separatedMap.totalOther - wholeUsedSummary.other - (salesTotalMap['Other Milk'] || 0);
 
     checkNeg(cowAvail, 'Cow Milk');
     checkNeg(buffAvail, 'Buffalo Milk');
@@ -706,7 +737,12 @@ app.get('/api/production/inventory', async (req, res) => {
       { $group: { _id: '$productType', total: { $sum: '$quantity' } } },
     ]);
     const salesMap: Record<string, number> = {};
-    rawSales.forEach((s: any) => { salesMap[s._id] = s.total; });
+    let totalDirectSold = 0;
+    const rawTypes = ['Cow Milk', 'Buffalo Milk', 'Goat Milk', 'Other Milk', 'Mixed Milk'];
+    rawSales.forEach((s: any) => { 
+      salesMap[s._id] = s.total;
+      if (rawTypes.includes(s._id)) totalDirectSold += s.total;
+    });
 
     const sourceCounts = await MilkEntry.aggregate([
       { $match: { userId: matchUserId } },
@@ -738,7 +774,7 @@ app.get('/api/production/inventory', async (req, res) => {
       if (val < -0.001) inconsistencies.push(`${label} is logically negative (${val.toFixed(2)})`);
     };
 
-    const wholeMilkRaw = totalCollected - prod.totalSeparated - use.usedWhole;
+    const wholeMilkRaw = totalCollected - prod.totalSeparated - use.usedWhole - totalDirectSold;
     checkNeg(wholeMilkRaw, 'Whole Milk');
 
     const skimAvail = prod.totalSkim - use.usedSkim - (salesMap['Skim Milk'] || 0);

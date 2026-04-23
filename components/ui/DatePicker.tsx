@@ -197,8 +197,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 style={[
                     styles.inputWrapper,
                     {
-                        backgroundColor: isDark ? '#0F172A' : '#F8FAFC',
-                        borderColor: isDark ? '#1F2937' : '#E2E8F0',
+                        backgroundColor: isDark ? '#0F172A' : '#F9FAFB',
+                        borderColor: isDark ? '#1F2937' : '#E5E7EB',
                     },
                     style
                 ]}
@@ -238,15 +238,15 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
 const styles = StyleSheet.create({
     container: { width: '100%' },
-    label: { fontSize: 13, fontWeight: '500', marginBottom: 4, marginLeft: 0 },
+    label: { fontSize: 12, fontWeight: '600', color: '#64748B', marginBottom: 6, marginLeft: 0 },
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        height: 40,
+        justifyContent: 'flex-start',
+        height: 48,
         borderWidth: 1,
         borderRadius: 12,
-        paddingHorizontal: 8,
+        paddingHorizontal: 12,
         width: '100%',
         overflow: 'hidden', 
     },
