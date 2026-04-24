@@ -449,7 +449,7 @@ app.get('/api/production/milk-summary', async (req, res) => {
     // Calculate before today for Opening Balance
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
-    const todayStr = startOfToday.toISOString().split('T')[0]; // YYYY-MM-DD
+    const startOfTodayISO = startOfToday.toISOString(); 
 
     const collectedBeforeToday = await MilkEntry.aggregate([
       { $match: { userId: matchUserId, date: { $lt: startOfToday } } },
@@ -504,7 +504,7 @@ app.get('/api/production/milk-summary', async (req, res) => {
     const separatedMapBeforeToday = sourceProducedBeforeToday[0] || { totalCow: 0, totalBuffalo: 0, totalGoat: 0, totalOther: 0 };
 
     const rawSalesBeforeToday = await SaleEntry.aggregate([
-      { $match: { userId: matchUserId, date: { $lt: todayStr }, productType: { $in: ['Cow Milk', 'Buffalo Milk', 'Goat Milk', 'Other Milk', 'Mixed Milk'] } } },
+      { $match: { userId: matchUserId, date: { $lt: startOfTodayISO }, productType: { $in: ['Cow Milk', 'Buffalo Milk', 'Goat Milk', 'Other Milk', 'Mixed Milk'] } } },
       { $group: { _id: '$productType', total: { $sum: '$quantity' } } }
     ]);
     const salesBeforeTodayMap: Record<string, number> = {};
@@ -534,7 +534,7 @@ app.get('/api/production/milk-summary', async (req, res) => {
     const todayWholeUsed = wholeUsedTodayAggr.length > 0 ? wholeUsedTodayAggr[0].total : 0;
 
     const directSalesTodayAggr = await SaleEntry.aggregate([
-      { $match: { userId: matchUserId, date: { $gte: todayStr }, productType: { $in: ['Cow Milk', 'Buffalo Milk', 'Goat Milk', 'Other Milk', 'Mixed Milk'] } } },
+      { $match: { userId: matchUserId, date: { $gte: startOfTodayISO }, productType: { $in: ['Cow Milk', 'Buffalo Milk', 'Goat Milk', 'Other Milk', 'Mixed Milk'] } } },
       { $group: { _id: null, total: { $sum: '$quantity' } } }
     ]);
     const todayDirectSold = directSalesTodayAggr.length > 0 ? directSalesTodayAggr[0].total : 0;

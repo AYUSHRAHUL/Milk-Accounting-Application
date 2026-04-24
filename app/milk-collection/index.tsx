@@ -17,7 +17,12 @@ import {
     View,
     FlatList,
     Animated as RNAnimated,
+    Modal,
+    Dimensions,
 } from 'react-native';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const DRAWER_WIDTH = SCREEN_WIDTH * 0.55;
 import { ScrollView as GHScrollView, FlatList as GHFlatList } from 'react-native-gesture-handler';
 import Animated, {
     Easing,
@@ -144,6 +149,20 @@ export default function MilkCollectionScreen() {
     outputRange: [0, Math.max(0, listVisibleHeight - safeIndicatorSize)],
     extrapolate: 'clamp',
   });
+
+  // Drawer Animation
+  const drawerAnim = useSharedValue(-DRAWER_WIDTH);
+  useEffect(() => {
+    if (showDropdown) {
+      drawerAnim.value = withTiming(0, { duration: 350, easing: Easing.bezier(0.25, 0.1, 0.25, 1) });
+    } else {
+      drawerAnim.value = withTiming(-DRAWER_WIDTH, { duration: 300, easing: Easing.ease });
+    }
+  }, [showDropdown]);
+
+  const drawerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: drawerAnim.value }],
+  }));
 
   // Fetch Suppliers on Mount
   useEffect(() => {
@@ -406,6 +425,7 @@ export default function MilkCollectionScreen() {
                   onPress={() => {
                     if (allSuppliers.length > 0) {
                       setFilteredSuppliers(allSuppliers);
+                      setSearchQuery('');
                       setShowDropdown(!showDropdown);
                     }
                   }}
@@ -415,90 +435,82 @@ export default function MilkCollectionScreen() {
                   <Ionicons name={showDropdown ? "chevron-up" : "chevron-down"} size={18} color="#4B5563" />
                 </TouchableOpacity>
 
-                <View style={styles.searchInputContainer}>
-                  <View style={[
-                    styles.searchInputWrapper,
-                    focusedField === 'supplier' && styles.textInputFocused
-                  ]}>
-                    <Ionicons name="search" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
-                    <TextInput
-                      style={[styles.textInputMain, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
-                      placeholder="Search..."
-                      placeholderTextColor="#9CA3AF"
-                      value={searchQuery}
-                      onChangeText={setSearchQuery}
-                      onFocus={() => {
-                        setFocusedField('supplier');
-                        if (filteredSuppliers.length > 0) setShowDropdown(true);
-                        scrollRef.current?.scrollTo({ y: 0, animated: true });
-                      }}
-                      onBlur={() => {
-                        setTimeout(() => {
-                          setShowDropdown(false);
-                          setFocusedField(null);
-                        }, 200);
-                      }}
-                    />
-                  </View>
-                </View>
+
               </View>
 
-              {showDropdown && (
-                <View style={styles.dropdown}>
-                  <RNAnimated.FlatList
-                    data={filteredSuppliers}
-                    keyExtractor={(item: any) => item._id}
-                    style={{ maxHeight: 250 }}
-                    contentContainerStyle={{ flexGrow: 1, paddingRight: showCustomScrollbar ? 14 : 0 }}
-                    keyboardShouldPersistTaps="always"
-                    nestedScrollEnabled={true}
-                    showsVerticalScrollIndicator={false}
-                    onContentSizeChange={(_w, h) => setListContentHeight(h)}
-                    onLayout={(e) => setListVisibleHeight(e.nativeEvent.layout.height)}
-                    onScroll={RNAnimated.event(
-                      [{ nativeEvent: { contentOffset: { y: scrollOffsetY } } }],
-                      { useNativeDriver: true }
-                    )}
-                    scrollEventThrottle={16}
-                    renderItem={({ item: s }) => (
-                      <TouchableOpacity
-                        style={styles.dropdownItem}
-                        onPress={() => selectSupplier(s)}
-                      >
-                        <View style={styles.dropdownItemLeft}>
-                          <View style={styles.avatarMini}>
-                            <Text style={styles.avatarText}>{s.name?.charAt(0).toUpperCase() || '?'}</Text>
-                          </View>
-                          <View style={styles.dropdownInfoRow}>
-                            <Text style={styles.dropdownItemName}>{s.name}</Text>
-                            <Text style={styles.dropdownItemSeparator}>•</Text>
-                            <Text style={styles.dropdownItemId}>ID: {s.supplierId}</Text>
-                          </View>
-                        </View>
-                        <Ionicons name="chevron-forward" size={16} color="#E5E7EB" />
-                      </TouchableOpacity>
-                    )}
-                    ListEmptyComponent={
-                      <View style={{ padding: 20, alignItems: 'center' }}>
-                        <Text style={{ color: '#9CA3AF' }}>No suppliers found.</Text>
-                      </View>
-                    }
+              {/* ══════════════════════════════════════════════════════════════════
+                  SUPPLIER SELECTION DRAWER (Slide from Left)
+                  ══════════════════════════════════════════════════════════════════ */}
+              <Modal
+                visible={showDropdown}
+                transparent={true}
+                animationType="none"
+                onRequestClose={() => setShowDropdown(false)}
+              >
+                <View style={styles.drawerOverlay}>
+                  <TouchableOpacity 
+                    style={styles.drawerBackdrop} 
+                    activeOpacity={1} 
+                    onPress={() => setShowDropdown(false)} 
                   />
-                  {showCustomScrollbar && (
-                    <View style={styles.customScrollbarTrack}>
-                      <RNAnimated.View
-                        style={[
-                          styles.customScrollbarThumb,
-                          {
-                            height: safeIndicatorSize,
-                            transform: [{ translateY: scrollIndicatorPosition }]
-                          }
-                        ]}
-                      />
+                  <Animated.View style={[styles.drawerContent, drawerStyle]}>
+                    <View style={styles.drawerHeader}>
+                      <View style={styles.drawerHeaderTop}>
+                        <Text style={styles.drawerTitle}>Select Supplier</Text>
+                        <TouchableOpacity 
+                          style={styles.drawerCloseBtn}
+                          onPress={() => setShowDropdown(false)}
+                        >
+                          <Ionicons name="close" size={22} color="#4B5563" />
+                        </TouchableOpacity>
+                      </View>
+                      
+                      <View style={styles.drawerSearchWrapper}>
+                        <Ionicons name="search" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+                        <TextInput
+                          style={[styles.drawerSearchInput, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
+                          placeholder="Search name or ID..."
+                          placeholderTextColor="#9CA3AF"
+                          value={searchQuery}
+                          onChangeText={setSearchQuery}
+                        />
+                      </View>
                     </View>
-                  )}
+
+                    <RNAnimated.FlatList
+                      data={filteredSuppliers}
+                      keyExtractor={(item: any) => item._id}
+                      style={{ flex: 1 }}
+                      contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 60 }}
+                      keyboardShouldPersistTaps="always"
+                      showsVerticalScrollIndicator={false}
+                      renderItem={({ item: s }) => (
+                        <TouchableOpacity
+                          style={styles.drawerItem}
+                          onPress={() => selectSupplier(s)}
+                        >
+                          <View style={styles.drawerItemLeft}>
+                            <View style={styles.avatarMini}>
+                              <Text style={styles.avatarText}>{s.name?.charAt(0).toUpperCase() || '?'}</Text>
+                            </View>
+                            <View>
+                              <Text style={styles.drawerItemName} numberOfLines={1}>{s.name}</Text>
+                              <Text style={styles.drawerItemId}>ID: {s.supplierId}</Text>
+                            </View>
+                          </View>
+                          <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+                        </TouchableOpacity>
+                      )}
+                      ListEmptyComponent={
+                        <View style={{ padding: 40, alignItems: 'center' }}>
+                          <Ionicons name="people-outline" size={48} color="#E5E7EB" />
+                          <Text style={{ color: '#9CA3AF', marginTop: 12, fontWeight: '500' }}>No suppliers found</Text>
+                        </View>
+                      }
+                    />
+                  </Animated.View>
                 </View>
-              )}
+              </Modal>
 
 
               
@@ -1100,7 +1112,7 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     gap: 12,
   },
   selectFarmerContainer: {
@@ -1114,77 +1126,103 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#4338CA', // Purple color as in the image
   },
-  searchInputContainer: {
+
+  drawerOverlay: {
     flex: 1,
-    maxWidth: '65%',
-  },
-  searchContainer: {
-    zIndex: 100,
-    width: '100%',
-  },
-  searchInputWrapper: {
     flexDirection: 'row',
-    alignItems: 'center',
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    paddingHorizontal: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
   },
-  textInputMain: {
-    flex: 1,
-    fontSize: 14,
-    color: '#374151',
+  drawerBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  drawerContent: {
+    width: DRAWER_WIDTH,
     height: '100%',
-  },
-  dropdown: {
-    marginTop: 12,
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderTopRightRadius: 24,
+    borderBottomRightRadius: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 10, height: 0 },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  customScrollbarTrack: {
-    position: 'absolute',
-    right: 3,
-    top: 3,
-    bottom: 3,
-    width: 6,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 3,
+    shadowRadius: 20,
+    elevation: 25,
+    paddingTop: Platform.OS === 'ios' ? 40 : 10,
     overflow: 'hidden',
   },
-  customScrollbarThumb: {
-    width: '100%',
-    backgroundColor: '#9CA3AF',
-    borderRadius: 3,
-  },
-  dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
+  drawerHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
-  dropdownItemLeft: {
+  drawerHeaderTop: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
-  dropdownInfoRow: {
+  drawerTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  drawerCloseBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  drawerSearchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 12,
   },
-  dropdownItemSeparator: {
+  drawerSearchInput: {
+    flex: 1,
     fontSize: 14,
-    color: '#D1D5DB',
+    color: '#374151',
+    fontWeight: '500',
+    padding: 0,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+  },
+  drawerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
+  },
+  drawerItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  drawerItemName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+    maxWidth: DRAWER_WIDTH - 110,
+  },
+  drawerItemId: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
   },
   avatarMini: {
     width: 32,
@@ -1199,15 +1237,6 @@ const styles = StyleSheet.create({
     color: '#22C55E',
     fontWeight: 'bold',
     fontSize: 12,
-  },
-  dropdownItemName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  dropdownItemId: {
-    fontSize: 12,
-    color: '#6B7280',
   },
   selectedBadge: {
     flexDirection: 'row',
