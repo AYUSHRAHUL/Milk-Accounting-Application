@@ -391,6 +391,7 @@ export default function MilkCollectionScreen() {
           bounces={true}
           overScrollMode="always"
           nestedScrollEnabled={true}
+          scrollEnabled={!showDropdown}
         >
           <Text style={styles.headerSubtitle}>Recording for: {todayFormatted}</Text>
 
