@@ -136,19 +136,19 @@ export default function MilkProductionScreen() {
             return;
         }
         if (cSep > sourceAvailable.Cow) {
-            Alert.alert('Error', `Cow separation cannot exceed available Cow milk (${sourceAvailable.Cow.toFixed(3)}L)`);
+            Alert.alert('Error', `Cow separation cannot exceed available Cow milk (${sourceAvailable.Cow.toFixed(2)}L)`);
             return;
         }
         if (bSep > sourceAvailable.Buffalo) {
-            Alert.alert('Error', `Buffalo separation cannot exceed available Buffalo milk (${sourceAvailable.Buffalo.toFixed(3)}L)`);
+            Alert.alert('Error', `Buffalo separation cannot exceed available Buffalo milk (${sourceAvailable.Buffalo.toFixed(2)}L)`);
             return;
         }
         if (gSep > sourceAvailable.Goat) {
-            Alert.alert('Error', `Goat separation cannot exceed available Goat milk (${sourceAvailable.Goat.toFixed(3)}L)`);
+            Alert.alert('Error', `Goat separation cannot exceed available Goat milk (${sourceAvailable.Goat.toFixed(2)}L)`);
             return;
         }
         if (oSep > sourceAvailable.Other) {
-            Alert.alert('Error', `Other separation cannot exceed available Other milk (${sourceAvailable.Other.toFixed(3)}L)`);
+            Alert.alert('Error', `Other separation cannot exceed available Other milk (${sourceAvailable.Other.toFixed(2)}L)`);
             return;
         }
         if (isDivisionExceeded) {
@@ -269,12 +269,12 @@ export default function MilkProductionScreen() {
                                     ) : (
                                         <View style={styles.bannerStatsRow}>
                                             <View style={styles.bannerStatItem}>
-                                                <ThemedText style={[styles.bannerStatValue, { fontSize: 22, color: '#fff' }]}>{totalAvailable.toFixed(1)} L</ThemedText>
+                                                <ThemedText style={[styles.bannerStatValue, { fontSize: 22, color: '#fff' }]}>{totalAvailable.toFixed(2)} L</ThemedText>
                                                 <ThemedText style={styles.bannerStatLabel}>Available Milk</ThemedText>
                                             </View>
                                             <View style={styles.bannerDividerCompact} />
                                             <View style={styles.bannerStatItem}>
-                                                <ThemedText style={[styles.bannerStatValue, { fontSize: 22, color: '#fff' }]}>{totalUsedMilk.toFixed(1)} L</ThemedText>
+                                                <ThemedText style={[styles.bannerStatValue, { fontSize: 22, color: '#fff' }]}>{totalUsedMilk.toFixed(2)} L</ThemedText>
                                                 <ThemedText style={styles.bannerStatLabel}>Total Used</ThemedText>
                                             </View>
                                         </View>
@@ -340,7 +340,7 @@ export default function MilkProductionScreen() {
                                         return (
                                             <View key={item.key} style={styles.sourceSepItem}>
                                                 <ThemedText style={[styles.sourceAvailLabel, { color: isExceeded ? '#EF4444' : (isDark ? '#94A3B8' : '#64748B') }]}>
-                                                    Avail: {remaining.toFixed(3)}L
+                                                    Avail: {remaining.toFixed(2)}L
                                                 </ThemedText>
                                                 <ThemedText style={[styles.sourceBoxTitle, { color: isDark ? '#F8FAFC' : '#1E293B' }]}>{item.label}</ThemedText>
                                                 <View style={[styles.sourceInputBox, { 
@@ -366,9 +366,9 @@ export default function MilkProductionScreen() {
                                                             const num = parseFloat(item.value) || 0;
                                                             if (num > item.avail) {
                                                                 if (Platform.OS === 'web') {
-                                                                    alert(`Warning: ${item.label} exceeds available milk (${item.avail.toFixed(3)}L)!`);
+                                                                    alert(`Warning: ${item.label} exceeds available milk (${item.avail.toFixed(2)}L)!`);
                                                                 } else {
-                                                                    Alert.alert('Warning', `${item.label} exceeds available milk (${item.avail.toFixed(3)}L)!`);
+                                                                    Alert.alert('Warning', `${item.label} exceeds available milk (${item.avail.toFixed(2)}L)!`);
                                                                 }
                                                             }
                                                         }}
@@ -384,7 +384,7 @@ export default function MilkProductionScreen() {
                                         <ThemedText style={[styles.resultTagCompact, { color: isDark ? '#4ADE80' : '#16A34A' }]}>TOTAL SEPARATION:</ThemedText>
                                     </View>
                                     <ThemedText style={[styles.resultBigValueCompact, { color: isDark ? '#4ADE80' : '#16A34A' }]}>
-                                        {sepQty.toFixed(3)} L
+                                        {sepQty.toFixed(2)} L
                                     </ThemedText>
                                 </View>
 
@@ -393,7 +393,7 @@ export default function MilkProductionScreen() {
                                         <ThemedText style={[styles.resultTagCompact, { color: isDark ? '#4ADE80' : '#16A34A' }]}>WHOLE MILK LEFT:</ThemedText>
                                     </View>
                                     <ThemedText style={[styles.resultBigValueCompact, { color: isDark ? '#4ADE80' : '#16A34A' }]}>
-                                        {wholeMilk.toFixed(3)} L
+                                        {wholeMilk.toFixed(2)} L
                                     </ThemedText>
                                 </View>
                             </View>
@@ -419,7 +419,7 @@ export default function MilkProductionScreen() {
                                             </ThemedText>
                                         </View>
                                         <ThemedText style={[styles.infoChipTextCompact, { color: isDivisionExceeded ? '#EF4444' : (isDark ? '#60A5FA' : '#3B82F6') }]}>
-                                            Total: {sepQty.toFixed(3)} L
+                                            Total: {sepQty.toFixed(2)} L
                                         </ThemedText>
                                     </View>
                                 </View>
@@ -467,11 +467,11 @@ export default function MilkProductionScreen() {
                             ]}>
                                 <View style={styles.summaryStripGridCompact}>
                                     {[
-                                        { label: 'Avail', value: `${totalAvailable.toFixed(3)}L`, color: '#22C55E' },
-                                        { label: 'Left', value: `${wholeMilk.toFixed(3)}L`, color: '#16A34A' },
-                                        { label: 'Cream', value: `${(inventory.creamMilk + creamQty).toFixed(3)}L`, color: '#F59E0B' },
-                                        { label: 'Skim', value: `${(inventory.skimMilk + skimQty).toFixed(3)}L`, color: '#60A5FA' },
-                                        { label: 'Mixed', value: `${(inventory.mixedMilk + mixedQty).toFixed(3)}L`, color: '#10B981' },
+                                        { label: 'Avail', value: `${totalAvailable.toFixed(2)}L`, color: '#22C55E' },
+                                        { label: 'Left', value: `${wholeMilk.toFixed(2)}L`, color: '#16A34A' },
+                                        { label: 'Cream', value: `${(inventory.creamMilk + creamQty).toFixed(2)}L`, color: '#F59E0B' },
+                                        { label: 'Skim', value: `${(inventory.skimMilk + skimQty).toFixed(2)}L`, color: '#60A5FA' },
+                                        { label: 'Mixed', value: `${(inventory.mixedMilk + mixedQty).toFixed(2)}L`, color: '#10B981' },
                                     ].map((item, idx) => (
                                         <View key={idx} style={styles.summaryStripItemCompact}>
                                             <ThemedText style={[styles.summaryStripValueCompact, { color: item.color }]}>{item.value}</ThemedText>

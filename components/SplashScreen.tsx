@@ -117,6 +117,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+    transform: [{ scale: 1.2 }],
   },
   textContainer: {
     alignItems: 'center',

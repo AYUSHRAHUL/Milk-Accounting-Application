@@ -229,7 +229,7 @@ export default function SalesScreen() {
             </div>
             <table>
                 <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
-                <tr><td>${data.productType}</td><td>${data.quantity}</td><td>₹${data.pricePerUnit}</td><td>₹${data.totalAmount}</td></tr>
+                <tr><td>${data.productType}</td><td>${parseFloat(data.quantity).toFixed(2)}</td><td>₹${parseFloat(data.pricePerUnit).toFixed(2)}</td><td>₹${data.totalAmount}</td></tr>
             </table>
             <div class="total">GRAND TOTAL: ₹${data.totalAmount}</div>
         </body></html>`;
@@ -378,7 +378,7 @@ export default function SalesScreen() {
                                                 <ThemedText style={[styles.productName, isSelected && { color, fontWeight: '800' }]}>{p}</ThemedText>
                                                 <View style={[styles.stockBadge, { backgroundColor: stock > 0 ? '#DCFCE7' : '#FEE2E2' }]}>
                                                     <ThemedText style={[styles.stockText, { color: stock > 0 ? '#166534' : '#991B1B' }]}>
-                                                        {stock > 0 ? `${stock.toFixed(1)} avail` : 'Out of stock'}
+                                                        {stock > 0 ? `${stock.toFixed(2)} avail` : 'Out of stock'}
                                                     </ThemedText>
                                                 </View>
                                             </TouchableOpacity>

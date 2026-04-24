@@ -220,40 +220,36 @@ export default function DashboardScreen() {
         {/* KPI Section */}
         <View style={[styles.grid, { marginBottom: 16 }]}>
           {/* Opening Balance Card */}
-          <View style={[styles.card, { height: 'auto', paddingVertical: 20 }]}>
-            <Text style={{ fontSize: 10, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          <View style={[styles.card, { height: 'auto', paddingVertical: 14, borderColor: '#22C55E', borderWidth: 1.2 }]}>
+            <Text style={{ fontSize: 9, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>
               OPENING BAL. ({todayStr})
             </Text>
-            <Text style={{ fontSize: 24, fontWeight: '800', color: '#111827', marginTop: 8 }}>
-              {openingBalance?.toFixed(1) || '0.0'}L
+            <Text style={{ fontSize: 20, fontWeight: '800', color: '#111827', marginTop: 4 }}>
+              {openingBalance?.toFixed(2) || '0.00'}L
             </Text>
             {sourceOpeningBalance && (
-              <View style={{ marginTop: 12, alignItems: 'center' }}>
-                <Text style={{ fontSize: 10, color: '#6B7280', fontWeight: '600' }}>
-                  C: {sourceOpeningBalance.Cow?.toFixed(0)}L  •  B: {sourceOpeningBalance.Buffalo?.toFixed(0)}L
-                </Text>
-                <Text style={{ fontSize: 10, color: '#6B7280', fontWeight: '600' }}>
-                  G: {sourceOpeningBalance.Goat?.toFixed(0)}L  •  O: {sourceOpeningBalance.Other?.toFixed(0)}L
+              <View style={{ marginTop: 8, alignItems: 'center' }}>
+                <Text style={{ fontSize: 9, color: '#6B7280', fontWeight: '600', textAlign: 'center' }}>
+                  C: {sourceOpeningBalance.Cow?.toFixed(1)}L • B: {sourceOpeningBalance.Buffalo?.toFixed(1)}L{"\n"}
+                  G: {sourceOpeningBalance.Goat?.toFixed(1)}L • O: {sourceOpeningBalance.Other?.toFixed(1)}L
                 </Text>
               </View>
             )}
           </View>
 
           {/* Closing Balance Card */}
-          <View style={[styles.card, { height: 'auto', paddingVertical: 20 }]}>
-            <Text style={{ fontSize: 10, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          <View style={[styles.card, { height: 'auto', paddingVertical: 14, borderColor: '#22C55E', borderWidth: 1.2 }]}>
+            <Text style={{ fontSize: 9, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>
               CLOSING BAL. ({cbDateStr})
             </Text>
-            <Text style={{ fontSize: 24, fontWeight: '800', color: '#111827', marginTop: 8 }}>
-              {closingBalance?.toFixed(1) || '0.0'}L
+            <Text style={{ fontSize: 20, fontWeight: '800', color: '#111827', marginTop: 4 }}>
+              {closingBalance?.toFixed(2) || '0.00'}L
             </Text>
             {sourceClosingBalance && (
-              <View style={{ marginTop: 12, alignItems: 'center' }}>
-                <Text style={{ fontSize: 10, color: '#6B7280', fontWeight: '600' }}>
-                  C: {sourceClosingBalance.Cow?.toFixed(0)}L  •  B: {sourceClosingBalance.Buffalo?.toFixed(0)}L
-                </Text>
-                <Text style={{ fontSize: 10, color: '#6B7280', fontWeight: '600' }}>
-                  G: {sourceClosingBalance.Goat?.toFixed(0)}L  •  O: {sourceClosingBalance.Other?.toFixed(0)}L
+              <View style={{ marginTop: 8, alignItems: 'center' }}>
+                <Text style={{ fontSize: 9, color: '#6B7280', fontWeight: '600', textAlign: 'center' }}>
+                  C: {sourceClosingBalance.Cow?.toFixed(1)}L • B: {sourceClosingBalance.Buffalo?.toFixed(1)}L{"\n"}
+                  G: {sourceClosingBalance.Goat?.toFixed(1)}L • O: {sourceClosingBalance.Other?.toFixed(1)}L
                 </Text>
               </View>
             )}

@@ -98,7 +98,7 @@ export default function ReportsScreen() {
                                 <View style={styles.statsRow}>
                                     <View style={styles.stat}>
                                         <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Volume</ThemedText>
-                                        <ThemedText style={styles.statValue}>{metrics.milkCollection.liters.toFixed(1)} L</ThemedText>
+                                        <ThemedText style={styles.statValue}>{metrics.milkCollection.liters.toFixed(2)} L</ThemedText>
                                     </View>
                                     <View style={[styles.divider, { backgroundColor: theme.borderMuted }]} />
                                     <View style={styles.stat}>
@@ -150,7 +150,7 @@ export default function ReportsScreen() {
                                 <View style={styles.statsRow}>
                                     <View style={styles.stat}>
                                         <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Products</ThemedText>
-                                        <ThemedText style={styles.statValue}>{metrics.products.produced.toFixed(1)} qty</ThemedText>
+                                        <ThemedText style={styles.statValue}>{metrics.products.produced.toFixed(2)} qty</ThemedText>
                                     </View>
                                     <View style={[styles.divider, { backgroundColor: theme.borderMuted }]} />
                                     <View style={styles.stat}>
