@@ -391,7 +391,6 @@ export default function MilkCollectionScreen() {
           bounces={true}
           overScrollMode="always"
           nestedScrollEnabled={true}
-          scrollEnabled={!showDropdown}
         >
           <Text style={styles.headerSubtitle}>Recording for: {todayFormatted}</Text>
 
@@ -1139,10 +1138,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   dropdown: {
-    position: 'absolute',
-    top: 58,
-    left: 12,
-    right: 12,
+    marginTop: 12,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     borderWidth: 1,
@@ -1152,7 +1148,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 5,
-    zIndex: 1000,
   },
   customScrollbarTrack: {
     position: 'absolute',
