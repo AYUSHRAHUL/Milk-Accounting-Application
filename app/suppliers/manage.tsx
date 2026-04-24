@@ -185,7 +185,10 @@ export default function ManageSupplierScreen() {
                     <Input
                         label="Supplier ID *"
                         value={supplierId}
-                        onChangeText={setSupplierId}
+                        onChangeText={(text) => {
+                            const alphanumericValue = text.replace(/[^a-zA-Z0-9]/g, '');
+                            setSupplierId(alphanumericValue);
+                        }}
                         placeholder="e.g. F-101"
                         autoCapitalize="characters"
                         onFocus={() => scrollRef.current?.scrollTo({ y: 80, animated: true })}

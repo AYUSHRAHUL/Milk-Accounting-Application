@@ -148,7 +148,8 @@ export default function DashboardScreen() {
     if (!user?.id) return;
     setIsRefreshing(true);
     try {
-      const res = await apiFetch(`/api/production/milk-summary?userId=${user.id}`);
+      const today = new Date().toISOString();
+      const res = await apiFetch(`/api/production/milk-summary?userId=${user.id}&date=${today}`);
       if (res.ok) {
         const data = await res.json();
         setOpeningBalance(data.openingBalance);

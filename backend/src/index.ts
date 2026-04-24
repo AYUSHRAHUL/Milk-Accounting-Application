@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import cors from 'cors';
 import 'dotenv/config';
+process.env.TZ = 'Asia/Kolkata';
 import express from 'express';
 import mongoose from 'mongoose';
 
@@ -401,6 +402,7 @@ app.get('/api/production/milk-summary', async (req, res) => {
   try {
     await connectToDatabase();
     const userId = typeof req.query.userId === 'string' ? req.query.userId : null;
+    const clientDateQuery = typeof req.query.date === 'string' ? req.query.date : null;
     if (!userId) return res.status(400).json({ message: 'userId is required' });
 
     const { ObjectId } = mongoose.Types;
@@ -446,8 +448,8 @@ app.get('/api/production/milk-summary', async (req, res) => {
       totalDirectSold += s.total;
     });
 
-    // Calculate before today for Opening Balance
-    const startOfToday = new Date();
+    // Calculate boundaries using client's local date if provided
+    const startOfToday = clientDateQuery ? new Date(clientDateQuery) : new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const startOfTodayISO = startOfToday.toISOString(); 
 
